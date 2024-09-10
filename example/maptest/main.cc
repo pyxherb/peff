@@ -1,0 +1,51 @@
+#include <cstdio>
+#include <phul/containers/set.h>
+#include <phul/containers/dynarray.h>
+#include <phul/containers/list.h>
+
+int main() {
+	{
+		phul::Set<int> map;
+
+		for (int i = 0; i < 64; i++) {
+			int j = i & 1 ? i : 128 - i;
+			printf("Inserting: %d\n", j);
+			if (!map.insert(j))
+				throw std::bad_alloc();
+
+			map.verify();
+		}
+
+		for (int i = 0; i < 64; i++) {
+			int j = i & 1 ? i : 128 - i;
+			printf("Removing: %d\n", j);
+
+			map.remove(j);
+
+			auto k = map.begin();
+			while (k != map.end()) {
+				printf("%d\n", *(k++));
+			}
+
+			// map.dump(std::cout);
+
+			map.verify();
+		}
+	}
+
+	{
+		phul::DynArray<int> arr;
+
+		for (int i = 0; i < 64; i++) {
+			int j;
+			if (i & 1) {
+				j = arr.getSize() - i;
+			} else {
+				j = arr.getSize();
+			}
+			arr.insertFront(j, i);
+		}
+	}
+
+	return 0;
+}

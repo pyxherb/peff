@@ -1,0 +1,12 @@
+#ifndef _PHUL_CONTAINERS_BASEDEFS_H_
+#define _PHUL_CONTAINERS_BASEDEFS_H_
+
+#include <phul/base/basedefs.h>
+
+#if IS_PHUL_CONTAINERS_BUILDING
+	#define PHUL_CONTAINERS_API PHUL_DLLEXPORT
+#else
+	#define PHUL_CONTAINERS_API PHUL_DLLIMPORT
+#endif
+
+#endif

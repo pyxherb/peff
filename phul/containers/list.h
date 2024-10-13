@@ -7,6 +7,7 @@
 #include <functional>
 #include <phul/base/allocator.h>
 #include <phul/utils/scope_guard.h>
+#include <phul/utils/misc.h>
 
 namespace phul {
 	template <typename T, typename Allocator = StdAlloc>
@@ -17,8 +18,8 @@ namespace phul {
 			T data;
 
 			Node() = default;
-			inline Node(const T &data) : data(data) {}
-			inline Node(T &&data) : data(data) {}
+			PHUL_FORCEINLINE Node(T &&data) : data(data) {
+			}
 		};
 
 	private:
@@ -53,7 +54,10 @@ namespace phul {
 					_allocator.release(node);
 				});
 
-			new (node) Node(data);
+			new (node) Node();
+			if (!phul::copy(node->data, data)) {
+				return false;
+			}
 			scopeGuard.release();
 
 			return node;
@@ -67,7 +71,7 @@ namespace phul {
 			ScopeGuard scopeGuard([this, node]() {
 				_allocator.release(node);
 			});
-			new (node) Node(data);
+			new (node) Node(std::move(data));
 			scopeGuard.release();
 
 			return node;
@@ -90,8 +94,12 @@ namespace phul {
 			}
 			node->next = dest;
 
+			if (!_first)
+				_first = node;
 			if (!_last)
 				_last = node;
+
+			++_length;
 		}
 
 		PHUL_FORCEINLINE void _append(Node *dest, Node *node) noexcept {
@@ -107,22 +115,29 @@ namespace phul {
 
 			if (!_first)
 				_first = node;
+			if (!_last)
+				_last = node;
+
+			++_length;
 		}
 
 		PHUL_FORCEINLINE void _remove(Node *dest) {
 			if (dest == _first) {
 				_first = dest->next;
 			} else if (dest == _last) {
-				_first = dest->prev;
+				_last = dest->prev;
 			}
 
 			if (dest->prev)
 				dest->prev->next = dest->next;
 			if (dest->next)
 				dest->next->prev = dest->prev;
+
+			--_length;
 		}
 
 	public:
+		PHUL_FORCEINLINE List() = default;
 		List(const ThisType &other) = delete;
 		PHUL_FORCEINLINE List(ThisType &&other) {
 			_first = other._first;
@@ -141,27 +156,28 @@ namespace phul {
 		PHUL_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
 
 		[[nodiscard]] PHUL_FORCEINLINE bool copy(List &dest) const {
-			if constexpr (IsCopyable<Allocator>::value) {
-				dest.clear();
+			dest._first = _first;
+			dest._last = _last;
+			dest._length = _length;
 
-				dest._first = _first;
-				dest._last = _last;
-				dest._length = _length;
-				dest._allocator = _allocator;
+			if (!phul::copy(dest._allocator, _allocator))
+				return false;
 
-				for (Node *i = _first; i; i = i->next) {
-					Node *newNode = dest._allocNode(i->data);
-					if (!newNode) {
-						dest.clear();
-						return false;
-					}
-					dest.pushBack(newNode);
+			for (Node *i = _first; i; i = i->next) {
+				Node *newNode = dest._allocNode(i->data);
+				if (!newNode) {
+					dest.clear();
+					return false;
 				}
-
-				return true;
-			} else {
-				throw std::runtime_error("The type is not copyable");
+				dest.pushBack(newNode);
 			}
+
+			return true;
+		}
+
+		[[nodiscard]] PHUL_FORCEINLINE bool copyAssign(List &dest) const {
+			dest.clear();
+			return copy(dest);
 		}
 
 		[[nodiscard]] PHUL_FORCEINLINE Node *insertFront(Node *node, const T &data) {
@@ -303,6 +319,10 @@ namespace phul {
 
 				i = nextNode;
 			}
+		}
+
+		PHUL_FORCEINLINE size_t getSize() {
+			return _length;
 		}
 	};
 }

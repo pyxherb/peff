@@ -3,51 +3,12 @@
 
 using namespace phul;
 
-PHUL_BASE_API StdAlloc::AllocRecord *StdAlloc::s_allocRecords = nullptr;
-
-PHUL_BASE_API void StdAlloc::_addAllocRecord(AllocRecord *allocRecord) {
-	allocRecord->prev = nullptr;
-	allocRecord->next = s_allocRecords;
-	s_allocRecords = allocRecord;
-}
-
-PHUL_BASE_API void StdAlloc::_removeAllocRecord(AllocRecord *allocRecord) {
-	if (allocRecord->prev)
-		allocRecord->prev->next = allocRecord->next;
-	if (allocRecord->next)
-		allocRecord->next->prev = allocRecord->prev;
-	if (allocRecord == s_allocRecords)
-		s_allocRecords = allocRecord->next;
-}
-
 PHUL_BASE_API void *StdAlloc::alloc(size_t size) {
-	size_t allocSize;
-
-#ifdef NDEBUG
-	allocSize = size;
-#else
-	allocSize = sizeof(AllocRecord) + size;
-#endif
-
-	char *ptr = (char *)malloc(allocSize);
-	if (!ptr)
-		return nullptr;
-
-	AllocRecord *allocRecord = (AllocRecord *)ptr;
-
-	allocRecord->size = size;
-
-	_addAllocRecord(allocRecord);
-
-	return ptr + sizeof(AllocRecord);
+	return malloc(size);
 }
 
 PHUL_BASE_API void StdAlloc::release(void *ptr) {
-	AllocRecord *allocRecord = (AllocRecord *)(((char *)ptr) - sizeof(AllocRecord));
-
-	_removeAllocRecord(allocRecord);
-
-	free(allocRecord);
+	free(ptr);
 }
 
 PHUL_BASE_API void PmrAlloc::_addAllocRecord(AllocRecord *allocRecord) {

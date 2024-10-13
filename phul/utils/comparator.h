@@ -13,12 +13,26 @@ namespace phul {
 				return 1;
 			return 0;
 		}
+
+		PHUL_FORCEINLINE bool copy(Comparator<T> &dest) const {
+			return true;
+		}
+		PHUL_FORCEINLINE bool copyAssign(Comparator<T> &&dest) const {
+			return true;
+		}
 	};
 
 	template <typename T>
 	struct LtComparator {
 		PHUL_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {
 			return lhs < rhs;
+		}
+
+		PHUL_FORCEINLINE bool copy(LtComparator<T> &dest) const {
+			return true;
+		}
+		PHUL_FORCEINLINE bool copyAssign(LtComparator<T> &&dest) const {
+			return true;
 		}
 	};
 
@@ -27,12 +41,26 @@ namespace phul {
 		PHUL_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {
 			return lhs > rhs;
 		}
+
+		PHUL_FORCEINLINE bool copy(GtComparator<T> &dest) const {
+			return true;
+		}
+		PHUL_FORCEINLINE bool copyAssign(GtComparator<T> &&dest) const {
+			return true;
+		}
 	};
 
 	template <typename T>
 	struct EqComparator {
 		PHUL_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {
 			return lhs == rhs;
+		}
+
+		PHUL_FORCEINLINE bool copy(EqComparator<T> &dest) const {
+			return true;
+		}
+		PHUL_FORCEINLINE bool copyAssign(EqComparator<T> &&dest) const {
+			return true;
 		}
 	};
 }

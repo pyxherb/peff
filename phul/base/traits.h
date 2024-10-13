@@ -2,18 +2,15 @@
 #define _PHUL_BASE_TRAITS_
 
 #include "basedefs.h"
+#include <type_traits>
 
 namespace phul {
-	template <typename T>
-	struct IsCopyable {
-	private:
-		template <typename U>
-		static auto _test(int) -> decltype(std::declval<U>().copy(*(T*)nullptr), std::true_type());
-		template<typename U>
-		static std::false_type _test(...);
+	template <typename T, typename V = void>
+	struct IsCopyable : std::false_type {
+	};
 
-	public:
-		static constexpr bool value = std::is_same<decltype(_test<T>(0)), std::true_type>::value;
+	template <typename T>
+	struct IsCopyable<T, std::void_t<decltype(std::declval<const T>().copy(*(T*)nullptr))>> : std::true_type {
 	};
 }
 

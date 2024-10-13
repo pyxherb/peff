@@ -6,7 +6,8 @@
 namespace phul {
 	enum class IteratorDirection : uint8_t {
 		Forward = 0,
-		Backward
+		Reversed,
+		Invalid
 	};
 }
 

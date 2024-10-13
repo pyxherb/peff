@@ -9,9 +9,18 @@ namespace phul {
 	private:
 		using Tree = RBTree<T, Comparator, Allocator>;
 		Tree _tree;
+		using ThisType = Set<T, Comparator, Allocator>;
 
 	public:
 		PHUL_FORCEINLINE ~Set() {
+		}
+
+		[[nodiscard]] PHUL_FORCEINLINE bool copy(ThisType& dest) {
+			return _tree.copy(dest._tree);
+		}
+
+		[[nodiscard]] PHUL_FORCEINLINE bool copyAssign(ThisType &dest) {
+			return _tree.copyAssign(dest._tree);
 		}
 
 		[[nodiscard]] PHUL_FORCEINLINE typename Tree::Node *insert(const T &value) {

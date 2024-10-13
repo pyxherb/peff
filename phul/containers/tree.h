@@ -66,7 +66,6 @@ namespace phul {
 			T value;
 
 			inline Node() {}
-			inline Node(const T &value) : value(value) {}
 			inline Node(T &&value) : value(value) {}
 			virtual ~Node() {}
 		};
@@ -83,7 +82,7 @@ namespace phul {
 				return nullptr;
 
 			ScopeGuard scopeGuard(
-				[node]() {
+				[this, node]() {
 					_allocator.release(node);
 				});
 			new (node) Node();
@@ -102,7 +101,10 @@ namespace phul {
 				[this, node]() {
 					_allocator.release(node);
 				});
-			new (node) Node(value);
+			new (node) Node();
+			if (!phul::copy(node->value, value)) {
+				return false;
+			}
 
 			scopeGuard.release();
 
@@ -115,10 +117,10 @@ namespace phul {
 				return nullptr;
 
 			ScopeGuard scopeGuard(
-				[node]() {
+				[this, node]() {
 					_allocator.release(node);
 				});
-			new (node) Node(value);
+			new (node) Node(std::move(value));
 
 			return node;
 		}
@@ -131,67 +133,88 @@ namespace phul {
 		PHUL_FORCEINLINE void _deleteNodeTree(Node *node) {
 			Node *maxNode = (Node *)_getMaxNode(node);
 			Node *curNode = (Node *)_getMinNode(node);
+			Node *parent = (Node*)node->p;
+			bool walkedRootNode = false;
 
-			while (curNode != node) {
+			while (curNode != parent) {
 				if (curNode->r) {
 					curNode = (Node *)_getMinNode(curNode->r);
 				} else {
-					while (curNode->p && (curNode == curNode->p->r))
+					Node *nodeToDelete = curNode;
+
+					while (curNode->p && (curNode == curNode->p->r)) {
+						nodeToDelete = curNode;
 						curNode = (Node *)curNode->p;
+						_deleteSingleNode(nodeToDelete);
+					}
+
+					nodeToDelete = curNode;
 					curNode = (Node *)curNode->p;
+					_deleteSingleNode(nodeToDelete);
 				}
-
-				_deleteSingleNode(curNode);
 			}
-
-			_deleteSingleNode(node);
 		}
 
+		struct CopyInfo {
+			const Node *node;
+			Node *newNode;
+			bool isLeftWalked;
+			bool isRightWalked;
+
+			PHUL_FORCEINLINE bool copy(CopyInfo &dest) const {
+				dest.node = node;
+				dest.newNode = newNode;
+				dest.isLeftWalked = isLeftWalked;
+				dest.isRightWalked = isRightWalked;
+				return true;
+			}
+		};
+
 		PHUL_FORCEINLINE Node *_copyTree(const Node *node) {
-			Node *prevNode;
-
-			struct CopyInfo {
-				Node *node;
-				Node *newNode;
-				bool isLeftWalked;
-			};
-
 			List<CopyInfo> copyInfoStack;
 
 			Node *newNode = _allocSingleNode(node->value);
 			if (!newNode)
 				return nullptr;
 
-			copyInfoStack.pushBack(
-				{ node,
-					newNode,
-					false });
+			if (!copyInfoStack.pushBack(
+					CopyInfo{ node,
+						newNode,
+						false }))
+				return nullptr;
 
-			while (true) {
+			while (copyInfoStack.getSize()) {
 				CopyInfo &copyInfo = copyInfoStack.back();
 
 				if ((!copyInfo.isLeftWalked)) {
 					copyInfo.isLeftWalked = true;
 					if (copyInfo.node->l) {
-						Node *newNode = _allocSingleNode(node->l->value);
+						Node *newNode = _allocSingleNode(((Node *)copyInfo.node->l)->value);
+						newNode->p = copyInfo.newNode;
 						copyInfo.newNode->l = newNode;
-						newNodes.insertBack(
-							{ node,
-								newNode,
-								false });
+						if (!copyInfoStack.pushBack(
+								CopyInfo{ ((Node *)copyInfo.node->l),
+									newNode,
+									false }))
+							return false;
 					}
-				} else {
+				} else if (!(copyInfo.isRightWalked)) {
+					copyInfo.isRightWalked = true;
 					if (copyInfo.node->r) {
-						Node *newNode = _allocSingleNode(node->r->value);
+						Node *newNode = _allocSingleNode(((Node *)copyInfo.node->r)->value);
+						newNode->p = copyInfo.newNode;
 						copyInfo.newNode->r = newNode;
-						newNodes.insertBack(
-							{ node,
-								newNode,
-								false });
+						if (!copyInfoStack.pushBack(
+								CopyInfo{ ((Node *)copyInfo.node->r),
+									newNode,
+									false }))
+							return false;
 					}
+				} else
 					copyInfoStack.remove(copyInfoStack.lastNode());
-				}
 			}
+
+			return newNode;
 		}
 
 		PHUL_FORCEINLINE Node *_get(const T &key) {
@@ -266,13 +289,34 @@ namespace phul {
 	public:
 		PHUL_FORCEINLINE RBTree() {}
 
-		PHUL_FORCEINLINE RBTree(const ThisType &other) {
-			_root = _copyTree(other._root);
-			_cachedMinNode = _getMinNode(_root);
-			_cachedMaxNode = _getMaxNode(_root);
-			_nNodes = other._nNodes;
-			_comparator = other._comparator;
-			_allocator = other._allocator;
+		PHUL_FORCEINLINE bool copy(ThisType &dest) {
+			if (!phul::copy(dest._allocator, _allocator))
+				return false;
+
+			ScopeGuard destroyAllocatorGuard([&dest]() {
+				std::destroy_at<Allocator>(&dest._allocator);
+			});
+
+			if (!phul::copy(dest._comparator, _comparator))
+				return false;
+
+			ScopeGuard destroyComparatorGuard([&dest]() {
+				std::destroy_at<Comparator>(&dest._comparator);
+			});
+
+			if (!(dest._root = _copyTree((Node *)_root)))
+				return false;
+			dest._cachedMinNode = _getMinNode(dest._root);
+			dest._cachedMaxNode = _getMaxNode(dest._root);
+			dest._nNodes = _nNodes;
+
+			destroyAllocatorGuard.release();
+			destroyComparatorGuard.release();
+		}
+
+		PHUL_FORCEINLINE bool copyAssign(ThisType &dest) {
+			dest.clear();
+			return copy(dest);
 		}
 
 		PHUL_FORCEINLINE RBTree(ThisType &&other) {
@@ -349,11 +393,11 @@ namespace phul {
 
 			Node *node = _allocSingleNode(key);
 			if (!node)
-				return false;
+				return nullptr;
 			if (!insert(node))
 				_deleteSingleNode(node);
 
-			return true;
+			return node;
 		}
 
 		PHUL_FORCEINLINE void remove(Node *node) {
@@ -406,24 +450,33 @@ namespace phul {
 				tree = it.tree;
 				direction = it.direction;
 			}
-			PHUL_FORCEINLINE Iterator(const Iterator &&it) {
+			PHUL_FORCEINLINE Iterator(Iterator &&it) {
 				node = it.node;
 				tree = it.tree;
 				direction = it.direction;
+
+				it.node = nullptr;
+				it.tree = nullptr;
+				it.direction = IteratorDirection::Invalid;
 			}
 			PHUL_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				node = it.node;
-				tree = it.tree;
+				node = rhs.node;
+				tree = rhs.tree;
 				return *this;
 			}
 			PHUL_FORCEINLINE Iterator &operator=(const Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				node = it.node;
-				tree = it.tree;
+				node = rhs.node;
+				tree = rhs.tree;
 				return *this;
+			}
+
+			PHUL_FORCEINLINE bool copy(Iterator &dest) noexcept {
+				dest = *this;
+				return true;
 			}
 
 			PHUL_FORCEINLINE Iterator &operator++() {
@@ -553,10 +606,14 @@ namespace phul {
 				tree = it.tree;
 				direction = it.direction;
 			}
-			PHUL_FORCEINLINE ConstIterator(const ConstIterator &&it) {
+			PHUL_FORCEINLINE ConstIterator(ConstIterator &&it) {
 				node = it.node;
 				tree = it.tree;
 				direction = it.direction;
+
+				it.node = nullptr;
+				it.tree = nullptr;
+				it.direction = IteratorDirection::Invalid;
 			}
 			PHUL_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
 				if (direction != rhs.direction)
@@ -564,7 +621,7 @@ namespace phul {
 				new (this) ConstIterator(rhs);
 				return *this;
 			}
-			PHUL_FORCEINLINE ConstIterator &operator=(const ConstIterator &&rhs) noexcept {
+			PHUL_FORCEINLINE ConstIterator &operator=(ConstIterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
 				new (this) ConstIterator(rhs);
@@ -574,7 +631,7 @@ namespace phul {
 			PHUL_FORCEINLINE ConstIterator(const Iterator &it) {
 				(*this) = it;
 			}
-			PHUL_FORCEINLINE ConstIterator(const Iterator &&it) {
+			PHUL_FORCEINLINE ConstIterator(Iterator &&it) {
 				(*this) = it;
 			}
 			PHUL_FORCEINLINE ConstIterator &operator=(const Iterator &rhs) noexcept {
@@ -584,12 +641,17 @@ namespace phul {
 				tree = rhs.tree;
 				return *this;
 			}
-			PHUL_FORCEINLINE ConstIterator &operator=(const Iterator &&rhs) noexcept {
+			PHUL_FORCEINLINE ConstIterator &operator=(Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
 				node = rhs.node;
 				tree = rhs.tree;
 				return *this;
+			}
+
+			PHUL_FORCEINLINE bool copy(ConstIterator &dest) noexcept {
+				dest = *this;
+				return true;
 			}
 
 			PHUL_FORCEINLINE ConstIterator &operator++() {
@@ -643,7 +705,7 @@ namespace phul {
 				return node == it.node;
 			}
 
-			PHUL_FORCEINLINE bool operator==(const ConstIterator &&rhs) const {
+			PHUL_FORCEINLINE bool operator==(ConstIterator &&rhs) const {
 				const ConstIterator it = rhs;
 				return *this == it;
 			}

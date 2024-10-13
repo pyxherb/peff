@@ -7,18 +7,6 @@
 namespace phul {
 	class StdAlloc {
 	public:
-		struct AllocRecord {
-			AllocRecord *prev, *next;
-			size_t size;
-		};
-
-	private:
-		PHUL_BASE_API static void _addAllocRecord(AllocRecord *allocRecord);
-		PHUL_BASE_API static void _removeAllocRecord(AllocRecord *allocRecord);
-
-	public:
-		PHUL_BASE_API static AllocRecord *s_allocRecords;
-
 		PHUL_BASE_API void *alloc(size_t size);
 		PHUL_BASE_API void release(void *ptr);
 
@@ -36,7 +24,7 @@ namespace phul {
 			throw std::logic_error("Cannot free memory by VoidAlloc");
 		}
 
-		PHUL_FORCEINLINE bool copy(VoidAlloc &dest) {
+		PHUL_FORCEINLINE bool copy(VoidAlloc &dest) const {
 			return true;
 		}
 	};

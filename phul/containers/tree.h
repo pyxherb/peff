@@ -1,5 +1,5 @@
-#ifndef __PHUL_TREE_H__
-#define __PHUL_TREE_H__
+#ifndef _PHUL_CONTAINERS_TREE_H_
+#define _PHUL_CONTAINERS_TREE_H_
 
 #include <cassert>
 #include <stdexcept>
@@ -304,8 +304,13 @@ namespace phul {
 				std::destroy_at<Comparator>(&dest._comparator);
 			});
 
-			if (!(dest._root = _copyTree((Node *)_root)))
-				return false;
+			if (_root) {
+				if (!(dest._root = _copyTree((Node *)_root)))
+					return false;
+			}
+			else {
+				dest._root = nullptr;
+			}
 			dest._cachedMinNode = _getMinNode(dest._root);
 			dest._cachedMaxNode = _getMaxNode(dest._root);
 			dest._nNodes = _nNodes;
@@ -315,8 +320,28 @@ namespace phul {
 		}
 
 		PHUL_FORCEINLINE bool copyAssign(ThisType &dest) {
-			dest.clear();
-			return copy(dest);
+			if (!phul::copyAssign(dest._allocator, _allocator))
+				return false;
+
+			ScopeGuard destroyAllocatorGuard([&dest]() {
+				std::destroy_at<Allocator>(&dest._allocator);
+			});
+
+			if (!phul::copyAssign(dest._comparator, _comparator))
+				return false;
+
+			ScopeGuard destroyComparatorGuard([&dest]() {
+				std::destroy_at<Comparator>(&dest._comparator);
+			});
+
+			if (!(dest._root = _copyTree((Node *)_root)))
+				return false;
+			dest._cachedMinNode = _getMinNode(dest._root);
+			dest._cachedMaxNode = _getMaxNode(dest._root);
+			dest._nNodes = _nNodes;
+
+			destroyAllocatorGuard.release();
+			destroyComparatorGuard.release();
 		}
 
 		PHUL_FORCEINLINE RBTree(ThisType &&other) {

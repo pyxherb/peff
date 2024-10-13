@@ -1,5 +1,5 @@
-#ifndef __PHUL_LIST_H__
-#define __PHUL_LIST_H__
+#ifndef _PHUL_CONTAINERS_LIST_H_
+#define _PHUL_CONTAINERS_LIST_H_
 
 #include "basedefs.h"
 #include <memory_resource>
@@ -177,7 +177,24 @@ namespace phul {
 
 		[[nodiscard]] PHUL_FORCEINLINE bool copyAssign(List &dest) const {
 			dest.clear();
-			return copy(dest);
+
+			dest._first = _first;
+			dest._last = _last;
+			dest._length = _length;
+
+			if (!phul::copyAssign(dest._allocator, _allocator))
+				return false;
+
+			for (Node *i = _first; i; i = i->next) {
+				Node *newNode = dest._allocNode(i->data);
+				if (!newNode) {
+					dest.clear();
+					return false;
+				}
+				dest.pushBack(newNode);
+			}
+
+			return true;
 		}
 
 		[[nodiscard]] PHUL_FORCEINLINE Node *insertFront(Node *node, const T &data) {

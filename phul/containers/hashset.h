@@ -1,5 +1,5 @@
-#ifndef __HASHSET_H__
-#define __HASHSET_H__
+#ifndef _PHUL_CONTAINERS_HASHSET_H_
+#define _PHUL_CONTAINERS_HASHSET_H_
 
 #include "list.h"
 #include "dynarray.h"

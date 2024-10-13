@@ -90,7 +90,7 @@ namespace phul {
 		if constexpr (IsCopyable<T>::value) {
 			return in.copyAssign(out);
 		} else {
-			throw std::logic_error("The type is not copyable");
+			throw std::logic_error("The type is not copy-assignable");
 		}
 	}
 

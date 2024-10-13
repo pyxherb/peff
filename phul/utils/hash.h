@@ -1,5 +1,5 @@
-#ifndef _PHUL_UTILS_MISC_H_
-#define _PHUL_UTILS_MISC_H_
+#ifndef _PHUL_UTILS_HASH_H_
+#define _PHUL_UTILS_HASH_H_
 
 #include <phul/base/allocator.h>
 

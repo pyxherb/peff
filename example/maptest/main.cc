@@ -18,9 +18,8 @@ int main() {
 			map.verify();
 		}
 
-		/*
-		for (int i = 0; i < 64; i++) {
-			int j = i & 1 ? i : 128 - i;
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
 			printf("Removing: %d\n", j);
 
 			map.remove(j);
@@ -33,8 +32,7 @@ int main() {
 			// map.dump(std::cout);
 
 			map.verify();
-		}*/
-		/*
+		}
 		phul::Set<int> map2;
 		if (!map.copy(map2))
 			throw std::bad_alloc();
@@ -42,10 +40,10 @@ int main() {
 		auto k = map2.begin();
 		while (k != map2.end()) {
 			printf("%d\n", *(k++));
-		}*/
+		}
 	}
 
-	{ /*
+	{
 		phul::DynArray<int> arr;
 
 		for (int i = 0; i < 64; i++) {
@@ -56,7 +54,7 @@ int main() {
 				j = arr.getSize();
 			}
 			arr.insertFront(j, i);
-		}*/
+		}
 	}
 
 	return 0;

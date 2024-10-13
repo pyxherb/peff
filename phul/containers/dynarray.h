@@ -118,6 +118,8 @@ namespace phul {
 					scopeGuard.release();
 				}
 
+				_capacity = newCapacity;
+				_allocator.release(_data);
 				_data = newData;
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
@@ -137,6 +139,8 @@ namespace phul {
 					scopeGuard.release();
 				}
 
+				_capacity = newCapacity;
+				_allocator.release(_data);
 				_data = newData;
 			} else {
 				if constexpr (std::is_trivial_v<T>) {

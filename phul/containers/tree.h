@@ -58,7 +58,7 @@ namespace phul {
 	};
 
 	template <typename T,
-		typename Comparator = Comparator<T>,
+		typename Comparator = LtComparator<T>,
 		typename Allocator = StdAlloc>
 	class RBTree : private RBTreeBase {
 	public:
@@ -220,11 +220,9 @@ namespace phul {
 		PHUL_FORCEINLINE Node *_get(const T &key) {
 			Node *i = (Node *)_root;
 			while (i) {
-				int cmpResult = _comparator(i->value, key);
-
-				if (cmpResult < 0)
+				if (_comparator(i->value, key))
 					i = (Node *)i->r;
-				else if (cmpResult > 0)
+				else if (_comparator(key, i->value))
 					i = (Node *)i->l;
 				else
 					return i;
@@ -235,12 +233,11 @@ namespace phul {
 		PHUL_FORCEINLINE Node **_getSlot(const T &key, Node *&parentOut) {
 			Node **i = (Node **)&_root;
 			while (*i) {
-				int cmpResult = _comparator((*i)->value, key);
 				parentOut = *i;
 
-				if (cmpResult < 0)
+				if (_comparator((*i)->value, key))
 					i = (Node **)&((*i)->r);
-				else if (cmpResult > 0)
+				else if (_comparator(key, (*i)->value))
 					i = (Node **)&((*i)->l);
 				else
 					return nullptr;
@@ -259,7 +256,7 @@ namespace phul {
 			}
 
 			{
-				if (_comparator(node->value, parent->value) < 0)
+				if (_comparator(node->value, parent->value))
 					parent->l = node;
 				else
 					parent->r = node;

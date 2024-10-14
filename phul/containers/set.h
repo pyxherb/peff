@@ -4,7 +4,7 @@
 #include "tree.h"
 
 namespace phul {
-	template <typename T, typename Comparator = Comparator<T>, typename Allocator = StdAlloc>
+	template <typename T, typename Comparator = LtComparator<T>, typename Allocator = StdAlloc>
 	class Set final {
 	private:
 		using Tree = RBTree<T, Comparator, Allocator>;

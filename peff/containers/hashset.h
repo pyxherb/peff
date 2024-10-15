@@ -1,15 +1,15 @@
-#ifndef _PHUL_CONTAINERS_HASHSET_H_
-#define _PHUL_CONTAINERS_HASHSET_H_
+#ifndef _PEFF_CONTAINERS_HASHSET_H_
+#define _PEFF_CONTAINERS_HASHSET_H_
 
 #include "list.h"
 #include "dynarray.h"
 #include "misc.h"
-#include <phul/utils/hash.h>
-#include <phul/utils/comparator.h>
+#include <peff/utils/hash.h>
+#include <peff/utils/comparator.h>
 
 constexpr size_t HASHSET_MIN_BUCKET_SIZE = 4;
 
-namespace phul {
+namespace peff {
 	template <
 		typename T,
 		typename EqCmp = EqComparator<T>,
@@ -21,8 +21,8 @@ namespace phul {
 			T data;
 			HashCode hashCode;
 
-			PHUL_FORCEINLINE Element(const T &data, HashCode hashCode) : data(data), hashCode(hashCode) {}
-			PHUL_FORCEINLINE Element(T &&data, HashCode hashCode) : data(data), hashCode(hashCode) {}
+			PEFF_FORCEINLINE Element(const T &data, HashCode hashCode) : data(data), hashCode(hashCode) {}
+			PEFF_FORCEINLINE Element(T &&data, HashCode hashCode) : data(data), hashCode(hashCode) {}
 		};
 		using Bucket = List<Element>;
 
@@ -35,7 +35,7 @@ namespace phul {
 		Hasher _hasher;
 		Allocator _allocator;
 
-		PHUL_FORCEINLINE int _checkCapacity() {
+		PEFF_FORCEINLINE int _checkCapacity() {
 			size_t capacity = _buckets.getSize() << 1;
 
 			if (capacity < _size)
@@ -48,7 +48,7 @@ namespace phul {
 			return 0;
 		}
 
-		PHUL_FORCEINLINE void _resizeBuckets(size_t newSize) {
+		PEFF_FORCEINLINE void _resizeBuckets(size_t newSize) {
 			BucketsType newBuckets;
 			newBuckets.resize(newSize);
 
@@ -84,7 +84,7 @@ namespace phul {
 		/// @param buckets Buckets to be operated.
 		/// @param data Element to insert.
 		/// @return true for succeeded, false if failed.
-		PHUL_FORCEINLINE bool _insert(BucketsType &buckets, T &&data) {
+		PEFF_FORCEINLINE bool _insert(BucketsType &buckets, T &&data) {
 			HashCode hashCode = _hasher(data);
 			size_t index = ((size_t)hashCode) % buckets.getSize();
 			Bucket &bucket = buckets.at(index);
@@ -112,17 +112,17 @@ namespace phul {
 		}
 
 	public:
-		PHUL_FORCEINLINE HashSet() {
+		PEFF_FORCEINLINE HashSet() {
 		}
 
-		PHUL_FORCEINLINE HashSet(const ThisType &other) {
+		PEFF_FORCEINLINE HashSet(const ThisType &other) {
 			_buckets = other._buckets;
 			_size = other._size;
 			_equalityComparator = other._equalityComparator;
 			_hasher = other._hasher;
 			_allocator = other._allocator;
 		}
-		PHUL_FORCEINLINE HashSet(ThisType &&other) {
+		PEFF_FORCEINLINE HashSet(ThisType &&other) {
 			_buckets = std::move(other._buckets);
 			_size = other._size;
 			_equalityComparator = std::move(other._equalityComparator);
@@ -130,7 +130,7 @@ namespace phul {
 			_allocator = std::move(other._allocator);
 		}
 
-		PHUL_FORCEINLINE ThisType &operator=(const ThisType &other) {
+		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) {
 			_buckets = other._buckets;
 			_size = other._size;
 			_equalityComparator = other._equalityComparator;
@@ -139,7 +139,7 @@ namespace phul {
 
 			return *this;
 		}
-		PHUL_FORCEINLINE ThisType &operator=(ThisType &&other) {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 		}
 	};
 }

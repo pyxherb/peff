@@ -1,9 +1,9 @@
 #include "allocator.h"
 #include <cstdlib>
 
-using namespace phul;
+using namespace peff;
 
-PHUL_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) {
+PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) {
 #ifdef _MSC_VER
 	return _aligned_malloc(alignment, size);
 #else
@@ -11,7 +11,7 @@ PHUL_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) {
 #endif
 }
 
-PHUL_BASE_API void StdAlloc::release(void *ptr) {
+PEFF_BASE_API void StdAlloc::release(void *ptr) {
 #ifdef _MSC_VER
 	return _aligned_free(ptr);
 #else

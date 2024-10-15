@@ -1,13 +1,13 @@
-#ifndef _PHUL_UTILS_DYNARRAY_H_
-#define _PHUL_UTILS_DYNARRAY_H_
+#ifndef _PEFF_UTILS_DYNARRAY_H_
+#define _PEFF_UTILS_DYNARRAY_H_
 
 #include "basedefs.h"
 #include <memory_resource>
 #include <cassert>
 #include <functional>
-#include <phul/base/allocator.h>
+#include <peff/base/allocator.h>
 
-namespace phul {
+namespace peff {
 	template <typename T, typename Allocator = StdAlloc>
 	class DynArray {
 	public:
@@ -16,7 +16,7 @@ namespace phul {
 		size_t _capacity = 0;
 		Allocator _allocator;
 
-		PHUL_FORCEINLINE static int _checkCapacity(size_t length, size_t capacity) {
+		PEFF_FORCEINLINE static int _checkCapacity(size_t length, size_t capacity) {
 			if (length > capacity)
 				return 1;
 			if (capacity < (length >> 1))
@@ -24,25 +24,25 @@ namespace phul {
 			return 0;
 		}
 
-		PHUL_FORCEINLINE void _moveData(T *newData, T *oldData, size_t length) noexcept {
+		PEFF_FORCEINLINE void _moveData(T *newData, T *oldData, size_t length) noexcept {
 			for (size_t i = 0; i < length; ++i) {
 				newData[i] = std::move(oldData[i]);
 			}
 		}
 
-		PHUL_FORCEINLINE void _moveDataUninitialized(T *newData, T *oldData, size_t length) noexcept {
+		PEFF_FORCEINLINE void _moveDataUninitialized(T *newData, T *oldData, size_t length) noexcept {
 			for (size_t i = 0; i < length; ++i) {
 				new (&newData[i]) T(std::move(oldData[i]));
 			}
 		}
 
-		PHUL_FORCEINLINE void _constructData(T *newData, size_t length) {
+		PEFF_FORCEINLINE void _constructData(T *newData, size_t length) {
 			for (size_t i = 0; i < length; ++i) {
 				new (&newData[i]) T();
 			}
 		}
 
-		PHUL_FORCEINLINE void _expand(
+		PEFF_FORCEINLINE void _expand(
 			T *newData,
 			size_t length) {
 			assert(length > _length);
@@ -76,7 +76,7 @@ namespace phul {
 			}
 		}
 
-		PHUL_FORCEINLINE void _shrink(
+		PEFF_FORCEINLINE void _shrink(
 			T *newData,
 			size_t length) {
 			assert(length < _length);
@@ -91,7 +91,7 @@ namespace phul {
 			}
 		}
 
-		PHUL_FORCEINLINE void _resize(size_t length) {
+		PEFF_FORCEINLINE void _resize(size_t length) {
 			if (length == _length)
 				return;
 
@@ -156,7 +156,7 @@ namespace phul {
 			_length = length;
 		}
 
-		PHUL_FORCEINLINE void _immediateResize(size_t length) {
+		PEFF_FORCEINLINE void _immediateResize(size_t length) {
 			if (length == _length)
 				return;
 
@@ -177,7 +177,7 @@ namespace phul {
 			_capacity = length;
 		}
 
-		PHUL_FORCEINLINE void _clear() {
+		PEFF_FORCEINLINE void _clear() {
 			if constexpr (!std::is_trivial_v<T>) {
 				for (size_t i = 0; i < _length; ++i)
 					std::destroy_at<T>(&_data[i]);
@@ -187,7 +187,7 @@ namespace phul {
 			_data = nullptr;
 		}
 
-		PHUL_FORCEINLINE void _eraseRange(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE void _eraseRange(size_t idxStart, size_t idxEnd) {
 			const size_t gapLength = idxEnd - idxStart;
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;
@@ -202,7 +202,7 @@ namespace phul {
 			}
 			_resize(newLength);
 		}
-		PHUL_FORCEINLINE void _extractRange(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE void _extractRange(size_t idxStart, size_t idxEnd) {
 			const size_t newLength = idxEnd - idxStart;
 
 			if (newLength > idxStart) {
@@ -214,7 +214,7 @@ namespace phul {
 		/// @param length Length of space to reserve.
 		/// @param construct Determines if to construct objects.
 		/// @return Pointer to the reserved area.
-		PHUL_CONTAINERS_API T *_reserveSlots(
+		PEFF_CONTAINERS_API T *_reserveSlots(
 			size_t index,
 			size_t length,
 			bool construct) {
@@ -253,35 +253,35 @@ namespace phul {
 			_clear();
 		}
 
-		PHUL_FORCEINLINE size_t getSize() {
+		PEFF_FORCEINLINE size_t getSize() {
 			return _length;
 		}
 
-		PHUL_FORCEINLINE void resize(size_t length) {
+		PEFF_FORCEINLINE void resize(size_t length) {
 			_resize(length);
 		}
 
-		PHUL_FORCEINLINE void clear() {
+		PEFF_FORCEINLINE void clear() {
 			_clear();
 		}
 
-		PHUL_FORCEINLINE T &at(size_t index) {
+		PEFF_FORCEINLINE T &at(size_t index) {
 			return _data[index];
 		}
 
-		PHUL_FORCEINLINE T &at(size_t index) const {
+		PEFF_FORCEINLINE T &at(size_t index) const {
 			return _data[index];
 		}
 
-		PHUL_FORCEINLINE size_t getSize() const {
+		PEFF_FORCEINLINE size_t getSize() const {
 			return _length;
 		}
 
-		PHUL_FORCEINLINE void reserveSlots(size_t index, size_t length) {
+		PEFF_FORCEINLINE void reserveSlots(size_t index, size_t length) {
 			_reserveSlots(index, length, true);
 		}
 
-		PHUL_FORCEINLINE void insertFront(size_t index, const T &data) {
+		PEFF_FORCEINLINE void insertFront(size_t index, const T &data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
 			if constexpr (std::is_trivial_v<T>) {
@@ -291,7 +291,7 @@ namespace phul {
 			}
 		}
 
-		PHUL_FORCEINLINE void insertFront(size_t index, T &&data) {
+		PEFF_FORCEINLINE void insertFront(size_t index, T &&data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
 			if constexpr (std::is_trivial_v<T>) {

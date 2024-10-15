@@ -1,10 +1,10 @@
-#ifndef _PHUL_BASE_TRAITS_
-#define _PHUL_BASE_TRAITS_
+#ifndef _PEFF_BASE_TRAITS_
+#define _PEFF_BASE_TRAITS_
 
 #include "basedefs.h"
 #include <type_traits>
 
-namespace phul {
+namespace peff {
 	template <typename T, typename V = void>
 	struct IsCopyable : std::false_type {
 	};

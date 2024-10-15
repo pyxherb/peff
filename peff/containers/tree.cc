@@ -1,10 +1,10 @@
 #include "tree.h"
 
-using namespace phul;
+using namespace peff;
 
-PHUL_CONTAINERS_API RBTreeBase::AbstractNode::~AbstractNode() {}
+PEFF_CONTAINERS_API RBTreeBase::AbstractNode::~AbstractNode() {}
 
-PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMinNode(AbstractNode* node) {
+PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMinNode(AbstractNode* node) {
 	if (!node)
 		return nullptr;
 
@@ -13,7 +13,7 @@ PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMinNode(AbstractNo
 	return node;
 }
 
-PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMaxNode(AbstractNode* node) {
+PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMaxNode(AbstractNode* node) {
 	if (!node)
 		return nullptr;
 
@@ -22,7 +22,7 @@ PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMaxNode(AbstractNo
 	return node;
 }
 
-PHUL_CONTAINERS_API void RBTreeBase::_lRot(AbstractNode* x) {
+PEFF_CONTAINERS_API void RBTreeBase::_lRot(AbstractNode* x) {
 	AbstractNode* y = x->r;
 	assert(y);
 
@@ -43,7 +43,7 @@ PHUL_CONTAINERS_API void RBTreeBase::_lRot(AbstractNode* x) {
 	x->p = y;
 }
 
-PHUL_CONTAINERS_API void RBTreeBase::_rRot(AbstractNode* x) {
+PEFF_CONTAINERS_API void RBTreeBase::_rRot(AbstractNode* x) {
 	AbstractNode* y = x->l;
 	assert(y);
 
@@ -63,7 +63,7 @@ PHUL_CONTAINERS_API void RBTreeBase::_rRot(AbstractNode* x) {
 	x->p = y;
 }
 
-PHUL_CONTAINERS_API void RBTreeBase::_insertFixUp(AbstractNode* node) {
+PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(AbstractNode* node) {
 	AbstractNode* p, * gp = node, * u;  // Parent, grandparent and uncle
 
 	while ((p = gp->p) && _isRed(p)) {
@@ -114,7 +114,7 @@ PHUL_CONTAINERS_API void RBTreeBase::_insertFixUp(AbstractNode* node) {
 	_root->color = RBColor::Black;
 }
 
-PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_removeFixUp(AbstractNode* node) {
+PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_removeFixUp(AbstractNode* node) {
 	// Adopted from SGI STL's stl_tree, with some minor improvements.
 	AbstractNode* y = node, * x, * p;
 
@@ -242,7 +242,7 @@ PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_removeFixUp(AbstractN
 	return y;
 }
 
-PHUL_CONTAINERS_API void RBTreeBase::_verify(AbstractNode* node, const size_t nBlack, size_t cntBlack) const {
+PEFF_CONTAINERS_API void RBTreeBase::_verify(AbstractNode* node, const size_t nBlack, size_t cntBlack) const {
 	if (!node) {
 		// We have reached a terminal node.
 		if (nBlack != cntBlack)
@@ -260,7 +260,7 @@ PHUL_CONTAINERS_API void RBTreeBase::_verify(AbstractNode* node, const size_t nB
 	_verify(node->r, nBlack, cntBlack);
 }
 
-PHUL_CONTAINERS_API void RBTreeBase::_verify() const {
+PEFF_CONTAINERS_API void RBTreeBase::_verify() const {
 	if (!_root)
 		return;
 
@@ -276,7 +276,7 @@ PHUL_CONTAINERS_API void RBTreeBase::_verify() const {
 	_verify(_root, nBlack, 0);
 }
 
-PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getNextNode(const AbstractNode* node, const AbstractNode* lastNode) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getNextNode(const AbstractNode* node, const AbstractNode* lastNode) noexcept {
 	assert(node);
 
 	if (node != lastNode) {
@@ -293,7 +293,7 @@ PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getNextNode(const Abs
 	return nullptr;
 }
 
-PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getPrevNode(const AbstractNode* node, const AbstractNode* firstNode) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getPrevNode(const AbstractNode* node, const AbstractNode* firstNode) noexcept {
 	assert(node);
 
 	if (node != firstNode) {
@@ -310,8 +310,8 @@ PHUL_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getPrevNode(const Abs
 	return nullptr;
 }
 
-PHUL_CONTAINERS_API RBTreeBase::RBTreeBase() {
+PEFF_CONTAINERS_API RBTreeBase::RBTreeBase() {
 }
 
-PHUL_CONTAINERS_API RBTreeBase::~RBTreeBase() {
+PEFF_CONTAINERS_API RBTreeBase::~RBTreeBase() {
 }

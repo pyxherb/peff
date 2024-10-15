@@ -1,5 +1,5 @@
-function(phul_add_component component_name)
+function(peff_add_component component_name)
 	add_library(${component_name} STATIC)
-	target_compile_definitions(${component_name} PRIVATE IS_PHUL_BUILDING=1)
+	target_compile_definitions(${component_name} PRIVATE IS_PEFF_BUILDING=1)
 	set_target_properties(${component_name} PROPERTIES CXX_STANDARD 17)
 endfunction()

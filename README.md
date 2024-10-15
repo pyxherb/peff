@@ -1,5 +1,3 @@
-# PHUL - Portable Helpful Utility Library
+# PEFF - Portable Exception-Free Foundations
 
-PHUL is a complementary library for the STL that can be used for replacing
-components which requires some optional features (e.g. exceptions) to work
-robustly or not featured enough, etc.
+PEFF is a exception-free common library for C++ projects.

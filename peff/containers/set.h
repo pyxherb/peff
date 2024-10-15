@@ -1,9 +1,9 @@
-#ifndef _PHUL_CONTAINERS_SET_H_
-#define _PHUL_CONTAINERS_SET_H_
+#ifndef _PEFF_CONTAINERS_SET_H_
+#define _PEFF_CONTAINERS_SET_H_
 
 #include "tree.h"
 
-namespace phul {
+namespace peff {
 	template <typename T, typename Comparator = LtComparator<T>, typename Allocator = StdAlloc>
 	class Set final {
 	private:
@@ -12,18 +12,18 @@ namespace phul {
 		using ThisType = Set<T, Comparator, Allocator>;
 
 	public:
-		PHUL_FORCEINLINE ~Set() {
+		PEFF_FORCEINLINE ~Set() {
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE bool copy(ThisType& dest) {
+		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType& dest) {
 			return _tree.copy(dest._tree);
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE bool copyAssign(ThisType &dest) {
+		[[nodiscard]] PEFF_FORCEINLINE bool copyAssign(ThisType &dest) {
 			return _tree.copyAssign(dest._tree);
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE typename Tree::Node *insert(const T &value) {
+		[[nodiscard]] PEFF_FORCEINLINE typename Tree::Node *insert(const T &value) {
 			Tree::Node *node = _tree.insert(value);
 
 			if (!node)
@@ -36,7 +36,7 @@ namespace phul {
 			return node;
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE typename Tree::Node *insert(T &&value) {
+		[[nodiscard]] PEFF_FORCEINLINE typename Tree::Node *insert(T &&value) {
 			Tree::Node *node = _tree.insert(value);
 
 			if (!node)
@@ -49,7 +49,7 @@ namespace phul {
 			return node;
 		}
 
-		PHUL_FORCEINLINE void remove(const T &key) {
+		PEFF_FORCEINLINE void remove(const T &key) {
 			auto node = _tree.get(key);
 
 			assert(node);
@@ -57,7 +57,7 @@ namespace phul {
 			_tree.remove(node);
 		}
 
-		PHUL_FORCEINLINE void remove(T &&key) {
+		PEFF_FORCEINLINE void remove(T &&key) {
 			auto node = _tree.get(key);
 
 			assert(node);
@@ -65,15 +65,15 @@ namespace phul {
 			_tree.remove(node);
 		}
 
-		PHUL_FORCEINLINE void verify() {
+		PEFF_FORCEINLINE void verify() {
 			_tree.verify();
 		}
 
-		PHUL_FORCEINLINE typename Tree::Iterator begin() {
+		PEFF_FORCEINLINE typename Tree::Iterator begin() {
 			return _tree.begin();
 		}
 
-		PHUL_FORCEINLINE typename Tree::Iterator end() {
+		PEFF_FORCEINLINE typename Tree::Iterator end() {
 			return _tree.end();
 		}
 	};

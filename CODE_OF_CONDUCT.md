@@ -1,4 +1,4 @@
-# PHUL Code of Conduct
+# PEFF Code of Conduct
 
 ## Our Pledge
 

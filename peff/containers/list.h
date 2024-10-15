@@ -1,15 +1,15 @@
-#ifndef _PHUL_CONTAINERS_LIST_H_
-#define _PHUL_CONTAINERS_LIST_H_
+#ifndef _PEFF_CONTAINERS_LIST_H_
+#define _PEFF_CONTAINERS_LIST_H_
 
 #include "basedefs.h"
 #include <memory_resource>
 #include <cassert>
 #include <functional>
-#include <phul/base/allocator.h>
-#include <phul/utils/scope_guard.h>
-#include <phul/utils/misc.h>
+#include <peff/base/allocator.h>
+#include <peff/utils/scope_guard.h>
+#include <peff/utils/misc.h>
 
-namespace phul {
+namespace peff {
 	template <typename T, typename Allocator = StdAlloc>
 	class List {
 	public:
@@ -18,7 +18,7 @@ namespace phul {
 			T data;
 
 			Node() = default;
-			PHUL_FORCEINLINE Node(T &&data) : data(data) {
+			PEFF_FORCEINLINE Node(T &&data) : data(data) {
 			}
 		};
 
@@ -29,7 +29,7 @@ namespace phul {
 		size_t _length = 0;
 		Allocator _allocator;
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *_allocNode() {
+		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode() {
 			Node *node = (Node *)_allocator.alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
@@ -44,7 +44,7 @@ namespace phul {
 			return node;
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *_allocNode(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(const T &data) {
 			Node *node = (Node *)_allocator.alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
@@ -55,7 +55,7 @@ namespace phul {
 				});
 
 			new (node) Node();
-			if (!phul::copy(node->data, data)) {
+			if (!peff::copy(node->data, data)) {
 				return false;
 			}
 			scopeGuard.release();
@@ -63,7 +63,7 @@ namespace phul {
 			return node;
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *_allocNode(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
 			Node *node = (Node *)_allocator.alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
@@ -77,13 +77,13 @@ namespace phul {
 			return node;
 		}
 
-		PHUL_FORCEINLINE void _deleteNode(Node *node) {
+		PEFF_FORCEINLINE void _deleteNode(Node *node) {
 			std::destroy_at<Node>(node);
 
 			_allocator.release(node);
 		}
 
-		PHUL_FORCEINLINE void _prepend(Node *dest, Node *node) noexcept {
+		PEFF_FORCEINLINE void _prepend(Node *dest, Node *node) noexcept {
 			if (dest) {
 				if (dest->prev)
 					dest->prev->next = node;
@@ -102,7 +102,7 @@ namespace phul {
 			++_length;
 		}
 
-		PHUL_FORCEINLINE void _append(Node *dest, Node *node) noexcept {
+		PEFF_FORCEINLINE void _append(Node *dest, Node *node) noexcept {
 			if (dest) {
 				if (dest->next)
 					dest->next->prev = node;
@@ -121,7 +121,7 @@ namespace phul {
 			++_length;
 		}
 
-		PHUL_FORCEINLINE void _remove(Node *dest) {
+		PEFF_FORCEINLINE void _remove(Node *dest) {
 			if (dest == _first) {
 				_first = dest->next;
 			} else if (dest == _last) {
@@ -137,9 +137,9 @@ namespace phul {
 		}
 
 	public:
-		PHUL_FORCEINLINE List() = default;
+		PEFF_FORCEINLINE List() = default;
 		List(const ThisType &other) = delete;
-		PHUL_FORCEINLINE List(ThisType &&other) {
+		PEFF_FORCEINLINE List(ThisType &&other) {
 			_first = other._first;
 			_last = other._last;
 			_length = other._length;
@@ -149,18 +149,18 @@ namespace phul {
 			other._last = nullptr;
 			other._length = 0;
 		}
-		PHUL_FORCEINLINE ThisType &operator=(ThisType &&other) {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();
 			new (this) List(std::move(other));
 		}
-		PHUL_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
+		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
 
-		[[nodiscard]] PHUL_FORCEINLINE bool copy(List &dest) const {
+		[[nodiscard]] PEFF_FORCEINLINE bool copy(List &dest) const {
 			dest._first = _first;
 			dest._last = _last;
 			dest._length = _length;
 
-			if (!phul::copy(dest._allocator, _allocator))
+			if (!peff::copy(dest._allocator, _allocator))
 				return false;
 
 			for (Node *i = _first; i; i = i->next) {
@@ -175,14 +175,14 @@ namespace phul {
 			return true;
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE bool copyAssign(List &dest) const {
+		[[nodiscard]] PEFF_FORCEINLINE bool copyAssign(List &dest) const {
 			dest.clear();
 
 			dest._first = _first;
 			dest._last = _last;
 			dest._length = _length;
 
-			if (!phul::copyAssign(dest._allocator, _allocator))
+			if (!peff::copyAssign(dest._allocator, _allocator))
 				return false;
 
 			for (Node *i = _first; i; i = i->next) {
@@ -197,7 +197,7 @@ namespace phul {
 			return true;
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *insertFront(Node *node, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *insertFront(Node *node, const T &data) {
 			assert(node);
 
 			Node *newNode = _allocNode(data);
@@ -209,7 +209,7 @@ namespace phul {
 			return newNode;
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *insertBack(Node *node, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *insertBack(Node *node, const T &data) {
 			assert(node);
 
 			Node *newNode = _allocNode(data);
@@ -221,18 +221,18 @@ namespace phul {
 			return newNode;
 		}
 
-		PHUL_FORCEINLINE void pushFront(Node *node) noexcept {
+		PEFF_FORCEINLINE void pushFront(Node *node) noexcept {
 			_prepend(_first, node);
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *pushFront(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *pushFront(const T &data) {
 			Node *newNode = _allocNode(data);
 			if (!newNode)
 				return nullptr;
 			_prepend(_first, newNode);
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *pushFront(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *pushFront(T &&data) {
 			Node *newNode = _allocNode(data);
 			if (!newNode)
 				return nullptr;
@@ -240,18 +240,18 @@ namespace phul {
 			return newNode;
 		}
 
-		PHUL_FORCEINLINE void pushBack(Node *node) noexcept {
+		PEFF_FORCEINLINE void pushBack(Node *node) noexcept {
 			_append(_last, node);
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *pushBack(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *pushBack(const T &data) {
 			Node *newNode = _allocNode(data);
 			if (!newNode)
 				return nullptr;
 			_append(_last, newNode);
 		}
 
-		[[nodiscard]] PHUL_FORCEINLINE Node *pushBack(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *pushBack(T &&data) {
 			Node *newNode = _allocNode(data);
 			if (!newNode)
 				return nullptr;
@@ -259,24 +259,24 @@ namespace phul {
 			return newNode;
 		}
 
-		PHUL_FORCEINLINE void popFront() {
+		PEFF_FORCEINLINE void popFront() {
 			remove(_first);
 		}
 
-		PHUL_FORCEINLINE void popBack() {
+		PEFF_FORCEINLINE void popBack() {
 			remove(_last);
 		}
 
-		PHUL_FORCEINLINE void remove(Node *node) {
+		PEFF_FORCEINLINE void remove(Node *node) {
 			_remove(node);
 			_deleteNode(node);
 		}
 
-		PHUL_FORCEINLINE void detach(Node *node) {
+		PEFF_FORCEINLINE void detach(Node *node) {
 			_remove(node);
 		}
 
-		PHUL_FORCEINLINE static Node *next(Node *curNode, size_t index) {
+		PEFF_FORCEINLINE static Node *next(Node *curNode, size_t index) {
 			while (index) {
 				assert(curNode);
 				curNode = curNode->next;
@@ -286,7 +286,7 @@ namespace phul {
 			return curNode;
 		}
 
-		PHUL_FORCEINLINE static Node *prev(Node *curNode, size_t index) {
+		PEFF_FORCEINLINE static Node *prev(Node *curNode, size_t index) {
 			while (index) {
 				assert(curNode);
 				curNode = curNode->prev;
@@ -296,39 +296,39 @@ namespace phul {
 			return curNode;
 		}
 
-		PHUL_FORCEINLINE Node *firstNode() {
+		PEFF_FORCEINLINE Node *firstNode() {
 			return _first;
 		}
 
-		PHUL_FORCEINLINE const Node *firstNode() const {
+		PEFF_FORCEINLINE const Node *firstNode() const {
 			return _first;
 		}
 
-		PHUL_FORCEINLINE Node *lastNode() {
+		PEFF_FORCEINLINE Node *lastNode() {
 			return _last;
 		}
 
-		PHUL_FORCEINLINE const Node *lastNode() const {
+		PEFF_FORCEINLINE const Node *lastNode() const {
 			return _last;
 		}
 
-		PHUL_FORCEINLINE T &front() {
+		PEFF_FORCEINLINE T &front() {
 			return _first->data;
 		}
 
-		PHUL_FORCEINLINE const T &front() const {
+		PEFF_FORCEINLINE const T &front() const {
 			return _first->data;
 		}
 
-		PHUL_FORCEINLINE T &back() {
+		PEFF_FORCEINLINE T &back() {
 			return _last->data;
 		}
 
-		PHUL_FORCEINLINE const T &back() const {
+		PEFF_FORCEINLINE const T &back() const {
 			return _last->data;
 		}
 
-		PHUL_FORCEINLINE void clear() {
+		PEFF_FORCEINLINE void clear() {
 			for (Node *i = _first; i;) {
 				Node *nextNode = i->next;
 
@@ -338,7 +338,7 @@ namespace phul {
 			}
 		}
 
-		PHUL_FORCEINLINE size_t getSize() {
+		PEFF_FORCEINLINE size_t getSize() {
 			return _length;
 		}
 	};

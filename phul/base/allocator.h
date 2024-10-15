@@ -2,12 +2,12 @@
 #define _PHUL_BASE_ALLOCATOR_H_
 
 #include "traits.h"
-#include <memory_resource>
+#include <cassert>
 
 namespace phul {
 	class StdAlloc {
 	public:
-		PHUL_BASE_API void *alloc(size_t size);
+		PHUL_BASE_API void *alloc(size_t size, size_t alignment = alignof(std::max_align_t));
 		PHUL_BASE_API void release(void *ptr);
 
 		PHUL_FORCEINLINE bool copy(StdAlloc& dest) const {
@@ -17,35 +17,16 @@ namespace phul {
 
 	class VoidAlloc {
 	public:
-		PHUL_FORCEINLINE void *alloc(size_t size) {
-			throw std::logic_error("Cannot allocate memory by VoidAlloc");
+		PHUL_FORCEINLINE void *alloc(size_t size, size_t alignment = 0) {
+			assert(("Cannot allocate memory by VoidAlloc" , false));
 		}
 		PHUL_FORCEINLINE void release(void *ptr) {
-			throw std::logic_error("Cannot free memory by VoidAlloc");
+			assert(("Cannot free memory by VoidAlloc", false));
 		}
 
 		PHUL_FORCEINLINE bool copy(VoidAlloc &dest) const {
 			return true;
 		}
-	};
-
-	class PmrAlloc {
-	public:
-		struct alignas(size_t) AllocRecord {
-			AllocRecord *prev, *next;
-			size_t size;
-		};
-
-	private:
-		PHUL_BASE_API void _addAllocRecord(AllocRecord *allocReocrd);
-		PHUL_BASE_API void _removeAllocRecord(AllocRecord *allocRecord);
-
-	public:
-		std::pmr::memory_resource *memoryResource = nullptr;
-		AllocRecord *allocRecords = nullptr;
-
-		PHUL_BASE_API void *alloc(size_t size);
-		PHUL_BASE_API void release(void *ptr);
 	};
 }
 

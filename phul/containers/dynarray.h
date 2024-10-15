@@ -103,7 +103,7 @@ namespace phul {
 			if (capacityStatus > 0) {
 				size_t newCapacity = _capacity ? (_capacity << 1) : length,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator.alloc(newCapacityTotalSize);
+				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
 
 				if constexpr (std::is_trivial_v<T>) {
 					memcpy(newData, _data, sizeof(T) * _length);
@@ -124,7 +124,7 @@ namespace phul {
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator.alloc(newCapacityTotalSize);
+				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
 
 				if constexpr (std::is_trivial_v<T>) {
 					memcpy(newData, _data, sizeof(T) * length);

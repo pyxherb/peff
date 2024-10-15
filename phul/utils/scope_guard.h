@@ -2,22 +2,23 @@
 #define _PHUL_UTILS_SCOPE_GUARD_H_
 
 #include <phul/base/basedefs.h>
-#include <functional>
 
 namespace phul {
+	template<typename T>
 	struct ScopeGuard {
-		std::function<void()> callable;
+		T callable;
+		bool released = false;
 
-		PHUL_FORCEINLINE ScopeGuard(std::function<void()>&& callable)
+		PHUL_FORCEINLINE ScopeGuard(T&& callable)
 			: callable(callable) {
 		}
 		PHUL_FORCEINLINE ~ScopeGuard() {
-			if (callable)
+			if (!released)
 				callable();
 		}
 
 		PHUL_FORCEINLINE void release() noexcept {
-			callable = {};
+			released = true;
 		}
 	};
 }

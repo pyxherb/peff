@@ -133,7 +133,7 @@ namespace phul {
 		PHUL_FORCEINLINE void _deleteNodeTree(Node *node) {
 			Node *maxNode = (Node *)_getMaxNode(node);
 			Node *curNode = (Node *)_getMinNode(node);
-			Node *parent = (Node*)node->p;
+			Node *parent = (Node *)node->p;
 			bool walkedRootNode = false;
 
 			while (curNode != parent) {
@@ -182,6 +182,10 @@ namespace phul {
 						newNode,
 						false }))
 				return nullptr;
+
+			ScopeGuard deleteNewTreeGuard([this, newNode]() {
+				_deleteNodeTree(newNode);
+			});
 
 			while (copyInfoStack.getSize()) {
 				CopyInfo &copyInfo = copyInfoStack.back();
@@ -304,8 +308,7 @@ namespace phul {
 			if (_root) {
 				if (!(dest._root = _copyTree((Node *)_root)))
 					return false;
-			}
-			else {
+			} else {
 				dest._root = nullptr;
 			}
 			dest._cachedMinNode = _getMinNode(dest._root);
@@ -467,11 +470,7 @@ namespace phul {
 				  tree(tree),
 				  direction(direction) {}
 
-			PHUL_FORCEINLINE Iterator(const Iterator &it) {
-				node = it.node;
-				tree = it.tree;
-				direction = it.direction;
-			}
+			Iterator(const Iterator &it) = default;
 			PHUL_FORCEINLINE Iterator(Iterator &&it) {
 				node = it.node;
 				tree = it.tree;
@@ -623,11 +622,7 @@ namespace phul {
 				  tree(tree),
 				  direction(direction) {}
 
-			PHUL_FORCEINLINE ConstIterator(const ConstIterator &it) {
-				node = it.node;
-				tree = it.tree;
-				direction = it.direction;
-			}
+			ConstIterator(const ConstIterator &it) = default;
 			PHUL_FORCEINLINE ConstIterator(ConstIterator &&it) {
 				node = it.node;
 				tree = it.tree;

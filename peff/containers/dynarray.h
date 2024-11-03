@@ -78,7 +78,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _shrink(
 			T *newData,
-			size_t length) {
+			size_t length) noexcept {
 			assert(length < _length);
 
 			for (size_t i = length; i < _length; ++i) {
@@ -105,7 +105,7 @@ namespace peff {
 					   newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
 
-				if constexpr (std::is_trivial_v<T>) {
+				if constexpr (std::is_trivially_copyable_v<T>) {
 					memcpy(newData, _data, sizeof(T) * _length);
 				} else {
 					ScopeGuard scopeGuard(
@@ -126,7 +126,7 @@ namespace peff {
 					   newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
 
-				if constexpr (std::is_trivial_v<T>) {
+				if constexpr (std::is_trivially_copyable_v<T>) {
 					memcpy(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
@@ -143,13 +143,14 @@ namespace peff {
 				_allocator.release(_data);
 				_data = newData;
 			} else {
-				if constexpr (std::is_trivial_v<T>) {
-					// No need to do anything.
-				} else {
-					if (length > _length)
+				if (length > _length) {
+					if constexpr (!std::is_trivially_constructible_v<T>) {
 						_expand(_data, length);
-					else
+					}
+				} else {
+					if constexpr (!std::is_trivially_destructible_v<T>) {
 						_shrink(_data, length);
+					}
 				}
 			}
 
@@ -163,7 +164,7 @@ namespace peff {
 			size_t newTotalSize = length * sizeof(T);
 			T *newData = (T *)_allocator.alloc(newTotalSize);
 
-			if constexpr (std::is_trivial_v<T>) {
+			if constexpr (std::is_trivially_copyable__v<T>) {
 				memcpy(newData, _data, length * sizeof(T));
 			} else {
 				if (length > _length) {
@@ -192,7 +193,7 @@ namespace peff {
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;
 
-			if constexpr (!std::is_trivial_v<T>) {
+			if constexpr (!std::is_trivially_copyable_v<T>) {
 				memcpy(&_data[idxStart], &_data[idxEnd], postGapLength * sizeof(T));
 			} else {
 				for (size_t i = idxStart; i < idxEnd; ++i)
@@ -214,7 +215,7 @@ namespace peff {
 		/// @param length Length of space to reserve.
 		/// @param construct Determines if to construct objects.
 		/// @return Pointer to the reserved area.
-		PEFF_CONTAINERS_API T *_reserveSlots(
+		PEFF_FORCEINLINE T *_reserveSlots(
 			size_t index,
 			size_t length,
 			bool construct) {
@@ -226,7 +227,7 @@ namespace peff {
 
 			T *gapStart = &_data[index];
 
-			if (std::is_trivial_v<T>) {
+			if (std::is_trivially_copyable_v<T>) {
 				if (index < oldLength) {
 					memcpy(&_data[index + length], gapStart, sizeof(T) * length);
 				}
@@ -284,7 +285,7 @@ namespace peff {
 		PEFF_FORCEINLINE void insertFront(size_t index, const T &data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
-			if constexpr (std::is_trivial_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				*gap = data;
 			} else {
 				new (gap) T();
@@ -294,7 +295,7 @@ namespace peff {
 		PEFF_FORCEINLINE void insertFront(size_t index, T &&data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
-			if constexpr (std::is_trivial_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				*gap = data;
 			} else {
 				new (gap) T(data);

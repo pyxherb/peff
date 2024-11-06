@@ -1,12 +1,17 @@
 #ifndef _PEFF_BASE_BASEDEFS_H_
 #define _PEFF_BASE_BASEDEFS_H_
 
-#if defined(_MSC_VER)
-	#define PEFF_DLLEXPORT __declspec(dllexport)
-	#define PEFF_DLLIMPORT __declspec(dllimport)
-#elif defined(__GNUC__) || defined(__clang__)
-	#define PEFF_DLLEXPORT __visbility__((__default__))
-	#define PEFF_DLLIMPORT __visbility__((__default__))
+#if PEFF_DYNAMIC_LINK
+	#if defined(_MSC_VER)
+		#define PEFF_DLLEXPORT __declspec(dllexport)
+		#define PEFF_DLLIMPORT __declspec(dllimport)
+	#elif defined(__GNUC__) || defined(__clang__)
+		#define PEFF_DLLEXPORT __visbility__((__default__))
+		#define PEFF_DLLIMPORT __visbility__((__default__))
+	#endif
+#else
+	#define PEFF_DLLEXPORT
+	#define PEFF_DLLIMPORT
 #endif
 
 #if defined(_MSC_VER)

@@ -1,5 +1,15 @@
+include_guard(GLOBAL)
+
+set(PEFF_LINK_MODE "shared" CACHE STRING "Indicates the build mode of PEFF")
+
 function(peff_add_component component_name)
-	add_library(${component_name} STATIC)
+	if(${PEFF_LINK_MODE} STREQUAL "shared")
+		add_library(${component_name} SHARED)
+		target_compile_definitions(${component_name} PRIVATE PEFF_DYNAMIC_LINK=1)
+	elseif(${PEFF_LINK_MODE} STREQUAL "static")
+		add_library(${component_name} STATIC)
+		target_compile_definitions(${component_name} PRIVATE PEFF_STATIC_LINK=1)
+	endif()
 	target_compile_definitions(${component_name} PRIVATE IS_PEFF_BUILDING=1)
 	set_target_properties(${component_name} PROPERTIES CXX_STANDARD 17)
 endfunction()

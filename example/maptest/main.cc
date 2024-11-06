@@ -46,15 +46,23 @@ int main() {
 	{
 		peff::DynArray<int> arr;
 
-		for (int i = 0; i < 64; i++) {
-			int j;
-			if (i & 1) {
-				j = arr.getSize() - i;
-			} else {
-				j = arr.getSize();
+		for (int i = 0; i < 32; i++) {
+			arr.insert(0, i);
+
+			for (size_t i = 0; i < arr.getSize(); ++i) {
+				printf("%d ", arr.at(i));
 			}
-			arr.insertFront(j, i);
+
+			puts("");
 		}
+
+		arr._eraseRange(1, 30);
+
+		for (size_t i = 0; i < arr.getSize(); ++i) {
+			printf("%d ", arr.at(i));
+		}
+
+		puts("");
 	}
 
 	return 0;

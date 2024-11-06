@@ -5,9 +5,9 @@ using namespace peff;
 
 PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) {
 #ifdef _MSC_VER
-	return _aligned_malloc(alignment, size);
+	return _aligned_malloc(size, alignment);
 #else
-	return aligned_alloc(alignment, size);
+	return aligned_alloc(size, alignment);
 #endif
 }
 

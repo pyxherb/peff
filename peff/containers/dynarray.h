@@ -91,9 +91,9 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void _resize(size_t length) {
+		PEFF_FORCEINLINE [[nodiscard]] bool _resize(size_t length) {
 			if (length == _length)
-				return;
+				return true;
 
 			if (!length) {
 				_clear();
@@ -105,8 +105,11 @@ namespace peff {
 					   newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
 
+				if (!newData)
+					return false;
+
 				if constexpr (std::is_trivially_copyable_v<T>) {
-					memcpy(newData, _data, sizeof(T) * _length);
+					memmove(newData, _data, sizeof(T) * _length);
 				} else {
 					ScopeGuard scopeGuard(
 						[]() {
@@ -126,8 +129,11 @@ namespace peff {
 					   newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
 
+				if (!newData)
+					return false;
+
 				if constexpr (std::is_trivially_copyable_v<T>) {
-					memcpy(newData, _data, sizeof(T) * length);
+					memmove(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
 						[]() {
@@ -155,6 +161,7 @@ namespace peff {
 			}
 
 			_length = length;
+			return true;
 		}
 
 		PEFF_FORCEINLINE void _immediateResize(size_t length) {
@@ -164,8 +171,8 @@ namespace peff {
 			size_t newTotalSize = length * sizeof(T);
 			T *newData = (T *)_allocator.alloc(newTotalSize);
 
-			if constexpr (std::is_trivially_copyable__v<T>) {
-				memcpy(newData, _data, length * sizeof(T));
+			if constexpr (std::is_trivially_copyable_v<T>) {
+				memmove(newData, _data, length * sizeof(T));
 			} else {
 				if (length > _length) {
 					_expand(newData, length);
@@ -188,20 +195,53 @@ namespace peff {
 			_data = nullptr;
 		}
 
-		PEFF_FORCEINLINE void _eraseRange(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE [[nodiscard]] bool _eraseRange(size_t idxStart, size_t idxEnd) {
 			const size_t gapLength = idxEnd - idxStart;
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;
 
-			if constexpr (!std::is_trivially_copyable_v<T>) {
-				memcpy(&_data[idxStart], &_data[idxEnd], postGapLength * sizeof(T));
+			int capacityStatus = _checkCapacity(newLength, _capacity);
+			assert(capacityStatus <= 0);
+			if (capacityStatus < 0) {
+				size_t newCapacity = _capacity >> 1,
+					   newCapacityTotalSize = newCapacity * sizeof(T);
+				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
+
+				if (!newData)
+					return false;
+
+				if constexpr (std::is_trivially_copyable_v<T>) {
+					memmove(newData, _data, sizeof(T) * idxStart);
+					memmove(newData + idxStart, _data + idxEnd, sizeof(T) * postGapLength);
+				} else {
+					ScopeGuard scopeGuard(
+						[]() {
+							_allocator.release(newData);
+						});
+
+					_moveData(newData, _data, idxStart);
+					_moveData(newData + idxStart, _data + idxEnd, postGapLength);
+
+					scopeGuard.release();
+				}
+
+				_capacity = newCapacity;
+				_allocator.release(_data);
+				_data = newData;
 			} else {
-				for (size_t i = idxStart; i < idxEnd; ++i)
-					std::destroy_at<T>(&_data[i]);
-				if (idxEnd < _length)
-					_moveDataUninitialized(&_data[idxStart], &_data[idxEnd], postGapLength);
+				if constexpr (std::is_trivially_copyable_v<T>) {
+					memmove(&_data[idxStart], &_data[idxEnd], postGapLength * sizeof(T));
+				} else {
+					for (size_t i = idxStart; i < idxEnd; ++i)
+						std::destroy_at<T>(&_data[i]);
+					if (idxEnd < _length)
+						_moveDataUninitialized(&_data[idxStart], &_data[idxEnd], postGapLength);
+				}
 			}
-			_resize(newLength);
+
+			_length = newLength;
+
+			return true;
 		}
 		PEFF_FORCEINLINE void _extractRange(size_t idxStart, size_t idxEnd) {
 			const size_t newLength = idxEnd - idxStart;
@@ -229,14 +269,14 @@ namespace peff {
 
 			if (std::is_trivially_copyable_v<T>) {
 				if (index < oldLength) {
-					memcpy(&_data[index + length], gapStart, sizeof(T) * length);
+					memmove(&_data[index + length], gapStart, sizeof(T) * (oldLength - index));
 				}
 			} else {
 				if (index < oldLength) {
 					_moveDataUninitialized(
-						&_data[(index + length)],
+						&_data[index + length + 1],
 						gapStart,
-						length);
+						oldLength - index);
 				}
 
 				if (construct) {
@@ -270,7 +310,7 @@ namespace peff {
 			return _data[index];
 		}
 
-		PEFF_FORCEINLINE T &at(size_t index) const {
+		PEFF_FORCEINLINE const T &at(size_t index) const {
 			return _data[index];
 		}
 
@@ -282,7 +322,7 @@ namespace peff {
 			_reserveSlots(index, length, true);
 		}
 
-		PEFF_FORCEINLINE void insertFront(size_t index, const T &data) {
+		PEFF_FORCEINLINE void insert(size_t index, const T &data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
 			if constexpr (std::is_trivially_copyable_v<T>) {
@@ -292,7 +332,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void insertFront(size_t index, T &&data) {
+		PEFF_FORCEINLINE void insert(size_t index, T &&data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
 			if constexpr (std::is_trivially_copyable_v<T>) {

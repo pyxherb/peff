@@ -195,7 +195,10 @@ namespace peff {
 			_data = nullptr;
 		}
 
-		PEFF_FORCEINLINE [[nodiscard]] bool _eraseRange(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE [[nodiscard]] bool eraseRange(size_t idxStart, size_t idxEnd) {
+			assert(idxStart < _length);
+			assert(idxEnd <= _length);
+
 			const size_t gapLength = idxEnd - idxStart;
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;

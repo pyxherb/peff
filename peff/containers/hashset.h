@@ -130,16 +130,16 @@ namespace peff {
 			_allocator = std::move(other._allocator);
 		}
 
-		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) {
-			_buckets = other._buckets;
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
+			_buckets = std::move(other._buckets);
 			_size = other._size;
-			_equalityComparator = other._equalityComparator;
-			_hasher = other._hasher;
-			_allocator = other._allocator;
+			_equalityComparator = std::move(other._equalityComparator);
+			_hasher = std::move(other._hasher);
+			_allocator = std::move(other._allocator);
+
+			other._size = 0;
 
 			return *this;
-		}
-		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 		}
 	};
 }

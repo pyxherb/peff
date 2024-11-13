@@ -9,7 +9,7 @@ namespace peff {
 	PEFF_FORCEINLINE bool copy(T &out, const T &in) {
 		if constexpr (IsCopyable<T>::value) {
 			return in.copy(out);
-		} else if constexpr (std::is_trivially_copy_constructible_v<T>) {
+		} else if constexpr (std::is_nothrow_constructible_v<T>) {
 			new (&out) T(in);
 		} else {
 			throw std::logic_error("The type is not copyable");
@@ -80,7 +80,7 @@ namespace peff {
 	PEFF_FORCEINLINE bool copyAssign(T &out, const T &in) {
 		if constexpr (IsCopyable<T>::value) {
 			return in.copyAssign(out);
-		} else if constexpr (std::is_trivially_copy_assignable_v<T>) {
+		} else if constexpr (std::is_nothrow_copy_assignable_v<T>) {
 			out = in;
 		} else {
 			throw std::logic_error("The type is not copy-assignable");

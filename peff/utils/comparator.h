@@ -50,6 +50,7 @@ namespace peff {
 		}
 	};
 
+
 	template <typename T>
 	struct EqComparator {
 		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {

@@ -290,7 +290,7 @@ namespace peff {
 	public:
 		PEFF_FORCEINLINE RBTree() {}
 
-		PEFF_FORCEINLINE bool copy(ThisType &dest) {
+		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			if (!peff::copy(dest._allocator, _allocator))
 				return false;
 
@@ -306,7 +306,7 @@ namespace peff {
 			});
 
 			if (_root) {
-				if (!(dest._root = _copyTree((Node *)_root)))
+				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root)))
 					return false;
 			} else {
 				dest._root = nullptr;
@@ -319,7 +319,7 @@ namespace peff {
 			destroyComparatorGuard.release();
 		}
 
-		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) {
+		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
 			if (!peff::copyAssign(dest._allocator, _allocator))
 				return false;
 
@@ -334,8 +334,12 @@ namespace peff {
 				std::destroy_at<Comparator>(&dest._comparator);
 			});
 
-			if (!(dest._root = _copyTree((Node *)_root)))
-				return false;
+			if (_root) {
+				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root)))
+					return false;
+			} else {
+				dest._root = nullptr;
+			}
 			dest._cachedMinNode = _getMinNode(dest._root);
 			dest._cachedMaxNode = _getMaxNode(dest._root);
 			dest._nNodes = _nNodes;

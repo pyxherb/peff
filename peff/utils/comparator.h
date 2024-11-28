@@ -17,7 +17,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(Comparator<T> &dest) const {
 			return true;
 		}
-		PEFF_FORCEINLINE bool copyAssign(Comparator<T> &&dest) const {
+		PEFF_FORCEINLINE bool copyAssign(Comparator<T> &dest) const {
 			return true;
 		}
 	};
@@ -31,7 +31,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(LtComparator<T> &dest) const {
 			return true;
 		}
-		PEFF_FORCEINLINE bool copyAssign(LtComparator<T> &&dest) const {
+		PEFF_FORCEINLINE bool copyAssign(LtComparator<T> &dest) const {
 			return true;
 		}
 	};
@@ -45,7 +45,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(GtComparator<T> &dest) const {
 			return true;
 		}
-		PEFF_FORCEINLINE bool copyAssign(GtComparator<T> &&dest) const {
+		PEFF_FORCEINLINE bool copyAssign(GtComparator<T> &dest) const {
 			return true;
 		}
 	};
@@ -60,7 +60,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(EqComparator<T> &dest) const {
 			return true;
 		}
-		PEFF_FORCEINLINE bool copyAssign(EqComparator<T> &&dest) const {
+		PEFF_FORCEINLINE bool copyAssign(EqComparator<T> &dest) const {
 			return true;
 		}
 	};

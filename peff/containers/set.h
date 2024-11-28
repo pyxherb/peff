@@ -15,11 +15,11 @@ namespace peff {
 		PEFF_FORCEINLINE ~Set() {
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType& dest) {
+		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType& dest) const {
 			return _tree.copy(dest._tree);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool copyAssign(ThisType &dest) {
+		[[nodiscard]] PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
 			return _tree.copyAssign(dest._tree);
 		}
 

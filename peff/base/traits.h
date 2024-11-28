@@ -2,6 +2,7 @@
 #define _PEFF_BASE_TRAITS_
 
 #include "basedefs.h"
+#include <utility>
 #include <type_traits>
 
 namespace peff {

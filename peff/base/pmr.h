@@ -9,7 +9,7 @@ namespace peff {
 		PEFF_BASE_API ~MemoryResource();
 
 		[[nodiscard]] virtual void *alloc(size_t size, size_t alignment) = 0;
-		[[nodiscard]] virtual void release(void *ptr) = 0;
+		virtual void release(void *ptr) = 0;
 	};
 
 	class DefaultMemoryResource final : public MemoryResource {
@@ -21,7 +21,7 @@ namespace peff {
 		PEFF_BASE_API ~DefaultMemoryResource();
 
 		PEFF_BASE_API [[nodiscard]] virtual void *alloc(size_t size, size_t alignment) override;
-		PEFF_BASE_API [[nodiscard]] virtual void release(void *ptr) override;
+		PEFF_BASE_API virtual void release(void *ptr) override;
 	};
 
 	extern DefaultMemoryResource g_defaultMemoryResource;
@@ -39,7 +39,7 @@ namespace peff {
 		PEFF_BASE_API ~MonotonicBufferMemoryResource();
 
 		PEFF_BASE_API [[nodiscard]] virtual void *alloc(size_t size, size_t alignment) override;
-		PEFF_BASE_API [[nodiscard]] virtual void release(void *ptr) override;
+		PEFF_BASE_API virtual void release(void *ptr) override;
 	};
 
 	class PmrAlloc {

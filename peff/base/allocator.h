@@ -13,6 +13,9 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(StdAlloc& dest) const {
 			return true;
 		}
+		PEFF_FORCEINLINE bool copyAssign(StdAlloc &dest) const {
+			return true;
+		}
 	};
 
 	class VoidAlloc {
@@ -25,6 +28,9 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copy(VoidAlloc &dest) const {
+			return true;
+		}
+		PEFF_FORCEINLINE bool copyAssign(VoidAlloc &dest) const {
 			return true;
 		}
 	};

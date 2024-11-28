@@ -2,25 +2,26 @@
 #define _PEFF_UTILS_SCOPE_GUARD_H_
 
 #include <peff/base/basedefs.h>
-#include <functional>
 
 namespace peff {
+	template<typename T>
 	struct ScopeGuard {
-		std::function<void()> callback;
+		T callback;
+		bool released = false;
 
 		ScopeGuard() = default;
-		PEFF_FORCEINLINE ScopeGuard(std::function<void()> &&callback)
+		PEFF_FORCEINLINE ScopeGuard(T callback)
 			: callback(callback) {
 		}
 		PEFF_FORCEINLINE ~ScopeGuard() {
-			if (callback)
+			if (!released)
 				callback();
 		}
 
 		PEFF_FORCEINLINE void release() noexcept {
-			callback = {};
+			released = true;
 		}
-		PEFF_FORCEINLINE ScopeGuard& operator=(std::function<void()>&& callback) {
+		PEFF_FORCEINLINE ScopeGuard& operator=(T callback) {
 			this->callback = callback;
 		}
 	};

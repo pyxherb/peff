@@ -2,7 +2,7 @@
 #define _PEFF_UTILS_MISC_H_
 
 #include <peff/base/allocator.h>
-#include <array>
+#include <type_traits>
 
 namespace peff {
 	template <typename T>
@@ -11,8 +11,9 @@ namespace peff {
 			return in.copy(out);
 		} else if constexpr (std::is_nothrow_constructible_v<T>) {
 			new (&out) T(in);
+			return true;
 		} else {
-			throw std::logic_error("The type is not copyable");
+			static_assert(("The type is not copyable", false));
 		}
 	}
 
@@ -82,8 +83,9 @@ namespace peff {
 			return in.copyAssign(out);
 		} else if constexpr (std::is_nothrow_copy_assignable_v<T>) {
 			out = in;
+			return true;
 		} else {
-			throw std::logic_error("The type is not copy-assignable");
+			static_assert(("The type is not copy-assignable", false));
 		}
 	}
 

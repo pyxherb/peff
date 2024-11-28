@@ -34,7 +34,7 @@ int main() {
 			map.verify();
 		}
 		peff::Set<int> map2;
-		if (!map.copy(map2))
+		if (!peff::copyAssign(map2, map))
 			throw std::bad_alloc();
 
 		auto k = map2.begin();

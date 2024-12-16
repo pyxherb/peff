@@ -56,7 +56,8 @@ int main() {
 			puts("");
 		}
 
-		arr.eraseRange(1, 30);
+		arr.extractRange(10, 20);
+		//arr.eraseRange(1, 30);
 
 		for (size_t i = 0; i < arr.getSize(); ++i) {
 			printf("%d ", arr.at(i));

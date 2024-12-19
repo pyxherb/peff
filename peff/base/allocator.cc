@@ -3,7 +3,15 @@
 
 using namespace peff;
 
-PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) {
+StdAlloc peff::g_stdAlloc;
+RcObjectPtr<StdAlloc> peff::g_stdAllocKeeper(&g_stdAlloc);
+
+PEFF_BASE_API Alloc::~Alloc() {}
+
+PEFF_BASE_API void StdAlloc::onRefZero() noexcept {
+}
+
+PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #ifdef _MSC_VER
 	return _aligned_malloc(size, alignment);
 #else
@@ -11,10 +19,37 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) {
 #endif
 }
 
-PEFF_BASE_API void StdAlloc::release(void *ptr) {
+PEFF_BASE_API void StdAlloc::release(void *ptr) noexcept {
 #ifdef _MSC_VER
 	return _aligned_free(ptr);
 #else
 	return free(ptr);
 #endif
+}
+
+PEFF_BASE_API Alloc *StdAlloc::getDefaultAlloc() const noexcept {
+	return g_stdAllocKeeper.get();
+}
+
+PEFF_BASE_API StdAlloc* peff::getDefaultAlloc() noexcept {
+	return &g_stdAlloc;
+}
+
+VoidAlloc peff::g_voidAlloc;
+RcObjectPtr<VoidAlloc> peff::g_voidAllocKeeper(&g_voidAlloc);
+
+PEFF_BASE_API void VoidAlloc::onRefZero() noexcept {
+}
+
+PEFF_BASE_API void *VoidAlloc::alloc(size_t size, size_t alignment) noexcept {
+	assert(("Cannot allocate memory by VoidAlloc", false));
+	return nullptr;
+}
+
+PEFF_BASE_API void VoidAlloc::release(void *ptr) noexcept {
+	assert(("Cannot free memory by VoidAlloc", false));
+}
+
+PEFF_BASE_API Alloc *VoidAlloc::getDefaultAlloc() const noexcept {
+	return g_voidAllocKeeper.get();
 }

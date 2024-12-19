@@ -13,8 +13,7 @@ namespace peff {
 	template <
 		typename T,
 		typename EqCmp = EqComparator<T>,
-		typename Hasher = Hasher<T>,
-		typename Allocator = StdAlloc>
+		typename Hasher = Hasher<T>>
 	class HashSet {
 	public:
 		struct Element {
@@ -33,7 +32,7 @@ namespace peff {
 		size_t _size = 0;
 		EqCmp _equalityComparator;
 		Hasher _hasher;
-		Allocator _allocator;
+		Alloc *_allocator;
 
 		PEFF_FORCEINLINE int _checkCapacity() {
 			size_t capacity = _buckets.getSize() << 1;

@@ -58,8 +58,7 @@ namespace peff {
 	};
 
 	template <typename T,
-		typename Comparator = LtComparator<T>,
-		typename Allocator = StdAlloc>
+		typename Comparator = LtComparator<T>>
 	class RBTree : private RBTreeBase {
 	public:
 		struct Node : public RBTreeBase::AbstractNode {
@@ -74,16 +73,16 @@ namespace peff {
 		using ThisType = RBTree<T>;
 
 		Comparator _comparator;
-		Allocator _allocator;
+		Alloc *_allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode() {
-			Node *node = (Node *)_allocator.alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard(
 				[this, node]() {
-					_allocator.release(node);
+					_allocator->release(node);
 				});
 			new (node) Node();
 
@@ -93,13 +92,13 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(const T &value) {
-			Node *node = (Node *)_allocator.alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard(
 				[this, node]() {
-					_allocator.release(node);
+					_allocator->release(node);
 				});
 			new (node) Node();
 			if (!peff::copy(node->value, value)) {
@@ -112,13 +111,13 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(T &&value) {
-			Node *node = (Node *)_allocator.alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard(
 				[this, node]() {
-					_allocator.release(node);
+					_allocator->release(node);
 				});
 			new (node) Node(std::move(value));
 
@@ -127,7 +126,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _deleteSingleNode(Node *node) {
 			std::destroy_at<Node>(node);
-			_allocator.release(node);
+			_allocator->release(node);
 		}
 
 		PEFF_FORCEINLINE void _deleteNodeTree(Node *node) {
@@ -288,11 +287,10 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE RBTree() {}
+		PEFF_FORCEINLINE RBTree(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			if (!peff::copy(dest._allocator, _allocator))
-				return false;
+			dest._allocator = _allocator;
 
 			ScopeGuard destroyAllocatorGuard([&dest]() {
 				std::destroy_at<Allocator>(&dest._allocator);
@@ -320,11 +318,10 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
-			if (!peff::copyAssign(dest._allocator, _allocator))
-				return false;
+			verifyAlloc(dest._allocator, _allocator);
 
 			ScopeGuard destroyAllocatorGuard([&dest]() {
-				std::destroy_at<Allocator>(&dest._allocator);
+				dest._allocator->decRef();
 			});
 
 			if (!peff::copyAssign(dest._comparator, _comparator))
@@ -335,11 +332,16 @@ namespace peff {
 			});
 
 			if (_root) {
-				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root)))
+				Node *backupRoot = (Node *)dest._root;
+				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root))) {
+					dest._root = backupRoot;
 					return false;
+				}
+				dest._deleteNodeTree(backupRoot);
 			} else {
 				dest._root = nullptr;
 			}
+			dest._allocator = _allocator;
 			dest._cachedMinNode = _getMinNode(dest._root);
 			dest._cachedMaxNode = _getMaxNode(dest._root);
 			dest._nNodes = _nNodes;
@@ -354,12 +356,13 @@ namespace peff {
 			_cachedMaxNode = other._cachedMaxNode;
 			_nNodes = other._nNodes;
 			_comparator = std::move(other._comparator);
-			_allocator = std::move(other._allocator);
+			_allocator = other._allocator;
 
 			other._root = nullptr;
 			other._cachedMinNode = nullptr;
 			other._cachedMaxNode = nullptr;
 			other._nNodes = 0;
+			other._allocator = nullptr;
 		}
 
 		virtual inline ~RBTree() {

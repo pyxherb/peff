@@ -8,13 +8,13 @@
 #include <peff/base/allocator.h>
 
 namespace peff {
-	template <typename T, typename Allocator = StdAlloc>
+	template <typename T>
 	class DynArray {
 	public:
 		T *_data = nullptr;
 		size_t _length = 0;
 		size_t _capacity = 0;
-		Allocator _allocator;
+		Alloc *_allocator;
 
 		PEFF_FORCEINLINE static int _checkCapacity(size_t length, size_t capacity) {
 			if (length > capacity)
@@ -121,7 +121,7 @@ namespace peff {
 			if (capacityStatus > 0) {
 				size_t newCapacity = _capacity ? (_capacity << 1) : length,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(T));
 
 				if (!newData)
 					return false;
@@ -131,7 +131,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[]() {
-							_allocator.release(newData);
+							_allocator->release(newData);
 						});
 
 					_expand(newData, length);
@@ -140,12 +140,12 @@ namespace peff {
 				}
 
 				_capacity = newCapacity;
-				_allocator.release(_data);
+				_allocator->release(_data);
 				_data = newData;
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(T));
 
 				if (!newData)
 					return false;
@@ -155,7 +155,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[]() {
-							_allocator.release(newData);
+							_allocator->release(newData);
 						});
 
 					_shrink(newData, length);
@@ -164,7 +164,7 @@ namespace peff {
 				}
 
 				_capacity = newCapacity;
-				_allocator.release(_data);
+				_allocator->release(_data);
 				_data = newData;
 			} else {
 				if (length > _length) {
@@ -187,7 +187,7 @@ namespace peff {
 				return;
 
 			size_t newTotalSize = length * sizeof(T);
-			T *newData = (T *)_allocator.alloc(newTotalSize);
+			T *newData = (T *)_allocator->alloc(newTotalSize);
 
 			if constexpr (std::is_trivially_move_assignable_v<T>) {
 				memmove(newData, _data, length * sizeof(T));
@@ -208,7 +208,7 @@ namespace peff {
 				for (size_t i = 0; i < _length; ++i)
 					std::destroy_at<T>(&_data[i]);
 			}
-			_allocator.release(_data);
+			_allocator->release(_data);
 
 			_data = nullptr;
 		}
@@ -226,7 +226,7 @@ namespace peff {
 			if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator.alloc(newCapacityTotalSize, sizeof(T));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(T));
 
 				if (!newData)
 					return false;
@@ -237,7 +237,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[]() {
-							_allocator.release(newData);
+							_allocator->release(newData);
 						});
 
 					_moveData(newData, _data, idxStart);
@@ -247,7 +247,7 @@ namespace peff {
 				}
 
 				_capacity = newCapacity;
-				_allocator.release(_data);
+				_allocator->release(_data);
 				_data = newData;
 			} else {
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
@@ -322,7 +322,7 @@ namespace peff {
 		}
 
 	public:
-		DynArray() {
+		DynArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
 		}
 		~DynArray() {
 			_clear();

@@ -6,6 +6,7 @@
 int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
+	peff::StdAlloc myStdAlloc;
 	{
 		peff::Set<int> map;
 
@@ -33,7 +34,7 @@ int main() {
 
 			map.verify();
 		}
-		peff::Set<int> map2;
+		peff::Set<int> map2(&myStdAlloc);
 		if (!peff::copyAssign(map2, map))
 			throw std::bad_alloc();
 

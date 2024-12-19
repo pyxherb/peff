@@ -4,14 +4,16 @@
 #include "tree.h"
 
 namespace peff {
-	template <typename T, typename Comparator = LtComparator<T>, typename Allocator = StdAlloc>
+	template <typename T, typename Comparator = LtComparator<T>>
 	class Set final {
 	private:
-		using Tree = RBTree<T, Comparator, Allocator>;
+		using Tree = RBTree<T, Comparator>;
 		Tree _tree;
-		using ThisType = Set<T, Comparator, Allocator>;
+		using ThisType = Set<T, Comparator>;
 
 	public:
+		PEFF_FORCEINLINE Set(Alloc *allocator = getDefaultAlloc()) : _tree(allocator) {
+		}
 		PEFF_FORCEINLINE ~Set() {
 		}
 

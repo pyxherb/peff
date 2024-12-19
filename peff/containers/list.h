@@ -10,7 +10,7 @@
 #include <peff/utils/misc.h>
 
 namespace peff {
-	template <typename T, typename Allocator = StdAlloc>
+	template <typename T>
 	class List {
 	public:
 		struct Node {
@@ -23,19 +23,19 @@ namespace peff {
 		};
 
 	private:
-		using ThisType = List<T, Allocator>;
+		using ThisType = List<T>;
 
 		Node *_first = nullptr, *_last = nullptr;
 		size_t _length = 0;
-		Allocator _allocator;
+		Alloc *_allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode() {
-			Node *node = (Node *)_allocator.alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard([this, node]() {
-				_allocator.release(node);
+				_allocator->release(node);
 			});
 
 			new (node) Node();
@@ -45,13 +45,13 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(const T &data) {
-			Node *node = (Node *)_allocator.alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard(
 				[this, node]() {
-					_allocator.release(node);
+					_allocator->release(node);
 				});
 
 			new (node) Node();
@@ -64,12 +64,12 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
-			Node *node = (Node *)_allocator.alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard([this, node]() {
-				_allocator.release(node);
+				_allocator->release(node);
 			});
 			new (node) Node(std::move(data));
 			scopeGuard.release();
@@ -80,7 +80,7 @@ namespace peff {
 		PEFF_FORCEINLINE void _deleteNode(Node *node) {
 			std::destroy_at<Node>(node);
 
-			_allocator.release(node);
+			_allocator->release(node);
 		}
 
 		PEFF_FORCEINLINE void _prepend(Node *dest, Node *node) noexcept {
@@ -137,13 +137,13 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE List() = default;
+		PEFF_FORCEINLINE List(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {}
 		List(const ThisType &other) = delete;
 		PEFF_FORCEINLINE List(ThisType &&other) {
 			_first = other._first;
 			_last = other._last;
 			_length = other._length;
-			_allocator = std::move(other._allocator);
+			_allocator = other._allocator;
 
 			other._first = nullptr;
 			other._last = nullptr;
@@ -159,9 +159,7 @@ namespace peff {
 			dest._first = _first;
 			dest._last = _last;
 			dest._length = _length;
-
-			if (!peff::copy(dest._allocator, _allocator))
-				return false;
+			dest._allocator = _allocator;
 
 			for (Node *i = _first; i; i = i->next) {
 				Node *newNode = dest._allocNode(i->data);
@@ -182,8 +180,8 @@ namespace peff {
 			dest._last = _last;
 			dest._length = _length;
 
-			if (!peff::copyAssign(dest._allocator, _allocator))
-				return false;
+			verifyAlloc(dest._allocator, _allocator);
+			dest._allocator = _allocator;
 
 			for (Node *i = _first; i; i = i->next) {
 				Node *newNode = dest._allocNode(i->data);

@@ -373,6 +373,22 @@ namespace peff {
 				_deleteNodeTree((Node *)_root);
 		}
 
+		PEFF_FORCEINLINE Node* getMaxLteqNode(const AbstractNode* node) {
+			Node *curNode = _root, *maxNode = NULL;
+
+			while (curNode) {
+				if (_comparator(curNode, node)) {
+					maxNode = curNode;
+					curNode = curNode->r;
+				} else if (_comparator(node, curNode)) {
+					curNode = curNode->l;
+				} else
+					return curNode;
+			}
+
+			return maxNode;
+		}
+
 		PEFF_FORCEINLINE Node *get(const T &key) {
 			return _get(key);
 		}

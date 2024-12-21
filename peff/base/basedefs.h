@@ -6,8 +6,8 @@
 		#define PEFF_DLLEXPORT __declspec(dllexport)
 		#define PEFF_DLLIMPORT __declspec(dllimport)
 	#elif defined(__GNUC__) || defined(__clang__)
-		#define PEFF_DLLEXPORT __visbility__((__default__))
-		#define PEFF_DLLIMPORT __visbility__((__default__))
+		#define PEFF_DLLEXPORT __attribute__((__visibility__("default")))
+		#define PEFF_DLLIMPORT __attribute__((__visibility__("default")))
 	#endif
 #else
 	#define PEFF_DLLEXPORT
@@ -17,7 +17,11 @@
 #if defined(_MSC_VER)
 	#define PEFF_FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
-	#define PEFF_FORCEINLINE __attribute__((__always_inline__)) inline
+	#ifndef NDEBUG
+		#define PEFF_FORCEINLINE __attribute__((__always_inline__)) inline
+	#else
+		#define PEFF_FORCEINLINE inline
+	#endif
 #endif
 
 #if defined(_MSC_VER)

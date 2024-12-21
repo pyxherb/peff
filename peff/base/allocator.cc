@@ -15,7 +15,11 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #ifdef _MSC_VER
 	return _aligned_malloc(size, alignment);
 #else
-	return aligned_alloc(size, alignment);
+	size_t sizeDiff = size % alignment;
+	if(sizeDiff) {
+		size += alignment - sizeDiff;
+	}
+	return aligned_alloc(alignment, size);
 #endif
 }
 

@@ -4,6 +4,7 @@
 #include "basedefs.h"
 #include <memory_resource>
 #include <cassert>
+#include <cstring>
 #include <functional>
 #include <peff/base/allocator.h>
 
@@ -109,7 +110,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE [[nodiscard]] bool _resize(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length) {
 			if (length == _length)
 				return true;
 
@@ -130,7 +131,7 @@ namespace peff {
 					memmove(newData, _data, sizeof(T) * _length);
 				} else {
 					ScopeGuard scopeGuard(
-						[]() {
+						[this, newData]() {
 							_allocator->release(newData);
 						});
 
@@ -154,7 +155,7 @@ namespace peff {
 					memmove(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
-						[]() {
+						[this, newData]() {
 							_allocator->release(newData);
 						});
 
@@ -213,7 +214,7 @@ namespace peff {
 			_data = nullptr;
 		}
 
-		PEFF_FORCEINLINE [[nodiscard]] bool eraseRange(size_t idxStart, size_t idxEnd) {
+		[[nodiscard]] PEFF_FORCEINLINE bool eraseRange(size_t idxStart, size_t idxEnd) {
 			assert(idxStart < _length);
 			assert(idxEnd <= _length);
 
@@ -236,7 +237,7 @@ namespace peff {
 					memmove(newData + idxStart, _data + idxEnd, sizeof(T) * postGapLength);
 				} else {
 					ScopeGuard scopeGuard(
-						[]() {
+						[this, newData]() {
 							_allocator->release(newData);
 						});
 

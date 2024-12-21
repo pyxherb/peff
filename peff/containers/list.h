@@ -56,7 +56,7 @@ namespace peff {
 
 			new (node) Node();
 			if (!peff::copy(node->data, data)) {
-				return false;
+				return nullptr;
 			}
 			scopeGuard.release();
 
@@ -642,13 +642,13 @@ namespace peff {
 		};
 
 		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
-			return ConstIterator((Node *)_cachedMinNode, this, IteratorDirection::Forward);
+			return ConstIterator((Node *)_first, this, IteratorDirection::Forward);
 		}
 		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Forward);
 		}
 		PEFF_FORCEINLINE ConstIterator beginConstReversed() const noexcept {
-			return ConstIterator((Node *)_cachedMinNode, this, IteratorDirection::Reversed);
+			return ConstIterator((Node *)_last, this, IteratorDirection::Reversed);
 		}
 		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Reversed);

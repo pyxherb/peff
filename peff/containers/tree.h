@@ -102,7 +102,7 @@ namespace peff {
 				});
 			new (node) Node();
 			if (!peff::copy(node->value, value)) {
-				return false;
+				return nullptr;
 			}
 
 			scopeGuard.release();
@@ -120,6 +120,7 @@ namespace peff {
 					_allocator->release(node);
 				});
 			new (node) Node(std::move(value));
+			scopeGuard.release();
 
 			return node;
 		}
@@ -199,7 +200,7 @@ namespace peff {
 								CopyInfo{ ((Node *)copyInfo.node->l),
 									newNode,
 									false }))
-							return false;
+							return nullptr;
 					}
 				} else if (!(copyInfo.isRightWalked)) {
 					copyInfo.isRightWalked = true;
@@ -211,7 +212,7 @@ namespace peff {
 								CopyInfo{ ((Node *)copyInfo.node->r),
 									newNode,
 									false }))
-							return false;
+							return nullptr;
 					}
 				} else
 					copyInfoStack.remove(copyInfoStack.lastNode());
@@ -293,7 +294,7 @@ namespace peff {
 			dest._allocator = _allocator;
 
 			ScopeGuard destroyAllocatorGuard([&dest]() {
-				std::destroy_at<Allocator>(&dest._allocator);
+				dest._allocator->decRef();
 			});
 
 			if (!peff::copy(dest._comparator, _comparator))
@@ -348,6 +349,8 @@ namespace peff {
 
 			destroyAllocatorGuard.release();
 			destroyComparatorGuard.release();
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE RBTree(ThisType &&other) {

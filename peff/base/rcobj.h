@@ -2,6 +2,7 @@
 #define _PEFF_BASE_RCOBJ_H_
 
 #include "basedefs.h"
+#include <cstddef>
 #include <atomic>
 
 namespace peff {

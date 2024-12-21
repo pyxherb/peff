@@ -26,7 +26,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE typename Tree::Node *insert(const T &value) {
-			Tree::Node *node = _tree.insert(value);
+			typename Tree::Node *node = _tree.insert(value);
 
 			if (!node)
 				return nullptr;
@@ -39,7 +39,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE typename Tree::Node *insert(T &&value) {
-			Tree::Node *node = _tree.insert(value);
+			typename Tree::Node *node = _tree.insert(value);
 
 			if (!node)
 				return nullptr;

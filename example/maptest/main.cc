@@ -4,7 +4,9 @@
 #include <peff/containers/list.h>
 
 int main() {
+#ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
 	peff::StdAlloc myStdAlloc;
 	{

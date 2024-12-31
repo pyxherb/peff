@@ -4,12 +4,9 @@
 #include "dynarray.h"
 
 namespace peff {
-	template <typename T, typename Allocator = StdAlloc>
 	class String final {
 	private:
-		using DynArray = DynArray<T, Allocator>;
-		DynArray _dynArray;
-		using ThisType = String<T, Allocator>;
+		Alloc *_allocator;
 
 	public:
 	};

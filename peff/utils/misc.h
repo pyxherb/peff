@@ -13,7 +13,7 @@ namespace peff {
 			new (&out) T(in);
 			return true;
 		} else {
-			static_assert(("The type is not copyable", false));
+			static_assert(!std::is_same_v<T, T>, "The type is not copyable");
 		}
 	}
 
@@ -85,7 +85,7 @@ namespace peff {
 			out = in;
 			return true;
 		} else {
-			static_assert(("The type is not copy-assignable", false));
+			static_assert(!std::is_same_v<T, T>, "The type is not copy-assignable");
 		}
 	}
 

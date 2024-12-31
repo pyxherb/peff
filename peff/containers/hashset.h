@@ -35,7 +35,7 @@ namespace peff {
 		Alloc *_allocator;
 
 		PEFF_FORCEINLINE int _checkCapacity() {
-			size_t capacity = _buckets.getSize() << 1;
+			size_t capacity = _buckets.size() << 1;
 
 			if (capacity < _size)
 				return 1;
@@ -51,7 +51,7 @@ namespace peff {
 			BucketsType newBuckets;
 			newBuckets.resize(newSize);
 
-			const size_t nOldBuckets = _buckets.getSize();
+			const size_t nOldBuckets = _buckets.size();
 
 			try {
 				for (size_t i = 0; i < nOldBuckets; ++i) {
@@ -85,7 +85,7 @@ namespace peff {
 		/// @return true for succeeded, false if failed.
 		PEFF_FORCEINLINE bool _insert(BucketsType &buckets, T &&data) {
 			HashCode hashCode = _hasher(data);
-			size_t index = ((size_t)hashCode) % buckets.getSize();
+			size_t index = ((size_t)hashCode) % buckets.size();
 			Bucket &bucket = buckets.at(index);
 
 			for (auto i = bucket.firstNode(); i; i = i->next) {
@@ -98,12 +98,12 @@ namespace peff {
 
 			switch (_checkCapacity()) {
 				case 1:
-					_resizeBuckets(buckets.getSize() << 1);
+					_resizeBuckets(buckets.size() << 1);
 					break;
 				case 0:
 					break;
 				case -1:
-					_resizeBuckets(buckets.getSize() >> 1);
+					_resizeBuckets(buckets.size() >> 1);
 					break;
 			}
 

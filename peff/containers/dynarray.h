@@ -329,7 +329,7 @@ namespace peff {
 			_clear();
 		}
 
-		PEFF_FORCEINLINE size_t getSize() {
+		PEFF_FORCEINLINE size_t size() {
 			return _length;
 		}
 
@@ -349,7 +349,7 @@ namespace peff {
 			return _data[index];
 		}
 
-		PEFF_FORCEINLINE size_t getSize() const {
+		PEFF_FORCEINLINE size_t size() const {
 			return _length;
 		}
 

@@ -22,6 +22,8 @@ namespace peff {
 			}
 		};
 
+		using NodeHandle = Node *;
+
 	private:
 		using ThisType = List<T>;
 
@@ -60,7 +62,7 @@ namespace peff {
 			}
 			scopeGuard.release();
 
-			return node;
+			return { node };
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
@@ -74,7 +76,7 @@ namespace peff {
 			new (node) Node(std::move(data));
 			scopeGuard.release();
 
-			return node;
+			return { node };
 		}
 
 		PEFF_FORCEINLINE void _deleteNode(Node *node) {
@@ -195,7 +197,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *insertFront(Node *node, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *insertFront(NodeHandle node, const T &data) {
 			assert(node);
 
 			Node *newNode = _allocNode(data);
@@ -207,7 +209,7 @@ namespace peff {
 			return newNode;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *insertBack(Node *node, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *insertBack(NodeHandle node, const T &data) {
 			assert(node);
 
 			Node *newNode = _allocNode(data);
@@ -265,16 +267,16 @@ namespace peff {
 			remove(_last);
 		}
 
-		PEFF_FORCEINLINE void remove(Node *node) {
+		PEFF_FORCEINLINE void remove(NodeHandle node) {
 			_remove(node);
 			_deleteNode(node);
 		}
 
-		PEFF_FORCEINLINE void detach(Node *node) {
+		PEFF_FORCEINLINE void detach(NodeHandle node) {
 			_remove(node);
 		}
 
-		PEFF_FORCEINLINE static Node *next(Node *curNode, size_t index) {
+		PEFF_FORCEINLINE static Node *next(NodeHandle curNode, size_t index) {
 			while (index) {
 				assert(curNode);
 				curNode = curNode->next;
@@ -284,7 +286,7 @@ namespace peff {
 			return curNode;
 		}
 
-		PEFF_FORCEINLINE static Node *prev(Node *curNode, size_t index) {
+		PEFF_FORCEINLINE static Node *prev(NodeHandle curNode, size_t index) {
 			while (index) {
 				assert(curNode);
 				curNode = curNode->prev;
@@ -336,7 +338,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE size_t getSize() {
+		PEFF_FORCEINLINE size_t size() {
 			return _length;
 		}
 		struct Iterator {

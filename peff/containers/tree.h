@@ -187,7 +187,7 @@ namespace peff {
 				_deleteNodeTree(newNode);
 			});
 
-			while (copyInfoStack.getSize()) {
+			while (copyInfoStack.size()) {
 				CopyInfo &copyInfo = copyInfoStack.back();
 
 				if ((!copyInfo.isLeftWalked)) {

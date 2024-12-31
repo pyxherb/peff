@@ -52,7 +52,7 @@ int main() {
 		for (int i = 0; i < 32; i++) {
 			arr.insert(0, i);
 
-			for (size_t i = 0; i < arr.getSize(); ++i) {
+			for (size_t i = 0; i < arr.size(); ++i) {
 				printf("%d ", arr.at(i));
 			}
 
@@ -62,7 +62,7 @@ int main() {
 		arr.extractRange(10, 20);
 		arr.eraseRange(0, 7);
 
-		for (size_t i = 0; i < arr.getSize(); ++i) {
+		for (size_t i = 0; i < arr.size(); ++i) {
 			printf("%d ", arr.at(i));
 		}
 

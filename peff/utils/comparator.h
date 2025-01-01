@@ -6,7 +6,7 @@
 namespace peff {
 	template <typename T>
 	struct Comparator {
-		PEFF_FORCEINLINE int operator()(const T &lhs, const T &rhs) {
+		PEFF_FORCEINLINE int operator()(const T &lhs, const T &rhs) const {
 			if (lhs < rhs)
 				return -1;
 			if (lhs > rhs)
@@ -24,7 +24,7 @@ namespace peff {
 
 	template <typename T>
 	struct LtComparator {
-		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {
+		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) const {
 			return lhs < rhs;
 		}
 
@@ -38,7 +38,7 @@ namespace peff {
 
 	template <typename T>
 	struct GtComparator {
-		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {
+		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) const {
 			return lhs > rhs;
 		}
 
@@ -53,7 +53,7 @@ namespace peff {
 
 	template <typename T>
 	struct EqComparator {
-		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) {
+		PEFF_FORCEINLINE bool operator()(const T &lhs, const T &rhs) const {
 			return lhs == rhs;
 		}
 

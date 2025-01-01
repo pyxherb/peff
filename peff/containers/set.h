@@ -25,21 +25,8 @@ namespace peff {
 			return _tree.copyAssign(dest._tree);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename Tree::Node *insert(const T &value) {
-			typename Tree::Node *node = _tree.insert(value);
-
-			if (!node)
-				return nullptr;
-
-#ifndef NDEBUG
-			_tree.verify();
-#endif
-
-			return node;
-		}
-
 		[[nodiscard]] PEFF_FORCEINLINE typename Tree::Node *insert(T &&value) {
-			typename Tree::Node *node = _tree.insert(value);
+			typename Tree::Node *node = _tree.insert(std::move(value));
 
 			if (!node)
 				return nullptr;

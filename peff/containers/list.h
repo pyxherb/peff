@@ -24,6 +24,10 @@ namespace peff {
 
 		using NodeHandle = Node *;
 
+		static PEFF_FORCEINLINE NodeHandle nullNodeHandle() {
+			return nullptr;
+		}
+
 	private:
 		using ThisType = List<T>;
 
@@ -197,7 +201,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *insertFront(NodeHandle node, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertFront(NodeHandle node, const T &data) {
 			assert(node);
 
 			Node *newNode = _allocNode(data);
@@ -209,7 +213,15 @@ namespace peff {
 			return newNode;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *insertBack(NodeHandle node, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertFront(NodeHandle node, NodeHandle newNode) {
+			assert(node);
+
+			_prepend(node, newNode);
+
+			return newNode;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertBack(NodeHandle node, const T &data) {
 			assert(node);
 
 			Node *newNode = _allocNode(data);
@@ -221,38 +233,46 @@ namespace peff {
 			return newNode;
 		}
 
-		PEFF_FORCEINLINE void pushFront(Node *node) noexcept {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertBack(NodeHandle node, NodeHandle newNode) {
+			assert(node);
+
+			_append(node, newNode);
+
+			return newNode;
+		}
+
+		PEFF_FORCEINLINE void pushFront(NodeHandle node) noexcept {
 			_prepend(_first, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *pushFront(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushFront(const T &data) {
 			Node *newNode = _allocNode(data);
 			if (!newNode)
 				return nullptr;
 			_prepend(_first, newNode);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *pushFront(T &&data) {
-			Node *newNode = _allocNode(data);
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushFront(T &&data) {
+			Node *newNode = _allocNode(std::move(data));
 			if (!newNode)
 				return nullptr;
 			_prepend(_first, newNode);
 			return newNode;
 		}
 
-		PEFF_FORCEINLINE void pushBack(Node *node) noexcept {
+		PEFF_FORCEINLINE void pushBack(NodeHandle node) noexcept {
 			_append(_last, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *pushBack(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushBack(const T &data) {
 			Node *newNode = _allocNode(data);
 			if (!newNode)
 				return nullptr;
 			_append(_last, newNode);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *pushBack(T &&data) {
-			Node *newNode = _allocNode(data);
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushBack(T &&data) {
+			Node *newNode = _allocNode(std::move(data));
 			if (!newNode)
 				return nullptr;
 			_append(_last, newNode);
@@ -296,19 +316,23 @@ namespace peff {
 			return curNode;
 		}
 
-		PEFF_FORCEINLINE Node *firstNode() {
+		PEFF_FORCEINLINE void deleteNode(NodeHandle node) {
+			_deleteNode(node);
+		}
+
+		PEFF_FORCEINLINE NodeHandle firstNode() {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE const Node *firstNode() const {
+		PEFF_FORCEINLINE const NodeHandle firstNode() const {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE Node *lastNode() {
+		PEFF_FORCEINLINE NodeHandle lastNode() {
 			return _last;
 		}
 
-		PEFF_FORCEINLINE const Node *lastNode() const {
+		PEFF_FORCEINLINE const NodeHandle lastNode() const {
 			return _last;
 		}
 

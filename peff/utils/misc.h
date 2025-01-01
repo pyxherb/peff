@@ -1,6 +1,7 @@
 #ifndef _PEFF_UTILS_MISC_H_
 #define _PEFF_UTILS_MISC_H_
 
+#include "basedefs.h"
 #include <peff/base/allocator.h>
 #include <type_traits>
 
@@ -148,6 +149,13 @@ namespace peff {
 		out = in;
 		return true;
 	}
+
+	enum class Endian : uint8_t {
+		Little = 0,
+		Big
+	};
+
+	PEFF_UTILS_API Endian testNativeEndian();
 }
 
 #endif

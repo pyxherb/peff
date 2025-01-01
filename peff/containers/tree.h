@@ -421,21 +421,6 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *insert(const T &key) {
-			Node *parent = nullptr, **slot = _getSlot(key, parent);
-
-			if (!slot)
-				return parent;
-
-			Node *node = _allocSingleNode(key);
-			if (!node)
-				return nullptr;
-			if (!insert(node))
-				_deleteSingleNode(node);
-
-			return node;
-		}
-
 		[[nodiscard]] PEFF_FORCEINLINE Node *insert(T &&key) {
 			Node *parent = nullptr, **slot = _getSlot(key, parent);
 
@@ -502,8 +487,6 @@ namespace peff {
 				tree = it.tree;
 				direction = it.direction;
 
-				it.node = nullptr;
-				it.tree = nullptr;
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
@@ -513,11 +496,10 @@ namespace peff {
 				tree = rhs.tree;
 				return *this;
 			}
-			PEFF_FORCEINLINE Iterator &operator=(const Iterator &&rhs) noexcept {
+			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				node = rhs.node;
-				tree = rhs.tree;
+				new (this) Iterator(rhs);
 				return *this;
 			}
 
@@ -654,8 +636,6 @@ namespace peff {
 				tree = it.tree;
 				direction = it.direction;
 
-				it.node = nullptr;
-				it.tree = nullptr;
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {

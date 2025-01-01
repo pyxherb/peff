@@ -8,82 +8,82 @@ namespace peff {
 
 	template <typename T>
 	struct Hasher {
-		static_assert(false, "Hasher for the type was not found");
+		static_assert(!std::is_same_v<T, T>, "Hasher for the type was not found");
 	};
 
 	template <>
 	struct Hasher<signed char> {
-		PEFF_FORCEINLINE HashCode operator()(signed char x) {
+		PEFF_FORCEINLINE HashCode operator()(signed char x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<unsigned char> {
-		PEFF_FORCEINLINE HashCode operator()(unsigned char x) {
+		PEFF_FORCEINLINE HashCode operator()(unsigned char x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<char> {
-		PEFF_FORCEINLINE HashCode operator()(char x) {
+		PEFF_FORCEINLINE HashCode operator()(char x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<short> {
-		PEFF_FORCEINLINE HashCode operator()(short x) {
+		PEFF_FORCEINLINE HashCode operator()(short x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<unsigned short> {
-		PEFF_FORCEINLINE HashCode operator()(unsigned short x) {
+		PEFF_FORCEINLINE HashCode operator()(unsigned short x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<int> {
-		PEFF_FORCEINLINE HashCode operator()(int x) {
+		PEFF_FORCEINLINE HashCode operator()(int x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<unsigned int> {
-		PEFF_FORCEINLINE HashCode operator()(unsigned int x) {
+		PEFF_FORCEINLINE HashCode operator()(unsigned int x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<long> {
-		PEFF_FORCEINLINE HashCode operator()(long x) {
+		PEFF_FORCEINLINE HashCode operator()(long x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<unsigned long> {
-		PEFF_FORCEINLINE HashCode operator()(unsigned long x) {
+		PEFF_FORCEINLINE HashCode operator()(unsigned long x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
 	struct Hasher<long long> {
-		PEFF_FORCEINLINE HashCode operator()(long long x) {
+		PEFF_FORCEINLINE HashCode operator()(long long x) const {
 			return (HashCode)x;
 		}
 	};
 
 	template <>
-	struct Hasher<unsigned long> {
-		PEFF_FORCEINLINE HashCode operator()(unsigned long long x) {
+	struct Hasher<unsigned long long> {
+		PEFF_FORCEINLINE HashCode operator()(unsigned long long x) const {
 			return (HashCode)x;
 		}
 	};

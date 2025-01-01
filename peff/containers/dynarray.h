@@ -61,7 +61,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void _expand(
+		[[nodiscard]] PEFF_FORCEINLINE bool _expand(
 			T *newData,
 			size_t length) {
 			assert(length > _length);
@@ -93,6 +93,47 @@ namespace peff {
 				if (_data)
 					_moveDataUninitialized(newData, _data, _length);
 			}
+
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool _expandWith(
+			T *newData,
+			size_t length,
+			const T &data) {
+			assert(length > _length);
+
+			{
+				// Because construction of new objects may throw exceptions,
+				// we choose to construct the new objects first.
+				size_t idxLastConstructedObject;
+				ScopeGuard scopeGuard(
+					[this, &idxLastConstructedObject, newData]() {
+						for (size_t i = _length;
+							 i < idxLastConstructedObject;
+							 ++i) {
+							std::destroy_at<T>(&newData[i]);
+						}
+					});
+
+				for (size_t i = _length;
+					 i < length;
+					 ++i) {
+					idxLastConstructedObject = i;
+					if (!peff::copy(newData[i], data)) {
+						return false;
+					}
+				}
+
+				scopeGuard.release();
+			}
+
+			if (newData != _data) {
+				if (_data)
+					_moveDataUninitialized(newData, _data, _length);
+			}
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE void _shrink(
@@ -135,7 +176,8 @@ namespace peff {
 							_allocator->release(newData);
 						});
 
-					_expand(newData, length);
+					if (!_expand(newData, length))
+						return false;
 
 					scopeGuard.release();
 				}
@@ -170,7 +212,85 @@ namespace peff {
 			} else {
 				if (length > _length) {
 					if constexpr (!std::is_trivially_constructible_v<T>) {
-						_expand(_data, length);
+						if (!_expand(_data, length))
+							return false;
+					}
+				} else {
+					if constexpr (!std::is_trivially_destructible_v<T>) {
+						_shrink(_data, length);
+					}
+				}
+			}
+
+			_length = length;
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool _resizeWith(size_t length, const T& filler) {
+			if (length == _length)
+				return true;
+
+			if (!length) {
+				_clear();
+			}
+
+			int capacityStatus = _checkCapacity(length, _capacity);
+			if (capacityStatus > 0) {
+				size_t newCapacity = _capacity ? (_capacity << 1) : length,
+					   newCapacityTotalSize = newCapacity * sizeof(T);
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(T));
+
+				if (!newData)
+					return false;
+
+				if constexpr (std::is_trivially_move_assignable_v<T>) {
+					memmove(newData, _data, sizeof(T) * _length);
+				} else {
+					ScopeGuard scopeGuard(
+						[this, newData]() {
+							_allocator->release(newData);
+						});
+
+					if (!_expandWith(newData, length, filler)) {
+						return false;
+					}
+
+					scopeGuard.release();
+				}
+
+				_capacity = newCapacity;
+				_allocator->release(_data);
+				_data = newData;
+			} else if (capacityStatus < 0) {
+				size_t newCapacity = _capacity >> 1,
+					   newCapacityTotalSize = newCapacity * sizeof(T);
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(T));
+
+				if (!newData)
+					return false;
+
+				if constexpr (std::is_trivially_move_assignable_v<T>) {
+					memmove(newData, _data, sizeof(T) * length);
+				} else {
+					ScopeGuard scopeGuard(
+						[this, newData]() {
+							_allocator->release(newData);
+						});
+
+					_shrink(newData, length);
+
+					scopeGuard.release();
+				}
+
+				_capacity = newCapacity;
+				_allocator->release(_data);
+				_data = newData;
+			} else {
+				if (length > _length) {
+					if constexpr (!std::is_trivially_constructible_v<T>) {
+						if (!_expandWith(_data, length, filler)) {
+							return false;
+						}
 					}
 				} else {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
@@ -333,8 +453,12 @@ namespace peff {
 			return _length;
 		}
 
-		PEFF_FORCEINLINE void resize(size_t length) {
-			_resize(length);
+		PEFF_FORCEINLINE bool resize(size_t length) {
+			return _resize(length);
+		}
+
+		PEFF_FORCEINLINE bool resizeWith(size_t length, const T &filler) {
+			return _resizeWith(length, filler);
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -375,6 +499,10 @@ namespace peff {
 			} else {
 				new (gap) T(data);
 			}
+		}
+
+		PEFF_FORCEINLINE Alloc* allocator() const {
+			return _allocator;
 		}
 	};
 }

@@ -4,6 +4,7 @@
 #include <peff/containers/string.h>
 #include <peff/containers/list.h>
 #include <peff/containers/hashset.h>
+#include <peff/containers/hashmap.h>
 
 int main() {
 #ifdef _MSC_VER
@@ -84,6 +85,32 @@ int main() {
 		while (k != map2.end()) {
 			printf("%d\n", *(k++));
 		}*/
+	}
+	{
+		peff::HashMap<int, int> map;
+
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
+			int k = i;
+			printf("Inserting: %d\n", j);
+			if (!map.insert(std::move(j), std::move(k)))
+				throw std::bad_alloc();
+		}
+
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
+			printf("Removing: %d\n", j);
+
+			map.remove(std::move(j));
+
+			auto k = map.begin();
+			while (k != map.end()) {
+				printf("%d=%d\n", k.key(), k.value());
+				++k;
+			}
+
+			// map.dump(std::cout);
+		}
 	}
 
 	{

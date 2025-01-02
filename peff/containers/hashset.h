@@ -9,8 +9,6 @@
 #include <peff/utils/scope_guard.h>
 #include <memory>
 
-constexpr size_t HASHSET_MIN_BUCKET_SIZE = 4;
-
 namespace peff {
 	template <
 		typename T,
@@ -46,7 +44,7 @@ namespace peff {
 			if (capacity < _size)
 				return 1;
 			if (auto size = (capacity >> 1); size > _size) {
-				if (size <= HASHSET_MIN_BUCKET_SIZE)
+				if (size <= 1)
 					return 0;
 				return -1;
 			}
@@ -101,10 +99,12 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool _checkAndResizeBuckets() {
+			size_t size = _buckets.size();
+
 			switch (_checkCapacity()) {
 				case 1: {
 					BucketsType newBuckets(_buckets.allocator());
-					if (!_resizeBuckets(_buckets.size() << 1, _buckets, newBuckets)) {
+					if (!_resizeBuckets(size ? size << 1 : 1, _buckets, newBuckets)) {
 						return false;
 					}
 					_buckets = std::move(newBuckets);
@@ -114,7 +114,7 @@ namespace peff {
 					break;
 				case -1: {
 					BucketsType newBuckets(_buckets.allocator());
-					if (!_resizeBuckets(_buckets.size() >> 1, _buckets, newBuckets)) {
+					if (!_resizeBuckets(size >> 1, _buckets, newBuckets)) {
 						return false;
 					}
 					_buckets = std::move(newBuckets);
@@ -125,11 +125,21 @@ namespace peff {
 			return true;
 		}
 
+		PEFF_FORCEINLINE bool _isBucketsInitialized() {
+			return _buckets.size();
+		}
+
 		/// @brief Insert a new element.
 		/// @param buckets Buckets to be operated.
 		/// @param data Element to insert.
 		/// @return true for succeeded, false if failed.
 		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data) {
+			if (!_buckets.size()) {
+				if (!_buckets.resize(1)) {
+					return false;
+				}
+			}
+
 			HashCode hashCode = _hasher(data);
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
@@ -151,6 +161,10 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool _remove(const T &data) {
+			if (!_buckets.size()) {
+				return false;
+			}
+
 			HashCode hashCode = _hasher(data);
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
@@ -176,7 +190,11 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename Bucket::NodeHandle _get(const T &data) const {
+		[[nodiscard]] PEFF_FORCEINLINE typename Bucket::NodeHandle _get(const T &data, size_t &index) const {
+			if (!_buckets.size()) {
+				return Bucket::nullNodeHandle();
+			}
+
 			HashCode hashCode = _hasher(data);
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			const Bucket &bucket = _buckets.at(index);
@@ -185,8 +203,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE HashSet() {
-			_buckets.resize(HASHSET_MIN_BUCKET_SIZE);
+		PEFF_FORCEINLINE HashSet(Alloc *allocator = getDefaultAlloc()) : _buckets(allocator) {
 		}
 
 		PEFF_FORCEINLINE HashSet(ThisType &&other) {
@@ -216,11 +233,13 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE typename Bucket::NodeHandle get(const T &data) {
-			return _get(data);
+			size_t index;
+			return _get(data, index);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool contains(const T &data) {
-			return _get(data);
+		[[nodiscard]] PEFF_FORCEINLINE bool contains(const T &data) const {
+			size_t index;
+			return _get(data, index);
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -502,6 +521,30 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
+		}
+
+		PEFF_FORCEINLINE Iterator find(const T &value) {
+			size_t index;
+			Bucket::NodeHandle node = _get(value, index);
+			if (!node)
+				return end();
+			return Iterator(this, index, node, IteratorDirection::Forward);
+		}
+
+		PEFF_FORCEINLINE ConstIterator find(const T &value) const {
+			return ConstIterator(const_cast<ThisType *>(this)->find(value));
+		}
+
+		T& at(const T& value) {
+			size_t index;
+			Bucket::NodeHandle node = _get(value, index);
+			if (!node)
+				throw std::out_of_range("No such element");
+			return node->data.data;
+		}
+
+		const T &at(const T &value) const {
+			return const_cast<ThisType *>(this)->at(value);
 		}
 	};
 }

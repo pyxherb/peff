@@ -46,20 +46,11 @@ namespace peff {
 			_tree.remove(node);
 		}
 
-		PEFF_FORCEINLINE void remove(T &&key) {
-			auto node = _tree.get(std::move(key));
-
-			assert(node);
-
-			_tree.remove(node);
-		}
-
-		PEFF_FORCEINLINE typename Tree::Node *find(const T &key) {
-			return _tree.get(key);
-		}
-
-		PEFF_FORCEINLINE typename Tree::Node *find(T &&key) {
-			return _tree.get(std::move(key));
+		PEFF_FORCEINLINE typename Tree::Iterator find(const T &key) {
+			if (auto node = _tree.get(key); node) {
+				return typename Tree::Iterator(node, &_tree, IteratorDirection::Forward);
+			}
+			return _tree.end();
 		}
 
 		PEFF_FORCEINLINE void verify() {

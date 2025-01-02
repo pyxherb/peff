@@ -618,75 +618,31 @@ namespace peff {
 		}
 
 		struct ConstIterator {
-			const Node *node;
-			const ThisType *tree;
-			IteratorDirection direction;
+			Iterator _iterator;
 
 			PEFF_FORCEINLINE ConstIterator(
-				const Node *node,
-				const ThisType *tree,
-				IteratorDirection direction)
-				: node(node),
-				  tree(tree),
-				  direction(direction) {}
+				Iterator &&iterator)
+				: _iterator(iterator) {}
 
 			ConstIterator(const ConstIterator &it) = default;
-			PEFF_FORCEINLINE ConstIterator(ConstIterator &&it) {
-				node = it.node;
-				tree = it.tree;
-				direction = it.direction;
-
-				it.direction = IteratorDirection::Invalid;
+			PEFF_FORCEINLINE ConstIterator(ConstIterator &&it) : _iterator(std::move(it._iterator)) {
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
-				new (this) ConstIterator(rhs);
+				_iterator = rhs._iterator;
 				return *this;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(ConstIterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
-				new (this) ConstIterator(rhs);
-				return *this;
-			}
-
-			PEFF_FORCEINLINE ConstIterator(const Iterator &it) {
-				(*this) = it;
-			}
-			PEFF_FORCEINLINE ConstIterator(Iterator &&it) {
-				(*this) = it;
-			}
-			PEFF_FORCEINLINE ConstIterator &operator=(const Iterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
-				node = rhs.node;
-				tree = rhs.tree;
-				return *this;
-			}
-			PEFF_FORCEINLINE ConstIterator &operator=(Iterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
-				node = rhs.node;
-				tree = rhs.tree;
+				_iterator = std::move(rhs._iterator);
 				return *this;
 			}
 
 			PEFF_FORCEINLINE bool copy(ConstIterator &dest) noexcept {
-				dest = *this;
+				new (&dest) ConstIterator(*this);
 				return true;
 			}
 
 			PEFF_FORCEINLINE ConstIterator &operator++() {
-				if (!node)
-					throw std::logic_error("Increasing the end iterator");
-
-				if (direction == IteratorDirection::Forward) {
-					node = ThisType::getNextNode(node, nullptr);
-				} else {
-					node = ThisType::getPrevNode(node, nullptr);
-				}
-
+				++_iterator;
 				return *this;
 			}
 
@@ -697,18 +653,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE ConstIterator &operator--() {
-				if (direction == IteratorDirection::Forward) {
-					if (node == tree->_cachedMinNode)
-						throw std::logic_error("Dereasing the begin iterator");
-
-					node = ThisType::getNextNode(node, nullptr);
-				} else {
-					if (node == tree->_cachedMaxNode)
-						throw std::logic_error("Dereasing the begin iterator");
-
-					node = ThisType::getPrevNode(node, nullptr);
-				}
-
+				--_iterator;
 				return *this;
 			}
 
@@ -718,29 +663,16 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE bool operator==(const Node *node) const noexcept {
-				return node == node;
-			}
-
 			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const {
-				if (tree != it.tree)
-					throw std::logic_error("Cannot compare iterators from different trees");
-				return node == it.node;
-			}
-
-			PEFF_FORCEINLINE bool operator==(ConstIterator &&rhs) const {
-				const ConstIterator it = rhs;
-				return *this == it;
-			}
-
-			PEFF_FORCEINLINE bool operator!=(const Node *node) const noexcept {
-				return node != node;
+				return _iterator == it._iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const ConstIterator &it) const {
-				if (tree != it.tree)
-					throw std::logic_error("Cannot compare iterators from different trees");
-				return node != it.node;
+				return _iterator != it._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator==(const Node *node) const {
+				return _iterator == node;
 			}
 
 			PEFF_FORCEINLINE bool operator!=(ConstIterator &&rhs) const {
@@ -749,41 +681,33 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE const T &operator*() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return node->value;
+				return *_iterator;
 			}
 
 			PEFF_FORCEINLINE const T &operator*() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return node->value;
+				return *_iterator;
 			}
 
 			PEFF_FORCEINLINE const T *operator->() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return &node->value;
+				return &*_iterator;
 			}
 
 			PEFF_FORCEINLINE const T *operator->() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return &node->value;
+				return &*_iterator;
 			}
 		};
 
 		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
-			return ConstIterator((Node *)_cachedMinNode, this, IteratorDirection::Forward);
+			return ConstIterator(const_cast<ThisType*>(this)->begin());
 		}
 		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
-			return ConstIterator(nullptr, this, IteratorDirection::Forward);
+			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
 		PEFF_FORCEINLINE ConstIterator beginConstReversed() const noexcept {
-			return ConstIterator((Node *)_cachedMinNode, this, IteratorDirection::Reversed);
+			return ConstIterator(const_cast<ThisType *>(this)->beginReversed());
 		}
 		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
-			return ConstIterator(nullptr, this, IteratorDirection::Reversed);
+			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
 		}
 	};
 }

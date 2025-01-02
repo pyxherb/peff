@@ -70,10 +70,10 @@ namespace peff {
 		};
 
 	private:
-		using ThisType = RBTree<T>;
+		using ThisType = RBTree<T, Comparator>;
 
 		Comparator _comparator;
-		Alloc *_allocator;
+		RcObjectPtr<Alloc> _allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode() {
 			Node *node = (Node *)_allocator->alloc(sizeof(Node));
@@ -319,7 +319,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
-			verifyAlloc(dest._allocator, _allocator);
+			verifyAlloc(dest._allocator.get(), _allocator.get());
 
 			ScopeGuard destroyAllocatorGuard([&dest]() {
 				dest._allocator->decRef();
@@ -373,15 +373,15 @@ namespace peff {
 				_deleteNodeTree((Node *)_root);
 		}
 
-		PEFF_FORCEINLINE Node* getMaxLteqNode(const AbstractNode* node) {
-			Node *curNode = _root, *maxNode = NULL;
+		PEFF_FORCEINLINE Node* getMaxLteqNode(const Node* node) {
+			Node *curNode = (Node*)_root, *maxNode = NULL;
 
 			while (curNode) {
-				if (_comparator(curNode, node)) {
+				if (_comparator(curNode->value, node->value)) {
 					maxNode = curNode;
-					curNode = curNode->r;
-				} else if (_comparator(node, curNode)) {
-					curNode = curNode->l;
+					curNode = (Node*)curNode->r;
+				} else if (_comparator(node->value, curNode->value)) {
+					curNode = (Node *)curNode->l;
 				} else
 					return curNode;
 			}
@@ -513,9 +513,9 @@ namespace peff {
 					throw std::logic_error("Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
-					node = RBTree<T>::getNextNode(node, nullptr);
+					node = ThisType::getNextNode(node, nullptr);
 				} else {
-					node = RBTree<T>::getPrevNode(node, nullptr);
+					node = ThisType::getPrevNode(node, nullptr);
 				}
 
 				return *this;
@@ -532,12 +532,12 @@ namespace peff {
 					if (node == tree->_cachedMinNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = RBTree<T>::getNextNode(node, nullptr);
+					node = ThisType::getNextNode(node, nullptr);
 				} else {
 					if (node == tree->_cachedMaxNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = RBTree<T>::getPrevNode(node, nullptr);
+					node = ThisType::getPrevNode(node, nullptr);
 				}
 
 				return *this;
@@ -619,12 +619,12 @@ namespace peff {
 
 		struct ConstIterator {
 			const Node *node;
-			const RBTree<T> *tree;
+			const ThisType *tree;
 			IteratorDirection direction;
 
 			PEFF_FORCEINLINE ConstIterator(
 				const Node *node,
-				const RBTree<T> *tree,
+				const ThisType *tree,
 				IteratorDirection direction)
 				: node(node),
 				  tree(tree),
@@ -682,9 +682,9 @@ namespace peff {
 					throw std::logic_error("Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
-					node = RBTree<T>::getNextNode(node, nullptr);
+					node = ThisType::getNextNode(node, nullptr);
 				} else {
-					node = RBTree<T>::getPrevNode(node, nullptr);
+					node = ThisType::getPrevNode(node, nullptr);
 				}
 
 				return *this;
@@ -701,12 +701,12 @@ namespace peff {
 					if (node == tree->_cachedMinNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = RBTree<T>::getNextNode(node, nullptr);
+					node = ThisType::getNextNode(node, nullptr);
 				} else {
 					if (node == tree->_cachedMaxNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = RBTree<T>::getPrevNode(node, nullptr);
+					node = ThisType::getPrevNode(node, nullptr);
 				}
 
 				return *this;

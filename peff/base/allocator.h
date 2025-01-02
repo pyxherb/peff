@@ -44,7 +44,7 @@ namespace peff {
 	extern VoidAlloc g_voidAlloc;
 	extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
 
-	PEFF_FORCEINLINE void verifyAlloc(Alloc *x, Alloc *y) {
+	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
 		// Check if the allocators have the same type.
 		assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
 	}

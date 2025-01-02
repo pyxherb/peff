@@ -18,6 +18,8 @@ namespace peff {
 		typename Hasher = Hasher<T>>
 	class HashSet {
 	public:
+		using HashCode = decltype(std::declval<Hasher>()(std::declval<T>()));
+
 		struct Element {
 			T data;
 			HashCode hashCode;

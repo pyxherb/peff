@@ -3,6 +3,7 @@
 
 #include "basedefs.h"
 #include <peff/utils/scope_guard.h>
+#include <peff/utils/hash.h>
 #include <peff/base/allocator.h>
 
 namespace peff {
@@ -216,6 +217,14 @@ namespace peff {
 			_clear();
 		}
 
+		PEFF_FORCEINLINE char* data() {
+			return _data;
+		}
+
+		PEFF_FORCEINLINE const char *data() const {
+			return _data;
+		}
+
 		PEFF_FORCEINLINE char &at(size_t index) {
 			return _data[index];
 		}
@@ -236,6 +245,13 @@ namespace peff {
 			char *gap = (char *)_reserveSlots(index, 1, false);
 
 			*gap = data;
+		}
+	};
+
+	template <>
+	struct Hasher<String> {
+		PEFF_FORCEINLINE uint64_t operator()(const String& x) const {
+			return djbHash64(x.data(), x.size());
 		}
 	};
 }

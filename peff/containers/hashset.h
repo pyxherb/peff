@@ -169,9 +169,7 @@ namespace peff {
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 
-			T tmpData = std::move(data);
-
-			Bucket::NodeHandle node = _getBucketSlot(bucket, tmpData);
+			Bucket::NodeHandle node = _getBucketSlot(bucket, data);
 			Bucket::NodeHandle nextNode = Bucket::next(node, 1);
 
 			bucket.detach(node);

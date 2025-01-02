@@ -8,6 +8,7 @@ namespace peff {
 	class HashMap final {
 	private:
 		struct Pair {
+			const K *queryKey;
 			K key;
 			V value;
 		};
@@ -16,7 +17,9 @@ namespace peff {
 			Eq eqComparator;
 
 			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<K>(), std::declval<K>())) operator()(const Pair & lhs, const Pair & rhs) const {
-				return eqComparator(lhs.key, rhs.key);
+				const K &l = lhs.queryKey ? *lhs.queryKey : lhs.key,
+					&r = rhs.queryKey ? *rhs.queryKey : rhs.key;
+				return eqComparator(l, r);
 			}
 		};
 
@@ -24,7 +27,8 @@ namespace peff {
 			Hasher hasher;
 
 			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const Pair & pair) const {
-				return hasher(pair.key);
+				const K &k = pair.queryKey ? *pair.queryKey : pair.key;
+				return hasher(k);
 			}
 		};
 
@@ -35,24 +39,20 @@ namespace peff {
 		SetType _set;
 
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
-			peff::copy(((Pair *)dest)->key, key);
-		}
-
-		PEFF_FORCEINLINE static void _constructKeyOnlyPairByMove(K &&key, char *dest) {
-			new (&((Pair *)dest)->key) K(std::move(key));
+			((Pair *)dest)->queryKey = &key;
 		}
 
 	public:
 		PEFF_FORCEINLINE HashMap(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
 
 		PEFF_FORCEINLINE bool insert(K&& key, V&& value) {
-			return _set.insert(Pair{ std::move(key), std::move(value) });
+			return _set.insert(Pair{ nullptr, std::move(key), std::move(value) });
 		}
 
-		PEFF_FORCEINLINE bool remove(K &&key) {
+		PEFF_FORCEINLINE bool remove(const K &key) {
 			char pair[sizeof(Pair)];
 
-			_constructKeyOnlyPairByMove(std::move(key), pair);
+			_constructKeyOnlyPairByCopy(key, pair);
 
 			return _set.remove(*(Pair *)pair);
 		}
@@ -61,14 +61,6 @@ namespace peff {
 			char pair[sizeof(Pair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
-
-			return _set.contains(*(Pair *)pair);
-		}
-
-		PEFF_FORCEINLINE bool contains(K &&key) const {
-			char pair[sizeof(Pair)];
-
-			_constructKeyOnlyPairByMove(std::move(key), pair);
 
 			return _set.contains(*(Pair *)pair);
 		}
@@ -85,22 +77,6 @@ namespace peff {
 			char pair[sizeof(Pair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
-
-			return _set.at(*(Pair *)pair).value;
-		}
-
-		PEFF_FORCEINLINE V &at(K &&key) {
-			char pair[sizeof(Pair)];
-
-			_constructKeyOnlyPairByMove(std::move(key), pair);
-
-			return _set.at(*(Pair *)pair).value;
-		}
-
-		PEFF_FORCEINLINE const V &at(K &&key) const {
-			char pair[sizeof(Pair)];
-
-			_constructKeyOnlyPairByMove(std::move(key), pair);
 
 			return _set.at(*(Pair *)pair).value;
 		}

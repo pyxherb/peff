@@ -101,7 +101,7 @@ int main() {
 			int j = i & 1 ? i : 32 - i;
 			printf("Removing: %d\n", j);
 
-			map.remove(std::move(j));
+			map.remove(j);
 
 			auto k = map.begin();
 			while (k != map.end()) {

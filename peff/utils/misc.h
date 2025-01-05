@@ -14,7 +14,8 @@ namespace peff {
 			new (&out) T(in);
 			return true;
 		} else {
-			static_assert(!std::is_same_v<T, T>, "The type is not copyable");
+			assert(("The type is not copyable", false));
+			return false;
 		}
 	}
 

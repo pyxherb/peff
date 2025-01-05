@@ -329,9 +329,13 @@ namespace peff {
 				for (size_t i = 0; i < _length; ++i)
 					std::destroy_at<T>(&_data[i]);
 			}
-			_allocator->release(_data);
+			if (_capacity) {
+				_allocator->release(_data);
+			}
 
 			_data = nullptr;
+			_length = 0;
+			_capacity = 0;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool eraseRange(size_t idxStart, size_t idxEnd) {
@@ -446,8 +450,55 @@ namespace peff {
 	public:
 		DynArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
 		}
+		DynArray(DynArray<T> &&rhs) noexcept : _allocator(rhs.allocator()), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
+			rhs._allocator = nullptr;
+			rhs._data = nullptr;
+			rhs._length = 0;
+			rhs._capacity = 0;
+		}
 		~DynArray() {
 			_clear();
+		}
+
+		DynArray<T>& operator=(DynArray<T>&& rhs) noexcept {
+			_clear();
+
+			_allocator = rhs._allocator;
+			_data = rhs._data;
+			_length = rhs._length;
+			_capacity = rhs._capacity;
+
+			rhs._allocator = nullptr;
+			rhs._data = nullptr;
+			rhs._length = 0;
+			rhs._capacity = 0;
+
+			return *this;
+		}
+
+		PEFF_FORCEINLINE bool copy(DynArray<T> &dest) const {
+			new (&dest) DynArray<T>(_allocator);
+
+			if (!dest.resize(_length)) {
+				return false;
+			}
+
+			if constexpr (std::is_trivially_copy_constructible_v<T>) {
+				memmove(dest._data, _data, sizeof(T) * _length);
+			} else {
+				size_t i = 0;
+				ScopeGuard destructionGuard([&dest, &i]() {
+					_destructData(dest._data, i);
+				});
+				while (i < _length) {
+					if (!::copy(*(dest._data + i), *(_data + i))) {
+						return false;
+					}
+					++i;
+				}
+			}
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE size_t size() {
@@ -507,7 +558,7 @@ namespace peff {
 			return _allocator;
 		}
 
-		PEFF_FORCEINLINE T* data() {
+		PEFF_FORCEINLINE T *data() {
 			return _data;
 		}
 

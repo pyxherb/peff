@@ -6,10 +6,16 @@
 #include <peff/containers/hashset.h>
 #include <peff/containers/hashmap.h>
 
+struct SomethingUncopyable {
+	peff::String s;
+};
+
 int main() {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+
+	peff::DynArray<SomethingUncopyable> a;
 
 	peff::StdAlloc myStdAlloc;
 	{
@@ -87,29 +93,21 @@ int main() {
 		}*/
 	}
 	{
-		peff::HashMap<int, int> map;
+		peff::HashMap<int, peff::String> map;
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
-			int k = i;
+
+			peff::String s;
+
 			printf("Inserting: %d\n", j);
-			if (!map.insert(std::move(j), std::move(k)))
+			if (!map.insert(std::move(j), std::move(s)))
 				throw std::bad_alloc();
 		}
 
-		for (int i = 0; i < 16; i++) {
-			int j = i & 1 ? i : 32 - i;
-			printf("Removing: %d\n", j);
-
-			map.remove(j);
-
-			auto k = map.begin();
-			while (k != map.end()) {
-				printf("%d=%d\n", k.key(), k.value());
-				++k;
-			}
-
-			// map.dump(std::cout);
+		peff::HashMap<int, peff::String> map2;
+		if (!peff::copy(map2, map)) {
+			throw std::bad_alloc();
 		}
 	}
 

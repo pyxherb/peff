@@ -10,7 +10,7 @@ PEFF_UTILS_API uint32_t peff::djbHash32(const char* data, size_t size) {
 	return hash;
 }
 
-PEFF_UTILS_API uint64_t djbHash64(const char *data, size_t size) {
+PEFF_UTILS_API uint64_t peff::djbHash64(const char *data, size_t size) {
 	uint64_t hash = 5381;
 	for (size_t i = 0; i < size; ++i) {
 		hash += (hash << 5) + *(data++);

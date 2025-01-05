@@ -2,6 +2,7 @@
 #define _PEFF_CONTAINERS_LIST_H_
 
 #include "basedefs.h"
+#include "misc.h"
 #include <memory_resource>
 #include <cassert>
 #include <functional>
@@ -17,8 +18,7 @@ namespace peff {
 			Node *prev = nullptr, *next = nullptr;
 			T data;
 
-			Node() = default;
-			PEFF_FORCEINLINE Node(T &&data) : data(data) {
+			PEFF_FORCEINLINE Node(T &&data) : data(std::move(data)) {
 			}
 		};
 
@@ -34,40 +34,6 @@ namespace peff {
 		Node *_first = nullptr, *_last = nullptr;
 		size_t _length = 0;
 		Alloc *_allocator;
-
-		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode() {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node));
-			if (!node)
-				return nullptr;
-
-			ScopeGuard scopeGuard([this, node]() {
-				_allocator->release(node);
-			});
-
-			new (node) Node();
-			scopeGuard.release();
-
-			return node;
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(const T &data) {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node));
-			if (!node)
-				return nullptr;
-
-			ScopeGuard scopeGuard(
-				[this, node]() {
-					_allocator->release(node);
-				});
-
-			new (node) Node();
-			if (!peff::copy(node->data, data)) {
-				return nullptr;
-			}
-			scopeGuard.release();
-
-			return { node };
-		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
 			Node *node = (Node *)_allocator->alloc(sizeof(Node));
@@ -154,81 +120,57 @@ namespace peff {
 			other._first = nullptr;
 			other._last = nullptr;
 			other._length = 0;
+			other._allocator = nullptr;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();
 			new (this) List(std::move(other));
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
+		PEFF_FORCEINLINE ~List() {
+			for (Node* i = _first; i != nullptr;) {
+				Node *next = i->next;
+
+				_deleteNode(i);
+
+				i = next;
+			}
+		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool copy(List &dest) const {
+			new (&dest) ThisType(_allocator);
 			dest._first = _first;
 			dest._last = _last;
 			dest._length = _length;
 			dest._allocator = _allocator;
 
 			for (Node *i = _first; i; i = i->next) {
-				Node *newNode = dest._allocNode(i->data);
+				char copiedData[sizeof(T)];
+
+				if (!::peff::copy(*(T*)copiedData, i->data)) {
+					return false;
+				}
+
+				ScopeGuard destroyCopiedDataGuard([copiedData]() {
+					std::destroy_at<T>((T *)copiedData);
+				});
+
+				Node *newNode = dest._allocNode(std::move(*(T*)copiedData));
 				if (!newNode) {
 					dest.clear();
 					return false;
 				}
+				destroyCopiedDataGuard.release();
 				dest.pushBack(newNode);
 			}
 
 			return true;
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool copyAssign(List &dest) const {
-			dest.clear();
-
-			dest._first = _first;
-			dest._last = _last;
-			dest._length = _length;
-
-			verifyAlloc(dest._allocator, _allocator);
-			dest._allocator = _allocator;
-
-			for (Node *i = _first; i; i = i->next) {
-				Node *newNode = dest._allocNode(i->data);
-				if (!newNode) {
-					dest.clear();
-					return false;
-				}
-				dest.pushBack(newNode);
-			}
-
-			return true;
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertFront(NodeHandle node, const T &data) {
-			assert(node);
-
-			Node *newNode = _allocNode(data);
-			if (!newNode)
-				return nullptr;
-
-			_prepend(node, newNode);
-
-			return newNode;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertFront(NodeHandle node, NodeHandle newNode) {
 			assert(node);
 
 			_prepend(node, newNode);
-
-			return newNode;
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertBack(NodeHandle node, const T &data) {
-			assert(node);
-
-			Node *newNode = _allocNode(data);
-			if (!newNode)
-				return nullptr;
-
-			_append(node, newNode);
 
 			return newNode;
 		}
@@ -245,13 +187,6 @@ namespace peff {
 			_prepend(_first, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushFront(const T &data) {
-			Node *newNode = _allocNode(data);
-			if (!newNode)
-				return nullptr;
-			_prepend(_first, newNode);
-		}
-
 		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushFront(T &&data) {
 			Node *newNode = _allocNode(std::move(data));
 			if (!newNode)
@@ -262,13 +197,6 @@ namespace peff {
 
 		PEFF_FORCEINLINE void pushBack(NodeHandle node) noexcept {
 			_append(_last, node);
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushBack(const T &data) {
-			Node *newNode = _allocNode(data);
-			if (!newNode)
-				return nullptr;
-			_append(_last, newNode);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushBack(T &&data) {
@@ -645,25 +573,25 @@ namespace peff {
 			PEFF_FORCEINLINE const T &operator*() {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return node->value;
+				return node->data;
 			}
 
 			PEFF_FORCEINLINE const T &operator*() const {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return node->value;
+				return node->data;
 			}
 
 			PEFF_FORCEINLINE const T *operator->() {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return &node->value;
+				return &node->data;
 			}
 
 			PEFF_FORCEINLINE const T *operator->() const {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return &node->value;
+				return &node->data;
 			}
 		};
 

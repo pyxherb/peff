@@ -22,9 +22,10 @@ namespace peff {
 			T data;
 			HashCode hashCode;
 
-			Element() = default;
-			PEFF_FORCEINLINE Element(const T &data, HashCode hashCode) : data(data), hashCode(hashCode) {}
-			PEFF_FORCEINLINE Element(T &&data, HashCode hashCode) : data(data), hashCode(hashCode) {}
+			PEFF_FORCEINLINE Element(T &&data, HashCode hashCode) : data(std::move(data)), hashCode(hashCode) {}
+
+			Element(Element &&rhs) = default;
+			Element &operator=(Element &&rhs) = default;
 		};
 		using Bucket = List<Element>;
 
@@ -77,11 +78,13 @@ namespace peff {
 			for (size_t i = 0; i < nOldBuckets; ++i) {
 				Bucket &bucket = oldBuckets.at(i);
 
-				for (Bucket::NodeHandle j = bucket.firstNode(); j; j = j->next) {
+				for (Bucket::NodeHandle j = bucket.firstNode(); j; ) {
+					Bucket::NodeHandle next = j->next;
 					size_t index = ((size_t)j->data.hashCode) % newSize;
 
 					bucket.detach(j);
 					newBuckets.at(index).pushFront(j);
+					j = next;
 				}
 			}
 
@@ -140,11 +143,11 @@ namespace peff {
 				}
 			}
 
-			HashCode hashCode = _hasher(data);
+			T tmpData = std::move(data);
+
+			HashCode hashCode = _hasher(tmpData);
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
-
-			T tmpData = std::move(data);
 
 			if (_getBucketSlot(bucket, tmpData))
 				return true;
@@ -157,6 +160,7 @@ namespace peff {
 				return false;
 			}
 
+			++_size;
 			return true;
 		}
 
@@ -170,21 +174,28 @@ namespace peff {
 			Bucket &bucket = _buckets.at(index);
 
 			Bucket::NodeHandle node = _getBucketSlot(bucket, data);
-			Bucket::NodeHandle nextNode = Bucket::next(node, 1);
+			if (node) {
+				Bucket::NodeHandle nextNode = Bucket::next(node, 1);
 
-			bucket.detach(node);
+				bucket.detach(node);
 
-			if (!_checkAndResizeBuckets()) {
-				if (nextNode) {
-					bucket.insertFront(nextNode, node);
-				} else {
-					bucket.pushFront(node);
+				Bucket deleterBucket(allocator()); // TODO: Use allocator() method in the `Bucket` type.
+
+				if (!_checkAndResizeBuckets()) {
+					if (nextNode) {
+						if (!bucket.insertFront(nextNode, node)) {
+							return false;
+						}
+					} else {
+						bucket.pushFront(node);
+					}
+					return false;
 				}
-				return false;
+
+				deleterBucket.deleteNode(node);
+
+				--_size;
 			}
-
-			bucket.deleteNode(node);
-
 			return true;
 		}
 
@@ -244,7 +255,7 @@ namespace peff {
 			_buckets.clear();
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() {
+		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _buckets.allocator();
 		}
 
@@ -506,6 +517,11 @@ namespace peff {
 			PEFF_FORCEINLINE const T *operator->() const {
 				return &*_iterator;
 			}
+
+			PEFF_FORCEINLINE ConstIterator &operator++() {
+				++_iterator;
+				return *this;
+			}
 		};
 
 		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
@@ -533,7 +549,7 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->find(value));
 		}
 
-		T& at(const T& value) {
+		PEFF_FORCEINLINE T &at(const T &value) {
 			size_t index;
 			Bucket::NodeHandle node = _get(value, index);
 			if (!node)
@@ -541,8 +557,47 @@ namespace peff {
 			return node->data.data;
 		}
 
-		const T &at(const T &value) const {
+		PEFF_FORCEINLINE const T &at(const T &value) const {
 			return const_cast<ThisType *>(this)->at(value);
+		}
+
+		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
+			new (&dest) ThisType(allocator());
+
+			ScopeGuard clearDestGuard([&dest]() {
+				dest.clear();
+			});
+
+			for (ConstIterator i = beginConst(); i != endConst(); ++i) {
+				char copiedData[sizeof(T)];
+
+				if (!std::is_trivially_destructible_v<T>) {
+					if (!::peff::copy(*(T *)copiedData, *i)) {
+						return false;
+					}
+
+					ScopeGuard destructCopiedDataGuard(
+						[copiedData]() {
+							std::destroy_at<T>((T *)copiedData);
+						});
+
+					if (!dest.insert(std::move(*(T *)copiedData))) {
+						return false;
+					}
+
+					destructCopiedDataGuard.release();
+				} else {
+					if (!::peff::copy(*(T *)copiedData, *i)) {
+						return false;
+					}
+
+					if (!dest.insert(std::move(*(T *)copiedData))) {
+						return false;
+					}
+				}
+			}
+
+			return true;
 		}
 	};
 }

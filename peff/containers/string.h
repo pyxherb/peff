@@ -18,4 +18,6 @@ namespace peff {
 	};
 }
 
+PEFF_CONTAINERS_API bool operator==(const peff::String &lhs, const peff::String &rhs) noexcept;
+
 #endif

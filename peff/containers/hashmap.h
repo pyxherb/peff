@@ -8,9 +8,9 @@ namespace peff {
 	class HashMap final {
 	private:
 		struct Pair {
-			bool isForQuery;
 			K key;
 			V value;
+			bool isForQuery;
 
 			Pair(Pair &&rhs) = default;
 		};

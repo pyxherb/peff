@@ -98,13 +98,6 @@ namespace peff {
 			return _ptr;
 		}
 	};
-
-	template <typename T>
-	struct RcObjectUniquePtrDeleter {
-		PEFF_FORCEINLINE void operator()(T *ptr) noexcept {
-			ptr->onRefZero();
-		}
-	};
 }
 
 #endif

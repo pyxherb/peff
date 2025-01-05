@@ -118,8 +118,11 @@ int main() {
 		peff::String str;
 
 		for (int i = 0; i < 32; i++) {
-			arr.insert(0, i);
-			str.insert(0, 'a' + i);
+			int tmp = i;
+			if (!arr.insert(arr.size(), std::move(tmp)))
+				throw std::bad_alloc();
+			if (!str.insert(0, 'a' + i))
+				throw std::bad_alloc();
 
 			for (size_t i = 0; i < arr.size(); ++i) {
 				printf("%d ", arr.at(i));

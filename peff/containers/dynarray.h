@@ -226,7 +226,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _resizeWith(size_t length, const T& filler) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _resizeWith(size_t length, const T &filler) {
 			if (length == _length)
 				return true;
 
@@ -410,7 +410,7 @@ namespace peff {
 		/// @param length Length of space to reserve.
 		/// @param construct Determines if to construct objects.
 		/// @return Pointer to the reserved area.
-		PEFF_FORCEINLINE T *_reserveSlots(
+		[[nodiscard]] PEFF_FORCEINLINE T *_reserveSlots(
 			size_t index,
 			size_t length,
 			bool construct) {
@@ -418,7 +418,8 @@ namespace peff {
 				oldLength = _length,
 				newLength = _length + length;
 
-			_resize(newLength);
+			if (!_resize(newLength))
+				return nullptr;
 
 			T *gapStart = &_data[index];
 
@@ -477,32 +478,41 @@ namespace peff {
 			return _length;
 		}
 
-		PEFF_FORCEINLINE void reserveSlots(size_t index, size_t length) {
-			_reserveSlots(index, length, true);
+		[[nodiscard]] PEFF_FORCEINLINE bool reserveSlots(size_t index, size_t length) {
+			if (!_reserveSlots(index, length, true))
+				return false;
+			return true;
 		}
 
-		PEFF_FORCEINLINE void insert(size_t index, const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insert(size_t index, T &&data) {
 			T *gap = (T *)_reserveSlots(index, 1, false);
 
-			if constexpr (std::is_trivially_copyable_v<T>) {
-				*gap = data;
-			} else {
-				new (gap) T();
-			}
+			if (!gap)
+				return false;
+
+			*gap = std::move(data);
+
+			return true;
 		}
 
-		PEFF_FORCEINLINE void insert(size_t index, T &&data) {
-			T *gap = (T *)_reserveSlots(index, 1, false);
-
-			if constexpr (std::is_trivially_copyable_v<T>) {
-				*gap = data;
-			} else {
-				new (gap) T(data);
-			}
+		[[nodiscard]] PEFF_FORCEINLINE bool pushFront(T &&data) {
+			return insert(0, std::move(data));
 		}
 
-		PEFF_FORCEINLINE Alloc* allocator() const {
+		[[nodiscard]] PEFF_FORCEINLINE bool pushBack(T &&data) {
+			return insert(_length, std::move(data));
+		}
+
+		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _allocator;
+		}
+
+		PEFF_FORCEINLINE T* data() {
+			return _data;
+		}
+
+		PEFF_FORCEINLINE const T *data() const {
+			return _data;
 		}
 	};
 }

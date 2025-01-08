@@ -55,7 +55,7 @@ namespace peff {
 		PEFF_FORCEINLINE HashMap(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
 
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
-			Pair pair = Pair{ false, std::move(key), std::move(value) };
+			Pair pair = Pair{ std::move(key), std::move(value), false };
 			return _set.insert(std::move(pair));
 		}
 

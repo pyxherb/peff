@@ -25,7 +25,7 @@ namespace peff {
 			return _tree.copyAssign(dest._tree);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename bool insert(T &&value) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&value) {
 			typename Tree::Node *node = _tree.insert(std::move(value));
 
 			if (!node)

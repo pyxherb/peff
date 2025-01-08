@@ -94,6 +94,8 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void _remove(Node *dest) {
+			assert(dest);
+
 			if (dest == _first) {
 				_first = dest->next;
 			} else if (dest == _last) {

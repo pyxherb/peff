@@ -65,7 +65,7 @@ namespace peff {
 				for (size_t i = 0; i < newSize; ++i) {
 					Bucket &bucket = newBuckets.at(i);
 
-					for (Bucket::NodeHandle j = bucket.firstNode(); j; j = j->next) {
+					for (typename Bucket::NodeHandle j = bucket.firstNode(); j; j = j->next) {
 						size_t index = ((size_t)j->data.hashCode) % nOldBuckets;
 
 						bucket.detach(j);
@@ -78,8 +78,8 @@ namespace peff {
 			for (size_t i = 0; i < nOldBuckets; ++i) {
 				Bucket &bucket = oldBuckets.at(i);
 
-				for (Bucket::NodeHandle j = bucket.firstNode(); j; ) {
-					Bucket::NodeHandle next = j->next;
+				for (typename Bucket::NodeHandle j = bucket.firstNode(); j; ) {
+					typename Bucket::NodeHandle next = j->next;
 					size_t index = ((size_t)j->data.hashCode) % newSize;
 
 					bucket.detach(j);
@@ -89,6 +89,8 @@ namespace peff {
 			}
 
 			restoreGuard.release();
+
+			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE typename Bucket::NodeHandle _getBucketSlot(const Bucket &bucket, const T &data) const {
@@ -173,9 +175,9 @@ namespace peff {
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 
-			Bucket::NodeHandle node = _getBucketSlot(bucket, data);
+			typename Bucket::NodeHandle node = _getBucketSlot(bucket, data);
 			if (node) {
-				Bucket::NodeHandle nextNode = Bucket::next(node, 1);
+				typename Bucket::NodeHandle nextNode = Bucket::next(node, 1);
 
 				bucket.detach(node);
 
@@ -205,8 +207,9 @@ namespace peff {
 			}
 
 			HashCode hashCode = _hasher(data);
-			size_t index = ((size_t)hashCode) % _buckets.size();
-			const Bucket &bucket = _buckets.at(index);
+			size_t i = ((size_t)hashCode) % _buckets.size();
+			const Bucket &bucket = _buckets.at();
+
 
 			return _getBucketSlot(bucket, data);
 		}
@@ -312,7 +315,7 @@ namespace peff {
 					throw std::logic_error("Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
-					Bucket::NodeHandle nextNode = Bucket::next(bucketNodeHandle, 1);
+					typename Bucket::NodeHandle nextNode = Bucket::next(bucketNodeHandle, 1);
 					if (!nextNode) {
 						while ((!nextNode) && (idxCurBucket != SIZE_MAX)) {
 							if (++idxCurBucket >= hashSet->_buckets.size()) {
@@ -325,7 +328,7 @@ namespace peff {
 					}
 					bucketNodeHandle = nextNode;
 				} else {
-					Bucket::NodeHandle nextNode = Bucket::prev(bucketNodeHandle, 1);
+					typename Bucket::NodeHandle nextNode = Bucket::prev(bucketNodeHandle, 1);
 					if (!nextNode) {
 						while ((!nextNode) && (idxCurBucket != SIZE_MAX)) {
 							if (!idxCurBucket) {
@@ -355,7 +358,7 @@ namespace peff {
 						idxCurBucket = hashSet->_buckets.size();
 						bucketNodeHandle = hashSet->_buckets.at(idxCurBucket).lastNode();
 					} else {
-						Bucket::NodeHandle nextNode = Bucket::prev(bucketNodeHandle, 1);
+						typename Bucket::NodeHandle nextNode = Bucket::prev(bucketNodeHandle, 1);
 						if (!nextNode) {
 							while (!nextNode) {
 								if (!idxCurBucket) {
@@ -373,7 +376,7 @@ namespace peff {
 						idxCurBucket = 0;
 						bucketNodeHandle = hashSet->_buckets.at(0).firstNode();
 					} else {
-						Bucket::NodeHandle nextNode = Bucket::next(bucketNodeHandle, 1);
+						typename Bucket::NodeHandle nextNode = Bucket::next(bucketNodeHandle, 1);
 						if (!nextNode) {
 							while (!nextNode) {
 								if (++idxCurBucket >= hashSet->_buckets.size()) {
@@ -446,7 +449,7 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator begin() {
 			for (size_t i = 0; i < _buckets.size(); ++i) {
 				auto &curBucket = _buckets.at(i);
-				Bucket::NodeHandle node = curBucket.firstNode();
+				typename Bucket::NodeHandle node = curBucket.firstNode();
 				if (node) {
 					return Iterator(this, i, node, IteratorDirection::Forward);
 				}
@@ -459,14 +462,14 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator beginReversed() {
 			for (size_t i = _buckets.size(); i; --i) {
 				auto &curBucket = _buckets.at(i);
-				Bucket::NodeHandle node = curBucket.lastNode();
+				typename Bucket::NodeHandle node = curBucket.lastNode();
 				if (node) {
 					return Iterator(this, i, node, IteratorDirection::Reversed);
 				}
 			}
 
 			auto &curBucket = _buckets.at(0);
-			Bucket::NodeHandle node = curBucket.lastNode();
+			typename Bucket::NodeHandle node = curBucket.lastNode();
 			if (node) {
 				return Iterator(this, 0, node, IteratorDirection::Reversed);
 			}
@@ -539,7 +542,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE Iterator find(const T &value) {
 			size_t index;
-			Bucket::NodeHandle node = _get(value, index);
+			typename Bucket::NodeHandle node = _get(value, index);
 			if (!node)
 				return end();
 			return Iterator(this, index, node, IteratorDirection::Forward);
@@ -551,7 +554,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE T &at(const T &value) {
 			size_t index;
-			Bucket::NodeHandle node = _get(value, index);
+			typename Bucket::NodeHandle node = _get(value, index);
 			if (!node)
 				throw std::out_of_range("No such element");
 			return node->data.data;

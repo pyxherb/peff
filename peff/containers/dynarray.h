@@ -7,6 +7,7 @@
 #include <cstring>
 #include <functional>
 #include <peff/base/allocator.h>
+#include <peff/utils/misc.h>
 
 namespace peff {
 	template <typename T>
@@ -120,7 +121,7 @@ namespace peff {
 					 i < length;
 					 ++i) {
 					idxLastConstructedObject = i;
-					if (!peff::copy(newData[i], data)) {
+					if (!::peff::copy(newData[i], data)) {
 						return false;
 					}
 				}
@@ -491,7 +492,7 @@ namespace peff {
 					_destructData(dest._data, i);
 				});
 				while (i < _length) {
-					if (!::copy(*(dest._data + i), *(_data + i))) {
+					if (!::peff::copy(*(dest._data + i), *(_data + i))) {
 						return false;
 					}
 					++i;

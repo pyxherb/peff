@@ -2,7 +2,7 @@
 
 using namespace peff;
 
-PEFF_CONTAINERS_API bool ::operator==(const peff::String& lhs, const peff::String& rhs) noexcept {
+PEFF_CONTAINERS_API bool operator==(const peff::String& lhs, const peff::String& rhs) noexcept {
 	if (lhs.size() != rhs.size())
 		return false;
 

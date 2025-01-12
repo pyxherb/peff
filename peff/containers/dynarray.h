@@ -162,8 +162,12 @@ namespace peff {
 
 			int capacityStatus = _checkCapacity(length, _capacity);
 			if (capacityStatus > 0) {
-				size_t newCapacity = _capacity ? (_capacity << 1) : length,
-					   newCapacityTotalSize = newCapacity * sizeof(T);
+				size_t newCapacity = _capacity ? (_capacity << 1) : length;
+
+				while (newCapacity < length)
+					newCapacity <<= 1;
+
+				size_t newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
 
 				if (!newData)
@@ -187,8 +191,12 @@ namespace peff {
 				_allocator->release(_data, sizeof(std::max_align_t));
 				_data = newData;
 			} else if (capacityStatus < 0) {
-				size_t newCapacity = _capacity >> 1,
-					   newCapacityTotalSize = newCapacity * sizeof(T);
+				size_t newCapacity = _capacity >> 1;
+
+				while ((newCapacity >> 1) > length)
+					newCapacity >>= 1;
+
+				size_t newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
 
 				if (!newData)
@@ -461,7 +469,7 @@ namespace peff {
 			_clear();
 		}
 
-		DynArray<T>& operator=(DynArray<T>&& rhs) noexcept {
+		DynArray<T> &operator=(DynArray<T> &&rhs) noexcept {
 			_clear();
 
 			_allocator = rhs._allocator;

@@ -412,9 +412,15 @@ namespace peff {
 
 			if (idxStart) {
 				_moveData(_data, _data + idxStart, newLength);
-				_resize(newLength);
+				if(!_resize(newLength)) {
+					// Change the length, but keep the capacity unchanged.
+					_length = newLength;
+				}
 			} else {
-				_resize(newLength);
+				if(!_resize(newLength)) {
+					// Destruct the trailing elements.
+					_destructData(_data + idxStart, idxEnd - idxStart);
+				}
 			}
 		}
 

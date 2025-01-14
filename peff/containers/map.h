@@ -216,6 +216,32 @@ namespace peff {
 			return Iterator(_set.find(*(QueryPair *)pair));
 		}
 
+		PEFF_FORCEINLINE bool build(const std::initializer_list<std::pair<K, V>> &initializerList) noexcept {
+			clear();
+
+			ScopeGuard clearScopeGuard([this]() {
+				clear();
+			});
+
+			for (auto &i : initializerList) {
+				char copiedKey[sizeof(K)], copiedValue(sizeof(V));
+
+				if (!peff::copy(*(K *)copiedKey, i.first))
+					return false;
+				if (!peff::copy(*(K *)copiedValue, i.second))
+					return false;
+
+				if (!insert(std::move(*(K *)copiedKey), std::move(*(V *)copiedValue)))
+					return false;
+			}
+
+			clearScopeGuard.release();
+		}
+
+		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
+			_set.remove(iterator._iterator);
+		}
+
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			new (&dest) ThisType(allocator());
 

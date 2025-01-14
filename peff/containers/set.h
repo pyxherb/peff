@@ -185,6 +185,10 @@ namespace peff {
 			}
 			return _tree.end();
 		}
+
+		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
+			_tree.remove(iterator._iterator);
+		}
 	};
 }
 

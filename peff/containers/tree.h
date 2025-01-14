@@ -428,10 +428,6 @@ namespace peff {
 			remove(get(key));
 		}
 
-		PEFF_FORCEINLINE void remove(T &&key) {
-			remove(get(key));
-		}
-
 		PEFF_FORCEINLINE void clear() {
 			if (_root) {
 				_deleteNodeTree((Node *)_root);
@@ -700,6 +696,11 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
+		}
+
+		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
+			assert(("Cannot remove the end iterator", iterator.node));
+			remove(iterator.node);
 		}
 	};
 }

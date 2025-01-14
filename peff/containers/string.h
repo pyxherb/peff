@@ -102,8 +102,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
-			_dynArray.extractRange(idxStart, idxEnd);
-			_dynArray.pushBack('\0');
+			_dynArray.extractRange(idxStart, idxEnd + 1);
 		}
 	};
 

@@ -5,6 +5,7 @@
 #include <peff/containers/list.h>
 #include <peff/containers/hashset.h>
 #include <peff/containers/hashmap.h>
+#include <peff/containers/map.h>
 
 struct SomethingUncopyable {
 	peff::String s;
@@ -93,7 +94,7 @@ int main() {
 		}*/
 	}
 	{
-		peff::HashMap<int, peff::String> map;
+		peff::Map<int, peff::String> map;
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -105,7 +106,7 @@ int main() {
 				throw std::bad_alloc();
 		}
 
-		peff::HashMap<int, peff::String> map2;
+		peff::Map<int, peff::String> map2;
 		if (!peff::copy(map2, map)) {
 			throw std::bad_alloc();
 		}

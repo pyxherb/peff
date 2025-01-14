@@ -13,7 +13,7 @@ namespace peff {
 		PEFF_BASE_API RcObject() noexcept;
 		PEFF_BASE_API virtual ~RcObject();
 
-		PEFF_BASE_API virtual void onRefZero() noexcept;
+		virtual void onRefZero() noexcept = 0;
 
 		PEFF_FORCEINLINE size_t incRef() noexcept {
 			return ++refCount;
@@ -96,6 +96,13 @@ namespace peff {
 
 		PEFF_FORCEINLINE operator bool() const noexcept {
 			return _ptr;
+		}
+	};
+
+	struct RcObjectUniquePtrDeleter {
+		PEFF_FORCEINLINE void operator()(RcObject *ptr) {
+			if (ptr)
+				ptr->onRefZero();
 		}
 	};
 }

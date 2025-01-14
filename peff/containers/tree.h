@@ -64,8 +64,7 @@ namespace peff {
 		struct Node : public RBTreeBase::AbstractNode {
 			T value;
 
-			inline Node() {}
-			inline Node(T &&value) : value(value) {}
+			inline Node(T &&value) : value(std::move(value)) {}
 			virtual ~Node() {}
 		};
 
@@ -74,22 +73,6 @@ namespace peff {
 
 		Comparator _comparator;
 		RcObjectPtr<Alloc> _allocator;
-
-		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode() {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node));
-			if (!node)
-				return nullptr;
-
-			ScopeGuard scopeGuard(
-				[this, node]() {
-					_allocator->release(node);
-				});
-			new (node) Node();
-
-			scopeGuard.release();
-
-			return node;
-		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(const T &value) {
 			Node *node = (Node *)_allocator->alloc(sizeof(Node));
@@ -100,10 +83,11 @@ namespace peff {
 				[this, node]() {
 					_allocator->release(node);
 				});
-			new (node) Node();
-			if (!peff::copy(node->value, value)) {
+			char copiedData[sizeof(T)];
+			if (!peff::copy(*(T*)copiedData, value)) {
 				return nullptr;
 			}
+			new (node) Node(std::move(*(T*)copiedData));
 
 			scopeGuard.release();
 
@@ -427,7 +411,7 @@ namespace peff {
 			if (!slot)
 				return parent;
 
-			Node *node = _allocSingleNode(key);
+			Node *node = _allocSingleNode(std::move(key));
 			if (!node)
 				return nullptr;
 			if (!insert(node))
@@ -454,6 +438,14 @@ namespace peff {
 				_root = nullptr;
 				_nNodes = 0;
 			}
+		}
+
+		PEFF_FORCEINLINE size_t size() {
+			return _nNodes;
+		}
+
+		PEFF_FORCEINLINE Alloc *allocator() const {
+			return const_cast<ThisType*>(this)->_allocator.get();
 		}
 
 		PEFF_FORCEINLINE void verify() {

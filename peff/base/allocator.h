@@ -3,7 +3,9 @@
 
 #include "traits.h"
 #include "rcobj.h"
+#include "scope_guard.h"
 #include <cassert>
+#include <memory>
 
 namespace peff {
 	class Alloc : public RcObject {
@@ -47,6 +49,32 @@ namespace peff {
 	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
 		// Check if the allocators have the same type.
 		assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
+	}
+
+	template <typename T, typename... Args>
+	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args... args) {
+		RcObjectPtr<Alloc> allocatorHolder(allocator);
+
+		void *ptr = allocatorHolder->alloc(sizeof(T), alignment);
+		if (!ptr)
+			return nullptr;
+
+		ScopeGuard releasePtrGuard([&allocatorHolder, ptr, alignment]() {
+			allocatorHolder->release(ptr, alignment);
+		});
+
+		new (ptr) T(std::forward<Args>(args)...);
+
+		releasePtrGuard.release();
+
+		return (T *)ptr;
+	}
+
+	template <typename T>
+	PEFF_FORCEINLINE T *deallocAndDestruct(Alloc *allocator, T *ptr, size_t alignment) {
+		RcObjectPtr<Alloc> allocatorHolder(allocator);
+		std::destroy_at<T>(ptr);
+		allocatorHolder->release((void*)ptr, alignment);
 	}
 }
 

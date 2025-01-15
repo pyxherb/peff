@@ -2,7 +2,7 @@
 #define _PEFF_CONTAINERS_STRING_H_
 
 #include "basedefs.h"
-#include <peff/utils/scope_guard.h>
+#include <peff/base/scope_guard.h>
 #include <peff/utils/hash.h>
 #include <peff/base/allocator.h>
 #include "dynarray.h"

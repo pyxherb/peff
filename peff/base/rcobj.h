@@ -20,8 +20,10 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE size_t decRef() noexcept {
-			if (!(--refCount))
+			if (!(--refCount)) {
 				onRefZero();
+				return 0;
+			}
 			return refCount;
 		}
 	};

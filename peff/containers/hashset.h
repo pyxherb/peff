@@ -6,7 +6,7 @@
 #include "misc.h"
 #include <peff/utils/hash.h>
 #include <peff/utils/comparator.h>
-#include <peff/utils/scope_guard.h>
+#include <peff/base/scope_guard.h>
 #include <memory>
 
 namespace peff {

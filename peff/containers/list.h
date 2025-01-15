@@ -7,7 +7,7 @@
 #include <cassert>
 #include <functional>
 #include <peff/base/allocator.h>
-#include <peff/utils/scope_guard.h>
+#include <peff/base/scope_guard.h>
 #include <peff/utils/misc.h>
 
 namespace peff {

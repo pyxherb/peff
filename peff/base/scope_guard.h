@@ -1,7 +1,7 @@
 #ifndef _PEFF_UTILS_SCOPE_GUARD_H_
 #define _PEFF_UTILS_SCOPE_GUARD_H_
 
-#include <peff/base/basedefs.h>
+#include "basedefs.h"
 
 namespace peff {
 	template<typename T>

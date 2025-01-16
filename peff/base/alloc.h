@@ -71,7 +71,7 @@ namespace peff {
 	}
 
 	template <typename T>
-	PEFF_FORCEINLINE T *deallocAndDestruct(Alloc *allocator, T *ptr, size_t alignment) {
+	PEFF_FORCEINLINE T *destroyAndRelease(Alloc *allocator, T *ptr, size_t alignment) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 		std::destroy_at<T>(ptr);
 		allocatorHolder->release((void*)ptr, alignment);

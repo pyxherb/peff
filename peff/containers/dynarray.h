@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstring>
 #include <functional>
-#include <peff/base/allocator.h>
+#include <peff/base/alloc.h>
 #include <peff/utils/misc.h>
 
 namespace peff {

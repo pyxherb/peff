@@ -4,7 +4,7 @@
 #include "basedefs.h"
 #include <peff/base/scope_guard.h>
 #include <peff/utils/hash.h>
-#include <peff/base/allocator.h>
+#include <peff/base/alloc.h>
 #include "dynarray.h"
 
 namespace peff {

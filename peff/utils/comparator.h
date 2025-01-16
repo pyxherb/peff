@@ -1,7 +1,7 @@
 #ifndef _PEFF_UTILS_COMPARATOR_H_
 #define _PEFF_UTILS_COMPARATOR_H_
 
-#include <peff/base/allocator.h>
+#include <peff/base/alloc.h>
 
 namespace peff {
 	template <typename T>

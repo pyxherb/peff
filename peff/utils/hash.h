@@ -2,7 +2,7 @@
 #define _PEFF_UTILS_HASH_H_
 
 #include "basedefs.h"
-#include <peff/base/allocator.h>
+#include <peff/base/alloc.h>
 
 namespace peff {
 	template <typename T>

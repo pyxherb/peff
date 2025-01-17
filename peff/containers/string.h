@@ -27,7 +27,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copy(String &dest) const {
-			new (&dest) String(_dynArray.allocator());
+			constructAt<String>(&dest, _dynArray.allocator());
 
 			DynArray<char> arrayCopy;
 			if (!(dest._dynArray.copy(arrayCopy))) {

@@ -87,7 +87,7 @@ namespace peff {
 			if (!peff::copy(*(T*)copiedData, value)) {
 				return nullptr;
 			}
-			new (node) Node(std::move(*(T*)copiedData));
+			constructAt<Node>(node, std::move(*(T*)copiedData));
 
 			scopeGuard.release();
 
@@ -103,7 +103,7 @@ namespace peff {
 				[this, node]() {
 					_allocator->release(node);
 				});
-			new (node) Node(std::move(value));
+			constructAt<Node>(node, std::move(value));
 			scopeGuard.release();
 
 			return node;
@@ -487,7 +487,7 @@ namespace peff {
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				new (this) Iterator(rhs);
+				constructAt<Iterator>(this, std::move(rhs));
 				return *this;
 			}
 
@@ -625,7 +625,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool copy(ConstIterator &dest) noexcept {
-				new (&dest) ConstIterator(*this);
+				constructAt<ConstIterator>(&dest, *this);
 				return true;
 			}
 

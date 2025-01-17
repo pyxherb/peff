@@ -78,7 +78,7 @@ namespace peff {
 			for (size_t i = 0; i < nOldBuckets; ++i) {
 				Bucket &bucket = oldBuckets.at(i);
 
-				for (typename Bucket::NodeHandle j = bucket.firstNode(); j; ) {
+				for (typename Bucket::NodeHandle j = bucket.firstNode(); j;) {
 					typename Bucket::NodeHandle next = j->next;
 					size_t index = ((size_t)j->data.hashCode) % newSize;
 
@@ -181,7 +181,7 @@ namespace peff {
 
 				bucket.detach(node);
 
-				Bucket deleterBucket(allocator()); // TODO: Use allocator() method in the `Bucket` type.
+				Bucket deleterBucket(allocator());	// TODO: Use allocator() method in the `Bucket` type.
 
 				if (!_checkAndResizeBuckets()) {
 					if (nextNode) {
@@ -209,7 +209,6 @@ namespace peff {
 			HashCode hashCode = _hasher(data);
 			size_t i = ((size_t)hashCode) % _buckets.size();
 			const Bucket &bucket = _buckets.at();
-
 
 			return _getBucketSlot(bucket, data);
 		}
@@ -301,7 +300,7 @@ namespace peff {
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				new (this) Iterator(rhs);
+				constructAt<Iterator>(this, std::move(rhs));
 				return *this;
 			}
 
@@ -565,7 +564,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			new (&dest) ThisType(allocator());
+			constructAt<ThisType>(&dest, allocator());
 
 			ScopeGuard clearDestGuard([&dest]() {
 				dest.clear();

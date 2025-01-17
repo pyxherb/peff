@@ -41,7 +41,7 @@ namespace peff {
 				memmove(newData, oldData, sizeof(T) * length);
 			} else {
 				for (size_t i = 0; i < length; ++i) {
-					new (&newData[i]) T(std::move(oldData[i]));
+					constructAt<T>(&newData[i], std::move(oldData[i]));
 				}
 			}
 		}
@@ -49,7 +49,7 @@ namespace peff {
 		PEFF_FORCEINLINE void _constructData(T *newData, size_t length) {
 			if (!std::is_trivially_constructible_v<T>) {
 				for (size_t i = 0; i < length; ++i) {
-					new (&newData[i]) T();
+					constructAt<T>(&newData[i]);
 				}
 			}
 		}
@@ -84,7 +84,7 @@ namespace peff {
 					 i < length;
 					 ++i) {
 					idxLastConstructedObject = i;
-					new (&newData[i]) T();
+					constructAt<T>(&newData[i]);
 				}
 
 				scopeGuard.release();
@@ -492,7 +492,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copy(DynArray<T> &dest) const {
-			new (&dest) DynArray<T>(_allocator);
+			constructAt<DynArray<T>>(&dest, _allocator);
 
 			if (!dest.resize(_length)) {
 				return false;

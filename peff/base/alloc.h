@@ -52,6 +52,23 @@ namespace peff {
 	}
 
 	template <typename T, typename... Args>
+	PEFF_FORCEINLINE void constructAt(T *ptr, Args... args) {
+#ifdef new
+	#ifdef _MSC_VER
+		#pragma push_macro("new")
+		#undef new
+		new (ptr) T(std::forward<Args>(args)...);
+		#pragma pop_macro("new")
+	#else
+		std::allocator<T> allocator;
+		allocator.construct(ptr, std::forward<Args>(args)...);
+	#endif
+#else
+		new (ptr) T(std::forward<Args>(args)...);
+#endif
+	}
+
+	template <typename T, typename... Args>
 	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args... args) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 
@@ -63,7 +80,7 @@ namespace peff {
 			allocatorHolder->release(ptr, alignment);
 		});
 
-		new (ptr) T(std::forward<Args>(args)...);
+		constructAt<T>((T *)ptr, std::forward<Args>(args)...);
 
 		releasePtrGuard.release();
 
@@ -71,10 +88,10 @@ namespace peff {
 	}
 
 	template <typename T>
-	PEFF_FORCEINLINE T *destroyAndRelease(Alloc *allocator, T *ptr, size_t alignment) {
+	PEFF_FORCEINLINE void destroyAndRelease(Alloc *allocator, T *ptr, size_t alignment) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 		std::destroy_at<T>(ptr);
-		allocatorHolder->release((void*)ptr, alignment);
+		allocatorHolder->release((void *)ptr, alignment);
 	}
 }
 

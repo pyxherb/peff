@@ -11,7 +11,7 @@ namespace peff {
 		if constexpr (IsCopyable<T>::value) {
 			return in.copy(out);
 		} else if constexpr (std::is_nothrow_constructible_v<T>) {
-			new (&out) T(in);
+			constructAt<T>(&out, in);
 			return true;
 		} else {
 			assert(("The type is not copyable", false));

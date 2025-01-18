@@ -2,6 +2,7 @@
 #define _PEFF_CONTAINERS_BITARRAY_H_
 
 #include "basedefs.h"
+#include <peff/base/alloc.h>
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
@@ -118,18 +119,8 @@ namespace peff {
 			}
 		}
 
-		inline void set(size_t bitIndex, uint8_t bits, size_t nBits) {
-			assert(bitIndex < _nBits);
-
-			size_t index = (bitIndex >> 3), inBitIndex = (bitIndex & 7);
-
-			_buffer[index] &= (0xff << inBitIndex);
-			_buffer[index] |= (bits << inBitIndex);
-
-			size_t tailSize = inBitIndex + nBits - 8;
-
-			_buffer[index + 1] &= (0xff >> (8 - tailSize));
-			_buffer[index + 1] |= (bits >> (8 - tailSize));
+		PEFF_FORCEINLINE Alloc *allocator() const {
+			return _allocator;
 		}
 	};
 }

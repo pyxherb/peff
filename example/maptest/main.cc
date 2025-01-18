@@ -6,6 +6,7 @@
 #include <peff/containers/hashset.h>
 #include <peff/containers/hashmap.h>
 #include <peff/containers/map.h>
+#include <peff/containers/bitarray.h>
 
 struct SomethingUncopyable {
 	peff::String s;
@@ -153,6 +154,19 @@ int main() {
 		}
 
 		puts("");
+	}
+
+	{
+		peff::BitArray bitArr;
+
+		bitArr.resize(64);
+
+		bitArr.fillSet(0, 64);
+		bitArr.fillClear(0, 48);
+
+		for(size_t i = 0 ; i < bitArr.bitSize(); ++i) {
+			printf("%s", bitArr.getBit(i) ? "1" : "0");
+		}
 	}
 
 	return 0;

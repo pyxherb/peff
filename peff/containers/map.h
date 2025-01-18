@@ -224,11 +224,11 @@ namespace peff {
 			});
 
 			for (auto &i : initializerList) {
-				char copiedKey[sizeof(K)], copiedValue(sizeof(V));
+				char copiedKey[sizeof(K)], copiedValue[sizeof(V)];
 
 				if (!peff::copy(*(K *)copiedKey, i.first))
 					return false;
-				if (!peff::copy(*(K *)copiedValue, i.second))
+				if (!peff::copy(*(V *)copiedValue, i.second))
 					return false;
 
 				if (!insert(std::move(*(K *)copiedKey), std::move(*(V *)copiedValue)))
@@ -236,6 +236,8 @@ namespace peff {
 			}
 
 			clearScopeGuard.release();
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE void remove(const Iterator &iterator) {

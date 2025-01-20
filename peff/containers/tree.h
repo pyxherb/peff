@@ -83,11 +83,11 @@ namespace peff {
 				[this, node]() {
 					_allocator->release(node);
 				});
-			char copiedData[sizeof(T)];
-			if (!peff::copy(*(T*)copiedData, value)) {
+			Uninitialized<T> copiedData;
+			if (copiedData.copyFrom(value)) {
 				return nullptr;
 			}
-			constructAt<Node>(node, std::move(*(T*)copiedData));
+			constructAt<Node>(node, copiedData.release());
 
 			scopeGuard.release();
 

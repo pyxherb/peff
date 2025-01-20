@@ -147,22 +147,17 @@ namespace peff {
 			dest._allocator = _allocator;
 
 			for (Node *i = _first; i; i = i->next) {
-				char copiedData[sizeof(T)];
+				Uninitialized<T> copiedData;
 
-				if (!::peff::copy(*(T*)copiedData, i->data)) {
+				if (!copiedData.copyFrom(i->data)) {
 					return false;
 				}
 
-				ScopeGuard destroyCopiedDataGuard([copiedData]() {
-					std::destroy_at<T>((T *)copiedData);
-				});
-
-				Node *newNode = dest._allocNode(std::move(*(T*)copiedData));
+				Node *newNode = dest._allocNode(copiedData.release());
 				if (!newNode) {
 					dest.clear();
 					return false;
 				}
-				destroyCopiedDataGuard.release();
 				dest.pushBack(newNode);
 			}
 

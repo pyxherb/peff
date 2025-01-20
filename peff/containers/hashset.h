@@ -571,31 +571,14 @@ namespace peff {
 			});
 
 			for (ConstIterator i = beginConst(); i != endConst(); ++i) {
-				char copiedData[sizeof(T)];
+				Uninitialized<T> copiedData;
 
-				if (!std::is_trivially_destructible_v<T>) {
-					if (!::peff::copy(*(T *)copiedData, *i)) {
-						return false;
-					}
+				if (!copiedData.copyFrom(*i)) {
+					return false;
+				}
 
-					ScopeGuard destructCopiedDataGuard(
-						[copiedData]() {
-							std::destroy_at<T>((T *)copiedData);
-						});
-
-					if (!dest.insert(std::move(*(T *)copiedData))) {
-						return false;
-					}
-
-					destructCopiedDataGuard.release();
-				} else {
-					if (!::peff::copy(*(T *)copiedData, *i)) {
-						return false;
-					}
-
-					if (!dest.insert(std::move(*(T *)copiedData))) {
-						return false;
-					}
+				if (!dest.insert(copiedData.release())) {
+					return false;
 				}
 			}
 

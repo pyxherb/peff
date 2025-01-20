@@ -217,33 +217,20 @@ namespace peff {
 			});
 
 			for (ConstIterator i = beginConst(); i != endConst(); ++i) {
-				char copiedKey[sizeof(K)],
-					copiedValue[sizeof(V)];
+				Uninitialized<K> copiedKey;
+				Uninitialized<V> copiedValue;
 
-				if (!::peff::copy(*(K *)copiedKey, i.key())) {
+				if (!copiedKey.copyFrom(i.key())) {
 					return false;
 				}
 
-				ScopeGuard destructCopiedKeyGuard(
-					[copiedKey]() {
-						std::destroy_at<K>((K *)copiedKey);
-					});
-
-				if (!::peff::copy(*(V *)copiedValue, i.value())) {
+				if (!copiedValue.copyFrom(i.value())) {
 					return false;
 				}
 
-				ScopeGuard destructCopiedValueGuard(
-					[copiedValue]() {
-						std::destroy_at<V>((V *)copiedValue);
-					});
-
-				if (!dest.insert(std::move(*(K *)copiedKey), std::move(*(V *)copiedValue))) {
+				if (!dest.insert(copiedKey.release(), copiedValue.release())) {
 					return false;
 				}
-
-				destructCopiedKeyGuard.release();
-				destructCopiedValueGuard.release();
 			}
 
 			return true;

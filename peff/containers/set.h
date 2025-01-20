@@ -172,6 +172,10 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
 		}
 
+		PEFF_FORCEINLINE bool contains(const T& key) const {
+			return _tree.get(key);
+		}
+
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
 			if (auto node = _tree.get(key); node) {
 				return ConstIterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));

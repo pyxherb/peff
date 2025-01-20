@@ -287,7 +287,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const {
 			return _length;
 		}
 		struct Iterator {
@@ -603,6 +603,13 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Reversed);
+		}
+
+		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
+			return beginConst();
+		}
+		PEFF_FORCEINLINE ConstIterator end() const noexcept {
+			return endConst();
 		}
 	};
 }

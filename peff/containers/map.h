@@ -224,8 +224,8 @@ namespace peff {
 			});
 
 			for (auto &i : initializerList) {
-				Uninitialized<K> copiedKey[sizeof(K)];
-				Uninitialized<V> copiedValue[sizeof(V)];
+				Uninitialized<K> copiedKey;
+				Uninitialized<V> copiedValue;
 
 				if (!copiedKey.copyFrom(i.first))
 					return false;

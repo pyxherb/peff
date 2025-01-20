@@ -138,7 +138,7 @@ namespace peff {
 		/// @param buckets Buckets to be operated.
 		/// @param data Element to insert.
 		/// @return true for succeeded, false if failed.
-		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data, bool forceResizeBuckets) {
 			if (!_buckets.size()) {
 				if (!_buckets.resize(1)) {
 					return false;
@@ -157,16 +157,18 @@ namespace peff {
 			if (!bucket.pushFront(Element(std::move(tmpData), hashCode)))
 				return false;
 
-			if (!_checkAndResizeBuckets()) {
-				bucket.popFront();
-				return false;
+			if (forceResizeBuckets) {
+				if (!_checkAndResizeBuckets()) {
+					bucket.popFront();
+					return false;
+				}
 			}
 
 			++_size;
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _remove(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _remove(const T &data, bool forceResizeBuckets) {
 			if (!_buckets.size()) {
 				return false;
 			}
@@ -184,14 +186,16 @@ namespace peff {
 				Bucket deleterBucket(allocator());	// TODO: Use allocator() method in the `Bucket` type.
 
 				if (!_checkAndResizeBuckets()) {
-					if (nextNode) {
-						if (!bucket.insertFront(nextNode, node)) {
-							return false;
+					if (forceResizeBuckets) {
+						if (nextNode) {
+							if (!bucket.insertFront(nextNode, node)) {
+								return false;
+							}
+						} else {
+							bucket.pushFront(node);
 						}
-					} else {
-						bucket.pushFront(node);
+						return false;
 					}
-					return false;
 				}
 
 				deleterBucket.deleteNode(node);
@@ -208,7 +212,7 @@ namespace peff {
 
 			HashCode hashCode = _hasher(data);
 			size_t i = ((size_t)hashCode) % _buckets.size();
-			const Bucket &bucket = _buckets.at();
+			const Bucket &bucket = _buckets.at(i);
 
 			return _getBucketSlot(bucket, data);
 		}
@@ -236,11 +240,19 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&data) {
-			return _insert(std::move(data));
+			return _insert(std::move(data), false);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool insertAndResizeBuckets(T &&data) {
+			return _insert(std::move(data), true);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool remove(const T &data) {
-			return _remove(data);
+			return _remove(data, false);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool removeAndResizeBuckets(const T &data) {
+			return _remove(data, true);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE typename Bucket::NodeHandle get(const T &data) {
@@ -561,6 +573,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE const T &at(const T &value) const {
 			return const_cast<ThisType *>(this)->at(value);
+		}
+
+		PEFF_FORCEINLINE size_t size() const {
+			return _size;
 		}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {

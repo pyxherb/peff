@@ -209,6 +209,26 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
 		}
 
+		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
+			char pair[sizeof(QueryPair)];
+
+			_constructKeyOnlyPairByCopy(key, pair);
+
+			return ConstIterator(_set.find(*(QueryPair *)pair));
+		}
+
+		PEFF_FORCEINLINE Iterator find(const K &key) {
+			char pair[sizeof(QueryPair)];
+
+			_constructKeyOnlyPairByCopy(key, pair);
+
+			return Iterator(_set.find(*(QueryPair *)pair));
+		}
+
+		PEFF_FORCEINLINE size_t size() const {
+			return _set.size();
+		}
+
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, allocator());
 

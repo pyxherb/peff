@@ -166,11 +166,11 @@ namespace peff {
 		bool _inited;
 
 	public:
-		PEFF_FORCEINLINE Uninitialized() {
+		PEFF_FORCEINLINE explicit Uninitialized() {
 			_inited = false;
 		}
 		Uninitialized(const Uninitialized<T> &) = delete;
-		PEFF_FORCEINLINE Uninitialized(Uninitialized<T> &&rhs) {
+		PEFF_FORCEINLINE explicit Uninitialized(Uninitialized<T> &&rhs) {
 			if ((_inited = rhs._inited)) {
 				memmove(_buf, rhs._buf, sizeof(T));
 				rhs._inited = false;

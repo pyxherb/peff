@@ -117,6 +117,13 @@ namespace peff {
 			return djbHash64(x.data(), x.size());
 		}
 	};
+
+	template <>
+	struct Hasher<std::string_view> {
+		PEFF_FORCEINLINE uint64_t operator()(const std::string_view &x) const {
+			return djbHash64(x.data(), x.size());
+		}
+	};
 }
 
 PEFF_CONTAINERS_API bool operator==(const peff::String &lhs, const peff::String &rhs) noexcept;

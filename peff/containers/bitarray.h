@@ -49,6 +49,8 @@ namespace peff {
 				_allocator->release(_buffer, 1);
 			}
 			_nBits = nBits;
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE uint8_t *data() {

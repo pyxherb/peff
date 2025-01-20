@@ -72,7 +72,7 @@ namespace peff {
 				// we choose to construct the new objects first.
 				size_t idxLastConstructedObject;
 				ScopeGuard scopeGuard(
-					[this, &idxLastConstructedObject, newData]() {
+					[this, &idxLastConstructedObject, newData]() noexcept {
 						for (size_t i = _length;
 							 i < idxLastConstructedObject;
 							 ++i) {
@@ -109,7 +109,7 @@ namespace peff {
 				// we choose to construct the new objects first.
 				size_t idxLastConstructedObject;
 				ScopeGuard scopeGuard(
-					[this, &idxLastConstructedObject, newData]() {
+					[this, &idxLastConstructedObject, newData]() noexcept {
 						for (size_t i = _length;
 							 i < idxLastConstructedObject;
 							 ++i) {
@@ -177,7 +177,7 @@ namespace peff {
 					memmove(newData, _data, sizeof(T) * _length);
 				} else {
 					ScopeGuard scopeGuard(
-						[this, newData]() {
+						[this, newData]() noexcept {
 							_allocator->release(newData, sizeof(std::max_align_t));
 						});
 
@@ -206,7 +206,7 @@ namespace peff {
 					memmove(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
-						[this, newData]() {
+						[this, newData]() noexcept {
 							_allocator->release(newData, sizeof(std::max_align_t));
 						});
 
@@ -256,7 +256,7 @@ namespace peff {
 					memmove(newData, _data, sizeof(T) * _length);
 				} else {
 					ScopeGuard scopeGuard(
-						[this, newData]() {
+						[this, newData]() noexcept {
 							_allocator->release(newData, sizeof(std::max_align_t));
 						});
 
@@ -282,7 +282,7 @@ namespace peff {
 					memmove(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
-						[this, newData]() {
+						[this, newData]() noexcept {
 							_allocator->release(newData, sizeof(std::max_align_t));
 						});
 
@@ -370,7 +370,7 @@ namespace peff {
 					memmove(newData + idxStart, _data + idxEnd, sizeof(T) * postGapLength);
 				} else {
 					ScopeGuard scopeGuard(
-						[this, newData]() {
+						[this, newData]() noexcept {
 							_allocator->release(newData, sizeof(std::max_align_t));
 						});
 
@@ -502,7 +502,7 @@ namespace peff {
 				memmove(dest._data, _data, sizeof(T) * _length);
 			} else {
 				size_t i = 0;
-				ScopeGuard destructionGuard([&dest, &i]() {
+				ScopeGuard destructionGuard([&dest, &i]() noexcept {
 					_destructData(dest._data, i);
 				});
 				while (i < _length) {

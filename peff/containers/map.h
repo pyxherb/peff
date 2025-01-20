@@ -219,7 +219,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool build(const std::initializer_list<std::pair<K, V>> &initializerList) noexcept {
 			clear();
 
-			ScopeGuard clearScopeGuard([this]() {
+			ScopeGuard clearScopeGuard([this]() noexcept {
 				clear();
 			});
 
@@ -248,7 +248,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, allocator());
 
-			ScopeGuard clearDestGuard([&dest]() {
+			ScopeGuard clearDestGuard([&dest]() noexcept {
 				dest.clear();
 			});
 

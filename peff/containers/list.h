@@ -40,7 +40,7 @@ namespace peff {
 			if (!node)
 				return nullptr;
 
-			ScopeGuard scopeGuard([this, node]() {
+			ScopeGuard scopeGuard([this, node]() noexcept {
 				_allocator->release(node);
 			});
 			constructAt<Node>(node, std::move(data));
@@ -615,7 +615,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool build(const std::initializer_list<T> &initializerList) {
 			clear();
 
-			ScopeGuard clearScopeGuard([this]() {
+			ScopeGuard clearScopeGuard([this]() noexcept {
 				clear();
 			});
 

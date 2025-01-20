@@ -232,7 +232,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, allocator());
 
-			ScopeGuard clearDestGuard([&dest]() {
+			ScopeGuard clearDestGuard([&dest]() noexcept {
 				dest.clear();
 			});
 

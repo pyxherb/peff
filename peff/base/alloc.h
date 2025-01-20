@@ -76,7 +76,7 @@ namespace peff {
 		if (!ptr)
 			return nullptr;
 
-		ScopeGuard releasePtrGuard([&allocatorHolder, ptr, alignment]() {
+		ScopeGuard releasePtrGuard([&allocatorHolder, ptr, alignment]() noexcept {
 			allocatorHolder->release(ptr, alignment);
 		});
 

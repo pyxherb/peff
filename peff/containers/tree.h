@@ -80,7 +80,7 @@ namespace peff {
 				return nullptr;
 
 			ScopeGuard scopeGuard(
-				[this, node]() {
+				[this, node]() noexcept {
 					_allocator->release(node);
 				});
 			Uninitialized<T> copiedData;
@@ -100,7 +100,7 @@ namespace peff {
 				return nullptr;
 
 			ScopeGuard scopeGuard(
-				[this, node]() {
+				[this, node]() noexcept {
 					_allocator->release(node);
 				});
 			constructAt<Node>(node, std::move(value));
@@ -167,7 +167,7 @@ namespace peff {
 						false }))
 				return nullptr;
 
-			ScopeGuard deleteNewTreeGuard([this, newNode]() {
+			ScopeGuard deleteNewTreeGuard([this, newNode]() noexcept {
 				_deleteNodeTree(newNode);
 			});
 
@@ -277,14 +277,14 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			dest._allocator = _allocator;
 
-			ScopeGuard destroyAllocatorGuard([&dest]() {
+			ScopeGuard destroyAllocatorGuard([&dest]() noexcept {
 				dest._allocator->decRef();
 			});
 
 			if (!peff::copy(dest._comparator, _comparator))
 				return false;
 
-			ScopeGuard destroyComparatorGuard([&dest]() {
+			ScopeGuard destroyComparatorGuard([&dest]() noexcept {
 				std::destroy_at<Comparator>(&dest._comparator);
 			});
 
@@ -305,14 +305,14 @@ namespace peff {
 		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
 			verifyAlloc(dest._allocator.get(), _allocator.get());
 
-			ScopeGuard destroyAllocatorGuard([&dest]() {
+			ScopeGuard destroyAllocatorGuard([&dest]() noexcept {
 				dest._allocator->decRef();
 			});
 
 			if (!peff::copyAssign(dest._comparator, _comparator))
 				return false;
 
-			ScopeGuard destroyComparatorGuard([&dest]() {
+			ScopeGuard destroyComparatorGuard([&dest]() noexcept {
 				std::destroy_at<Comparator>(&dest._comparator);
 			});
 

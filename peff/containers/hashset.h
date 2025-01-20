@@ -61,7 +61,7 @@ namespace peff {
 			}
 
 			const size_t nOldBuckets = oldBuckets.size();
-			ScopeGuard restoreGuard([newSize, &oldBuckets, &newBuckets, nOldBuckets]() {
+			ScopeGuard restoreGuard([newSize, &oldBuckets, &newBuckets, nOldBuckets]() noexcept {
 				for (size_t i = 0; i < newSize; ++i) {
 					Bucket &bucket = newBuckets.at(i);
 
@@ -582,7 +582,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, allocator());
 
-			ScopeGuard clearDestGuard([&dest]() {
+			ScopeGuard clearDestGuard([&dest]() noexcept {
 				dest.clear();
 			});
 

@@ -463,19 +463,19 @@ namespace peff {
 		}
 
 	public:
-		DynArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
+		PEFF_FORCEINLINE DynArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
 		}
-		DynArray(DynArray<T> &&rhs) noexcept : _allocator(rhs.allocator()), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
+		PEFF_FORCEINLINE DynArray(DynArray<T> &&rhs) noexcept : _allocator(rhs.allocator()), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
 			rhs._allocator = nullptr;
 			rhs._data = nullptr;
 			rhs._length = 0;
 			rhs._capacity = 0;
 		}
-		~DynArray() {
+		PEFF_FORCEINLINE ~DynArray() {
 			_clear();
 		}
 
-		DynArray<T> &operator=(DynArray<T> &&rhs) noexcept {
+		PEFF_FORCEINLINE DynArray<T> &operator=(DynArray<T> &&rhs) noexcept {
 			_clear();
 
 			_allocator = rhs._allocator;

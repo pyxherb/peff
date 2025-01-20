@@ -46,7 +46,7 @@ namespace peff {
 			constructAt<Node>(node, std::move(data));
 			scopeGuard.release();
 
-			return { node };
+			return node;
 		}
 
 		PEFF_FORCEINLINE void _deleteNode(Node *node) {
@@ -610,6 +610,31 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ConstIterator end() const noexcept {
 			return endConst();
+		}
+
+		PEFF_FORCEINLINE bool build(const std::initializer_list<T> &initializerList) {
+			clear();
+
+			ScopeGuard clearScopeGuard([this]() {
+				clear();
+			});
+
+			for(auto i = initializerList.begin(); i != initializerList.end(); ++i) {
+				Uninitialized<T> copiedData;
+
+				if(!copiedData.copyFrom(*i))
+					return false;
+
+				Node *node = _allocNode(copiedData.release());
+				if(!node)
+					return false;
+
+				_append(_last, node);
+			}
+
+			clearScopeGuard.release();
+
+			return true;
 		}
 	};
 }

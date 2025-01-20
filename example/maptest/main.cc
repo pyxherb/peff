@@ -7,6 +7,7 @@
 #include <peff/containers/hashmap.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
+#include <iostream>
 
 struct SomethingUncopyable {
 	peff::String s;
@@ -101,6 +102,15 @@ int main() {
 			int j = i & 1 ? i : 32 - i;
 
 			peff::String s;
+			{
+				std::string stdString = std::to_string(j);
+				if (!s.resize(stdString.size()))
+					throw std::bad_alloc();
+				memcpy(s.data(), stdString.data(), stdString.size());
+			}
+
+			std::string_view sv = (std::string_view)s;
+			std::cout << "Dumping string: " << sv << std::endl;
 
 			printf("Inserting: %d\n", j);
 			if (!map.insert(std::move(j), std::move(s)))
@@ -164,7 +174,7 @@ int main() {
 		bitArr.fillSet(0, 64);
 		bitArr.fillClear(0, 48);
 
-		for(size_t i = 0 ; i < bitArr.bitSize(); ++i) {
+		for (size_t i = 0; i < bitArr.bitSize(); ++i) {
 			printf("%s", bitArr.getBit(i) ? "1" : "0");
 		}
 	}

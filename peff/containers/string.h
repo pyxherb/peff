@@ -6,6 +6,7 @@
 #include <peff/utils/hash.h>
 #include <peff/base/alloc.h>
 #include "dynarray.h"
+#include <string_view>
 
 namespace peff {
 	class String {
@@ -103,6 +104,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
 			_dynArray.extractRange(idxStart, idxEnd + 1);
+		}
+
+		PEFF_FORCEINLINE operator std::string_view() {
+			return std::string_view(_dynArray.data(), _dynArray.size());
 		}
 	};
 

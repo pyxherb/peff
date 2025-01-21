@@ -8,13 +8,13 @@
 namespace peff {
 	/// @brief An RAII-based scope guard for executing codes automatically when leaving the scope.
 	/// @tparam T For lambda expression, will be deduced by the compiler automatically.
-	/// @note The lambda expression is required to be noexcept.
+	/// @note The callback is required to be noexcept.
 	template<typename T>
 	struct ScopeGuard {
 		T callback;
 		bool released = false;
 
-		static_assert(std::is_nothrow_invocable_v<T>);
+		static_assert(std::is_nothrow_invocable_v<T>, "The callback must be noexcept");
 
 		ScopeGuard() = delete;
 		PEFF_FORCEINLINE ScopeGuard(T &&callback)

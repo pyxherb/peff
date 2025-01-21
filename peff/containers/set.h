@@ -14,6 +14,8 @@ namespace peff {
 	public:
 		PEFF_FORCEINLINE Set(Alloc *allocator = getDefaultAlloc()) : _tree(allocator) {
 		}
+		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(rhs._tree) {
+		}
 		PEFF_FORCEINLINE ~Set() {
 		}
 
@@ -60,6 +62,22 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			_tree.clear();
+		}
+
+		PEFF_FORCEINLINE T &at(const T& key) {
+			auto node = _tree.get(key);
+
+			assert(node);
+
+			return node->value;
+		}
+
+		PEFF_FORCEINLINE const T &at(const T& key) const {
+			auto node = _tree.get(key);
+
+			assert(node);
+
+			return node->value;
 		}
 
 		struct Iterator {

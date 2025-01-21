@@ -44,6 +44,8 @@ namespace peff {
 
 	public:
 		PEFF_FORCEINLINE Map(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
+		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)), comparator(std::move(rhs.comparator)) {
+		}
 
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
 			Pair pair = Pair{ std::move(key), std::move(value), false };

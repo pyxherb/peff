@@ -35,7 +35,8 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
 			this->_ptr = _ptr;
-			_ptr->incRef();
+			if (_ptr)
+				_ptr->incRef();
 		}
 
 	public:
@@ -46,8 +47,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE RcObjectPtr(T *ptr = nullptr) noexcept {
-			if (ptr)
-				_setAndIncRef(ptr);
+			_setAndIncRef(ptr);
 		}
 		PEFF_FORCEINLINE RcObjectPtr(const RcObjectPtr<T> &other) noexcept {
 			_setAndIncRef(other._ptr);
@@ -78,17 +78,10 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE T *get() noexcept {
+		PEFF_FORCEINLINE T *get() const noexcept {
 			return _ptr;
 		}
-		PEFF_FORCEINLINE T *operator->() noexcept {
-			return _ptr;
-		}
-
-		PEFF_FORCEINLINE const T *get() const noexcept {
-			return _ptr;
-		}
-		PEFF_FORCEINLINE const T *operator->() const noexcept {
+		PEFF_FORCEINLINE T *operator->() const noexcept {
 			return _ptr;
 		}
 

@@ -18,7 +18,7 @@ add_library(peff_containers_static STATIC)
 target_compile_definitions(peff_containers_static PRIVATE PEFF_STATIC_LINK=1 IS_PEFF_CONTAINERS_BUILDING=1)
 set_target_properties(peff_containers_static PROPERTIES CXX_STANDARD 17)
 target_sources(peff_containers_static PRIVATE ${HEADERS} ${SRC})
-target_link_libraries(peff_containers PUBLIC peff_base_static peff_utils_static)
+target_link_libraries(peff_containers_static PUBLIC peff_base_static peff_utils_static)
 target_include_directories(peff_containers_static PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/> $<INSTALL_INTERFACE:include/>)
 set_target_properties(peff_containers_static PROPERTIES
     PUBLIC_HEADER "${HEADERS}"

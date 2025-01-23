@@ -11,17 +11,23 @@
 namespace peff {
 	class String {
 	private:
-		DynArray<char> _dynArray;
+		using ArrayType = DynArray<char, true>;
+		ArrayType _dynArray;
 
 	public:
+		using Iterator = char*;
+		using ConstIterator = const char*;
+
 		PEFF_FORCEINLINE String(Alloc *allocator = getDefaultAlloc()) : _dynArray(allocator) {
-			clear();
 		}
 		PEFF_FORCEINLINE String(String &&rhs) noexcept : _dynArray(std::move(rhs._dynArray)) {
 		}
 		PEFF_FORCEINLINE ~String() {}
 
-		String &operator=(String &&rhs) noexcept {
+		PEFF_FORCEINLINE String &operator=(String &&rhs) noexcept {
+			verifyAlloc(allocator(), rhs.allocator());
+			_dynArray.clear();
+
 			_dynArray = std::move(rhs._dynArray);
 
 			return *this;
@@ -30,8 +36,8 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(String &dest) const {
 			constructAt<String>(&dest, _dynArray.allocator());
 
-			DynArray<char> arrayCopy;
-			if (!(dest._dynArray.copy(arrayCopy))) {
+			ArrayType arrayCopy;
+			if (!(_dynArray.copy(arrayCopy))) {
 				return false;
 			}
 
@@ -41,6 +47,8 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE size_t size() const {
+			if (!_dynArray.size())
+				return 0;
 			return _dynArray.size() - 1;
 		}
 
@@ -59,7 +67,8 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void clear() {
-			_dynArray.resizeWith(1, '\0');
+			bool result = _dynArray.resizeWith(1, '\0');
+			assert(result);
 		}
 
 		PEFF_FORCEINLINE char& at(size_t index) {
@@ -106,8 +115,60 @@ namespace peff {
 			_dynArray.extractRange(idxStart, idxEnd + 1);
 		}
 
-		PEFF_FORCEINLINE operator std::string_view() {
-			return std::string_view(_dynArray.data(), _dynArray.size());
+		PEFF_FORCEINLINE Iterator begin() {
+			return _dynArray.begin();
+		}
+
+		PEFF_FORCEINLINE Iterator end() {
+			return _dynArray.end();
+		}
+
+		PEFF_FORCEINLINE ConstIterator begin() const {
+			return _dynArray.begin();
+		}
+
+		PEFF_FORCEINLINE ConstIterator end() const {
+			return _dynArray.end();
+		}
+
+		PEFF_FORCEINLINE operator std::string_view() const {
+			if (!_dynArray.size())
+				return std::string_view(_dynArray.data(), 0);
+			return std::string_view(_dynArray.data(), size());
+		}
+
+		PEFF_FORCEINLINE bool operator==(const std::string_view& rhs) const {
+			if (rhs.size() != size())
+				return false;
+			return !memcmp(_dynArray.data(), rhs.data(), size());
+		}
+
+		PEFF_FORCEINLINE bool operator==(const String &rhs) const {
+			if (rhs.size() != size())
+				return false;
+			return !memcmp(_dynArray.data(), rhs.data(), size());
+		}
+
+		PEFF_FORCEINLINE bool operator!=(const String &rhs) const {
+			if (rhs.size() == size())
+				return false;
+			return memcmp(_dynArray.data(), rhs.data(), size());
+		}
+
+		PEFF_FORCEINLINE bool operator>(const String &rhs) const {
+			if (rhs.size() > size())
+				return true;
+			if (rhs.size() < size())
+				return false;
+			return memcmp(_dynArray.data(), rhs.data(), size()) > 0;
+		}
+
+		PEFF_FORCEINLINE bool operator<(const String &rhs) const {
+			if (rhs.size() < size())
+				return true;
+			if (rhs.size() > size())
+				return false;
+			return memcmp(_dynArray.data(), rhs.data(), size()) < 0;
 		}
 	};
 
@@ -126,6 +187,6 @@ namespace peff {
 	};
 }
 
-PEFF_CONTAINERS_API bool operator==(const peff::String &lhs, const peff::String &rhs) noexcept;
+PEFF_CONTAINERS_API bool operator==(const std::string_view &lhs, const peff::String &rhs) noexcept;
 
 #endif

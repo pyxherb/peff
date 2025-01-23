@@ -43,6 +43,8 @@ namespace peff {
 		}
 
 	public:
+		using NodeType = typename SetType::NodeType;
+
 		PEFF_FORCEINLINE Map(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
 		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)), comparator(std::move(rhs.comparator)) {
 		}
@@ -90,6 +92,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			_set.clear();
+		}
+
+		PEFF_FORCEINLINE size_t size() {
+			return _set.size();
 		}
 
 		struct Iterator {
@@ -270,6 +276,8 @@ namespace peff {
 					return false;
 				}
 			}
+
+			clearDestGuard.release();
 
 			return true;
 		}

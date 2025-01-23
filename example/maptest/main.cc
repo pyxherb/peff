@@ -18,6 +18,11 @@ int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+	peff::String s;
+	s.resize(3);
+	memcpy(s.data(), "123", 3);
+	assert(s == "123");
+
 	peff::DynArray<SomethingUncopyable> a;
 
 	peff::StdAlloc myStdAlloc;
@@ -129,7 +134,7 @@ int main() {
 
 		for (int i = 0; i < 32; i++) {
 			int tmp = i;
-			if (!arr.insert(arr.size(), std::move(tmp)))
+			if (!arr.pushFront(std::move(tmp)))
 				throw std::bad_alloc();
 			if (!str.insert(0, 'a' + i))
 				throw std::bad_alloc();

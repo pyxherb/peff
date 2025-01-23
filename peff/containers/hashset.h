@@ -221,14 +221,17 @@ namespace peff {
 		PEFF_FORCEINLINE HashSet(Alloc *allocator = getDefaultAlloc()) : _buckets(allocator) {
 		}
 
-		PEFF_FORCEINLINE HashSet(ThisType &&other) {
-			_buckets = std::move(other._buckets);
-			_size = other._size;
-			_equalityComparator = std::move(other._equalityComparator);
-			_hasher = std::move(other._hasher);
+		PEFF_FORCEINLINE HashSet(ThisType &&other)
+			: _buckets(std::move(other._buckets)),
+			  _size(other._size),
+			  _equalityComparator(std::move(other._equalityComparator)),
+			  _hasher(std::move(other._hasher)) {
+			other._size = 0;
 		}
 
-		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
+			clear();
+
 			_buckets = std::move(other._buckets);
 			_size = other._size;
 			_equalityComparator = std::move(other._equalityComparator);
@@ -247,8 +250,8 @@ namespace peff {
 			return _insert(std::move(data), true);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool remove(const T &data) {
-			return _remove(data, false);
+		[[nodiscard]] PEFF_FORCEINLINE void remove(const T &data) {
+			bool unused = _remove(data, false);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool removeAndResizeBuckets(const T &data) {

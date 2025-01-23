@@ -68,6 +68,8 @@ namespace peff {
 			virtual ~Node() {}
 		};
 
+		using NodeType = Node;
+
 	private:
 		using ThisType = RBTree<T, Comparator>;
 
@@ -81,7 +83,7 @@ namespace peff {
 
 			ScopeGuard scopeGuard(
 				[this, node]() noexcept {
-					_allocator->release(node);
+					_allocator->release(node, sizeof(Node));
 				});
 			Uninitialized<T> copiedData;
 			if (copiedData.copyFrom(value)) {
@@ -101,7 +103,7 @@ namespace peff {
 
 			ScopeGuard scopeGuard(
 				[this, node]() noexcept {
-					_allocator->release(node);
+					_allocator->release(node, sizeof(Node));
 				});
 			constructAt<Node>(node, std::move(value));
 			scopeGuard.release();
@@ -111,7 +113,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _deleteSingleNode(Node *node) {
 			std::destroy_at<Node>(node);
-			_allocator->release(node);
+			_allocator->release(node, sizeof(Node));
 		}
 
 		PEFF_FORCEINLINE void _deleteNodeTree(Node *node) {
@@ -275,18 +277,10 @@ namespace peff {
 		PEFF_FORCEINLINE RBTree(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			dest._allocator = _allocator;
-
-			ScopeGuard destroyAllocatorGuard([&dest]() noexcept {
-				dest._allocator->decRef();
-			});
+			peff::constructAt<ThisType>(&dest, _allocator.get());
 
 			if (!peff::copy(dest._comparator, _comparator))
 				return false;
-
-			ScopeGuard destroyComparatorGuard([&dest]() noexcept {
-				std::destroy_at<Comparator>(&dest._comparator);
-			});
 
 			if (_root) {
 				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root)))
@@ -297,42 +291,6 @@ namespace peff {
 			dest._cachedMinNode = _getMinNode(dest._root);
 			dest._cachedMaxNode = _getMaxNode(dest._root);
 			dest._nNodes = _nNodes;
-
-			destroyAllocatorGuard.release();
-			destroyComparatorGuard.release();
-		}
-
-		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
-			verifyAlloc(dest._allocator.get(), _allocator.get());
-
-			ScopeGuard destroyAllocatorGuard([&dest]() noexcept {
-				dest._allocator->decRef();
-			});
-
-			if (!peff::copyAssign(dest._comparator, _comparator))
-				return false;
-
-			ScopeGuard destroyComparatorGuard([&dest]() noexcept {
-				std::destroy_at<Comparator>(&dest._comparator);
-			});
-
-			if (_root) {
-				Node *backupRoot = (Node *)dest._root;
-				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root))) {
-					dest._root = backupRoot;
-					return false;
-				}
-				dest._deleteNodeTree(backupRoot);
-			} else {
-				dest._root = nullptr;
-			}
-			dest._allocator = _allocator;
-			dest._cachedMinNode = _getMinNode(dest._root);
-			dest._cachedMaxNode = _getMaxNode(dest._root);
-			dest._nNodes = _nNodes;
-
-			destroyAllocatorGuard.release();
-			destroyComparatorGuard.release();
 
 			return true;
 		}
@@ -355,6 +313,27 @@ namespace peff {
 		virtual inline ~RBTree() {
 			if (_root)
 				_deleteNodeTree((Node *)_root);
+		}
+
+		PEFF_FORCEINLINE ThisType& operator=(ThisType&& other) noexcept {
+			verifyAlloc(other._allocator.get(), _allocator.get());
+
+			clear();
+
+			_root = other._root;
+			_cachedMinNode = other._cachedMinNode;
+			_cachedMaxNode = other._cachedMaxNode;
+			_nNodes = other._nNodes;
+			_comparator = std::move(other._comparator);
+			_allocator = other._allocator;
+
+			other._root = nullptr;
+			other._cachedMinNode = nullptr;
+			other._cachedMaxNode = nullptr;
+			other._nNodes = 0;
+			other._allocator = nullptr;
+
+			return *this;
 		}
 
 		PEFF_FORCEINLINE Node* getMaxLteqNode(const Node* node) {
@@ -593,13 +572,13 @@ namespace peff {
 		};
 
 		PEFF_FORCEINLINE Iterator begin() {
-			return Iterator((Node *)_cachedMinNode, this, IteratorDirection::Forward);
+			return Iterator((Node *)_getMinNode(_root), this, IteratorDirection::Forward);
 		}
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(nullptr, this, IteratorDirection::Forward);
 		}
 		PEFF_FORCEINLINE Iterator beginReversed() {
-			return Iterator((Node *)_cachedMinNode, this, IteratorDirection::Reversed);
+			return Iterator((Node *)_cachedMaxNode, this, IteratorDirection::Reversed);
 		}
 		PEFF_FORCEINLINE Iterator endReversed() {
 			return Iterator(nullptr, this, IteratorDirection::Reversed);

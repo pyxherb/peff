@@ -12,19 +12,23 @@ namespace peff {
 		using ThisType = Set<T, Comparator>;
 
 	public:
+		using NodeType = typename Tree::NodeType;
+
 		PEFF_FORCEINLINE Set(Alloc *allocator = getDefaultAlloc()) : _tree(allocator) {
 		}
-		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(rhs._tree) {
+		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
 		}
 		PEFF_FORCEINLINE ~Set() {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType& dest) const {
+			constructAt<ThisType>(&dest, _tree.allocator());
 			return _tree.copy(dest._tree);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
-			return _tree.copyAssign(dest._tree);
+		[[nodiscard]] PEFF_FORCEINLINE ThisType &operator=(ThisType &&dest) noexcept {
+			_tree = std::move(dest._tree);
+			return *this;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&value) {
@@ -125,16 +129,16 @@ namespace peff {
 			}
 		};
 
-		Iterator begin() {
+		PEFF_FORCEINLINE Iterator begin() {
 			return Iterator(_tree.begin());
 		}
-		Iterator end() {
+		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(_tree.end());
 		}
-		Iterator beginReversed() {
+		PEFF_FORCEINLINE Iterator beginReversed() {
 			return Iterator(_tree.beginReversed());
 		}
-		Iterator endReversed() {
+		PEFF_FORCEINLINE Iterator endReversed() {
 			return Iterator(_tree.endReversed());
 		}
 
@@ -177,6 +181,12 @@ namespace peff {
 			}
 		};
 
+		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->begin());
+		}
+		PEFF_FORCEINLINE ConstIterator end() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->end());
+		}
 		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}

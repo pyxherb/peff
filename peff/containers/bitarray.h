@@ -19,7 +19,7 @@ namespace peff {
 		PEFF_FORCEINLINE BitArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
 		}
 		PEFF_FORCEINLINE ~BitArray() {
-			_allocator->release(_buffer, 1);
+			_allocator->release(_buffer, size(), 1);
 		}
 
 		PEFF_FORCEINLINE size_t size() {
@@ -42,11 +42,11 @@ namespace peff {
 					memcpy((void *)newBuffer, (void *)_buffer, nBytes);
 					newBuffer[nBytes - 1] &= ~(0xff >> (nBits & 7));
 				}
-				_allocator->release(_buffer, 1);
+				_allocator->release(_buffer, size(), 1);
 
 				_buffer = newBuffer;
 			} else {
-				_allocator->release(_buffer, 1);
+				_allocator->release(_buffer, size(), 1);
 			}
 			_nBits = nBits;
 

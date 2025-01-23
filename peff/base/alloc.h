@@ -13,7 +13,7 @@ namespace peff {
 		PEFF_BASE_API virtual ~Alloc();
 
 		virtual void *alloc(size_t size, size_t alignment = alignof(std::max_align_t)) noexcept = 0;
-		virtual void release(void *ptr, size_t alignment = alignof(std::max_align_t)) noexcept = 0;
+		virtual void release(void *ptr, size_t size, size_t alignment = alignof(std::max_align_t)) noexcept = 0;
 
 		virtual Alloc *getDefaultAlloc() const noexcept = 0;
 	};
@@ -23,7 +23,7 @@ namespace peff {
 		PEFF_BASE_API virtual void onRefZero() noexcept override;
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = alignof(std::max_align_t)) noexcept override;
-		PEFF_BASE_API virtual void release(void *ptr, size_t alignment) noexcept override;
+		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
@@ -38,7 +38,7 @@ namespace peff {
 		PEFF_BASE_API virtual void onRefZero() noexcept override;
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
-		PEFF_BASE_API virtual void release(void *ptr, size_t alignment) noexcept override;
+		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
@@ -52,7 +52,7 @@ namespace peff {
 	}
 
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE void constructAt(T *ptr, Args... args) {
+	PEFF_FORCEINLINE void constructAt(T *ptr, Args&&... args) {
 #ifdef new
 	#ifdef _MSC_VER
 		#pragma push_macro("new")
@@ -69,7 +69,7 @@ namespace peff {
 	}
 
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args... args) {
+	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args&&... args) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 
 		void *ptr = allocatorHolder->alloc(sizeof(T), alignment);
@@ -87,11 +87,14 @@ namespace peff {
 		return (T *)ptr;
 	}
 
+	/// @brief Destroy and release an object.
+	/// @tparam T The final type of the object
+	/// @note T must be the final type of the object, the behavior is undefined if T is not the final type.
 	template <typename T>
 	PEFF_FORCEINLINE void destroyAndRelease(Alloc *allocator, T *ptr, size_t alignment) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 		std::destroy_at<T>(ptr);
-		allocatorHolder->release((void *)ptr, alignment);
+		allocatorHolder->release((void *)ptr, sizeof(T), alignment);
 	}
 }
 

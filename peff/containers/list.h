@@ -41,7 +41,7 @@ namespace peff {
 				return nullptr;
 
 			ScopeGuard scopeGuard([this, node]() noexcept {
-				_allocator->release(node);
+				_allocator->release(node, sizeof(Node));
 			});
 			constructAt<Node>(node, std::move(data));
 			scopeGuard.release();
@@ -52,7 +52,7 @@ namespace peff {
 		PEFF_FORCEINLINE void _deleteNode(Node *node) {
 			std::destroy_at<Node>(node);
 
-			_allocator->release(node);
+			_allocator->release(node, sizeof(Node));
 		}
 
 		PEFF_FORCEINLINE void _prepend(Node *dest, Node *node) noexcept {

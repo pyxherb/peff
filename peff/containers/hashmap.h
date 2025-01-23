@@ -53,18 +53,42 @@ namespace peff {
 
 	public:
 		PEFF_FORCEINLINE HashMap(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
+		PEFF_FORCEINLINE HashMap(ThisType &&rhs) : comparator(std::move(rhs.comparator)), _set(std::move(rhs._set)) {
+		}
+
+		PEFF_FORCEINLINE ThisType& operator=(ThisType&& rhs) noexcept {
+			clear();
+
+			comparator = std::move(rhs.comparator);
+			_set = std::move(rhs._set);
+
+			return *this;
+		}
 
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
 			Pair pair = Pair{ std::move(key), std::move(value), false };
 			return _set.insert(std::move(pair));
 		}
 
-		PEFF_FORCEINLINE bool remove(const K &key) {
+		PEFF_FORCEINLINE bool insertAndResizeBuckets(K &&key, V &&value) {
+			Pair pair = Pair{ std::move(key), std::move(value), false };
+			return _set.insertAndResizeBuckets(std::move(pair));
+		}
+
+		PEFF_FORCEINLINE void remove(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			return _set.remove(*(QueryPair *)pair);
+			_set.remove(*(QueryPair *)pair);
+		}
+
+		PEFF_FORCEINLINE bool removeAndResizeBuckets(const K &key) {
+			char pair[sizeof(QueryPair)];
+
+			_constructKeyOnlyPairByCopy(key, pair);
+
+			return _set.removeAndResizeBuckets(*(QueryPair *)pair);
 		}
 
 		PEFF_FORCEINLINE bool contains(const K &key) const {
@@ -252,6 +276,12 @@ namespace peff {
 					return false;
 				}
 			}
+
+			return true;
+		}
+
+		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
+			verifyAlloc(allocator(), dest.allocator());
 
 			return true;
 		}

@@ -25,7 +25,7 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #endif
 }
 
-PEFF_BASE_API void StdAlloc::release(void *ptr, size_t alignment) noexcept {
+PEFF_BASE_API void StdAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
 #ifdef _MSC_VER
 	if (alignment > 1) {
 		_aligned_free(ptr);
@@ -56,7 +56,7 @@ PEFF_BASE_API void *VoidAlloc::alloc(size_t size, size_t alignment) noexcept {
 	return nullptr;
 }
 
-PEFF_BASE_API void VoidAlloc::release(void *ptr, size_t alignment) noexcept {
+PEFF_BASE_API void VoidAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
 	assert(("Cannot free memory by VoidAlloc", false));
 }
 

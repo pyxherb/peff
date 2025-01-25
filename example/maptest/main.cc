@@ -196,10 +196,13 @@ int main() {
 			printf("Allocated: %p\n", p1);
 			void *p2 = bufferAlloc.alloc(i * 2, i * 2);
 			printf("Allocated: %p\n", p2);
+			memset(p1, 0, i);
+			memset(p2, 0, i * 2);
 			bufferAlloc.release(p1, i, i);
 			bufferAlloc.release(p2, i * 2, i * 2);
 			void *p3 = bufferAlloc.alloc(i * 3, i * 3);
 			printf("Allocated: %p\n", p3);
+			memset(p3, 0, i * 3);
 			bufferAlloc.release(p3, i * 3, i * 3);
 		}
 	}

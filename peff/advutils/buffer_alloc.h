@@ -19,6 +19,7 @@ namespace peff {
 		struct AllocDesc : public RBTree<void *, AllocDescComparator>::Node {
 			size_t size;
 			size_t alignment;
+			AllocDesc *descBase;
 
 			PEFF_FORCEINLINE AllocDesc(void *ptr) : Node(std::move(ptr)) {}
 		};

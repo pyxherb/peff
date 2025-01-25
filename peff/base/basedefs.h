@@ -39,6 +39,8 @@
 	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...)
 #endif
 
+#define PEFF_CONTAINER_OF(t, m, p) ((t *)(((char *)p) - offsetof(t, m)))
+
 #if IS_PEFF_BASE_BUILDING
 	#define PEFF_BASE_API PEFF_DLLEXPORT
 #else

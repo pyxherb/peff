@@ -12,17 +12,20 @@ PEFF_BASE_API void BufferAlloc::onRefZero() noexcept {
 }
 
 PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
-	size_t off = 0, descSize = sizeof(AllocDesc);
+	size_t off = 0, descSize = sizeof(AllocDesc), descOff;
 
-	if (size_t alignedDiff = descSize % alignment; descSize) {
-		descSize += alignment - alignedDiff;
+	size_t actualAvailableSize = size + descSize;
+
+	if (size_t alignedDiff = actualAvailableSize % alignment; alignedDiff) {
+		actualAvailableSize += alignment - alignedDiff;
 	}
 
-	size_t actualSize = size + descSize;
-
-	if (size_t alignedDiff = actualSize % alignment; alignedDiff) {
-		actualSize += alignment - alignedDiff;
+	descOff = actualAvailableSize;
+	if (size_t alignedDiff = descOff % alignof(AllocDesc); descOff) {
+		descSize += alignof(AllocDesc) - alignedDiff;
 	}
+
+	size_t actualSize = descOff + sizeof(AllocDesc);
 
 	while (off < bufferSize) {
 		if (size_t alignedDiff = ((uintptr_t)(buffer + off)) % alignment; alignedDiff) {
@@ -36,9 +39,9 @@ PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 			AllocDesc *bottomDesc = (AllocDesc *)allocDescs.getMaxLteqNode(&queryDesc);
 
 			if (bottomDesc) {
-				size_t bottomDescOff = (((char *)bottomDesc) - buffer);
-				if (bottomDescOff + bottomDesc->size >= off) {
-					off = (((char *)bottomDesc->value) - buffer) + bottomDesc->size;
+				size_t bottomDescOff = (((char*)bottomDesc->descBase) - buffer);
+				if (bottomDescOff + sizeof(AllocDesc) > off) {
+					off = bottomDescOff + sizeof(AllocDesc);
 					continue;
 				}
 			}
@@ -49,9 +52,9 @@ PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 			AllocDesc *topDesc = (AllocDesc *)allocDescs.getMaxLteqNode(&queryDesc);
 
 			if (topDesc) {
-				size_t topDescOff = (((char *)topDesc) - buffer);
-				if (topDescOff + topDesc->size >= off) {
-					off = (((char *)topDesc->value) - buffer) + topDesc->size;
+				size_t topDescOff = (((char*)topDesc->descBase) - buffer);
+				if (topDescOff + sizeof(AllocDesc) > off) {
+					off = topDescOff + sizeof(AllocDesc);
 					continue;
 				}
 			}
@@ -62,18 +65,19 @@ PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 	return nullptr;
 
 succeeded:
-	char *ptr = buffer + off, *availablePtr = ptr + descSize;
-	constructAt<AllocDesc>((AllocDesc*)ptr, (AllocDesc*)availablePtr);
+	char *ptr = buffer + off, *allocDescRawPtr = ptr + descOff;
+	constructAt<AllocDesc>((AllocDesc*)allocDescRawPtr, (AllocDesc*)ptr);
 
-	AllocDesc *allocDescPtr = (AllocDesc*)ptr;
+	AllocDesc *allocDescPtr = (AllocDesc*)allocDescRawPtr;
 
 	allocDescPtr->size = size;
 	allocDescPtr->alignment = alignment;
+	allocDescPtr->descBase = allocDescPtr;
 
-	bool result = allocDescs.insert((RBTree<void*, AllocDescComparator>::Node*)ptr);
+	bool result = allocDescs.insert((RBTree<void*, AllocDescComparator>::Node*)allocDescRawPtr);
 	assert(result);
 
-	return availablePtr;
+	return ptr;
 }
 
 PEFF_BASE_API void BufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {

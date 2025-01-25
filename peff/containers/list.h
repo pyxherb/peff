@@ -130,7 +130,7 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
 		PEFF_FORCEINLINE ~List() {
-			for (Node* i = _first; i != nullptr;) {
+			for (Node *i = _first; i != nullptr;) {
 				Node *next = i->next;
 
 				_deleteNode(i);
@@ -612,6 +612,10 @@ namespace peff {
 			return endConst();
 		}
 
+		PEFF_FORCEINLINE Alloc *allocator() const {
+			return _allocator;
+		}
+
 		PEFF_FORCEINLINE bool build(const std::initializer_list<T> &initializerList) {
 			clear();
 
@@ -619,14 +623,14 @@ namespace peff {
 				clear();
 			});
 
-			for(auto i = initializerList.begin(); i != initializerList.end(); ++i) {
+			for (auto i = initializerList.begin(); i != initializerList.end(); ++i) {
 				Uninitialized<T> copiedData;
 
-				if(!copiedData.copyFrom(*i))
+				if (!copiedData.copyFrom(*i))
 					return false;
 
 				Node *node = _allocNode(copiedData.release());
-				if(!node)
+				if (!node)
 					return false;
 
 				_append(_last, node);

@@ -204,6 +204,8 @@ namespace peff {
 					copyInfoStack.remove(copyInfoStack.lastNode());
 			}
 
+			deleteNewTreeGuard.release();
+
 			return newNode;
 		}
 

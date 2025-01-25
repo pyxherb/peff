@@ -54,7 +54,7 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE static bool _resizeBuckets(size_t newSize, BucketsType &oldBuckets, BucketsType &newBuckets) {
 			{
-				Bucket fillerBucket(oldBuckets.allocator());
+				Bucket fillerBucket(newBuckets.allocator());
 				if (!newBuckets.resizeWith(newSize, fillerBucket)) {
 					return false;
 				}
@@ -140,7 +140,8 @@ namespace peff {
 		/// @return true for succeeded, false if failed.
 		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data, bool forceResizeBuckets) {
 			if (!_buckets.size()) {
-				if (!_buckets.resize(1)) {
+				Bucket fillerBucket(_buckets.allocator());
+				if (!_buckets.resizeWith(1, fillerBucket)) {
 					return false;
 				}
 			}
@@ -157,8 +158,8 @@ namespace peff {
 			if (!bucket.pushFront(Element(std::move(tmpData), hashCode)))
 				return false;
 
-			if (forceResizeBuckets) {
-				if (!_checkAndResizeBuckets()) {
+			if (!_checkAndResizeBuckets()) {
+				if (forceResizeBuckets) {
 					bucket.popFront();
 					return false;
 				}
@@ -176,6 +177,7 @@ namespace peff {
 			HashCode hashCode = _hasher(data);
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
+			peff::RcObjectPtr<Alloc> alloc = bucket.allocator();
 
 			typename Bucket::NodeHandle node = _getBucketSlot(bucket, data);
 			if (node) {
@@ -183,14 +185,13 @@ namespace peff {
 
 				bucket.detach(node);
 
-				Bucket deleterBucket(allocator());	// TODO: Use allocator() method in the `Bucket` type.
+				Bucket deleterBucket(alloc.get());
 
 				if (!_checkAndResizeBuckets()) {
 					if (forceResizeBuckets) {
 						if (nextNode) {
-							if (!bucket.insertFront(nextNode, node)) {
-								return false;
-							}
+							typename Bucket::NodeHandle node = bucket.insertFront(nextNode, node);
+							assert(node);
 						} else {
 							bucket.pushFront(node);
 						}
@@ -600,6 +601,8 @@ namespace peff {
 					return false;
 				}
 			}
+
+			clearDestGuard.release();
 
 			return true;
 		}

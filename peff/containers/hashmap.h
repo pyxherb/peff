@@ -277,6 +277,8 @@ namespace peff {
 				}
 			}
 
+			clearDestGuard.release();
+
 			return true;
 		}
 

@@ -14,21 +14,24 @@ struct SomethingUncopyable {
 	peff::String s;
 };
 
+char g_buffer[1048576];
+
 int main() {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	peff::String s;
+	peff::BufferAlloc globalBufferAlloc(g_buffer, sizeof(g_buffer));
+
+	peff::String s(&globalBufferAlloc);
 	s.resize(3);
 	memcpy(s.data(), "123", 3);
 	assert(s == "123");
 
-	peff::DynArray<SomethingUncopyable> a;
+	peff::DynArray<SomethingUncopyable> a(&globalBufferAlloc);
 
-	peff::StdAlloc myStdAlloc;
 	{
-		peff::Set<int> map;
+		peff::Set<int> map(&globalBufferAlloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -54,7 +57,7 @@ int main() {
 
 			map.verify();
 		}
-		peff::Set<int> map2(&myStdAlloc);
+		peff::Set<int> map2(&globalBufferAlloc);
 		if (!peff::copyAssign(map2, map))
 			throw std::bad_alloc();
 
@@ -64,7 +67,7 @@ int main() {
 		}
 	}
 	{
-		peff::HashSet<int> map;
+		peff::HashSet<int> map(&globalBufferAlloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -102,12 +105,12 @@ int main() {
 		}*/
 	}
 	{
-		peff::Map<int, peff::String> map;
+		peff::Map<int, peff::String> map(&globalBufferAlloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
 
-			peff::String s;
+			peff::String s(&globalBufferAlloc);
 			{
 				std::string stdString = std::to_string(j);
 				if (!s.resize(stdString.size()))
@@ -130,8 +133,8 @@ int main() {
 	}
 
 	{
-		peff::DynArray<int> arr;
-		peff::String str;
+		peff::DynArray<int> arr(&globalBufferAlloc);
+		peff::String str(&globalBufferAlloc);
 
 		for (int i = 0; i < 32; i++) {
 			int tmp = i;
@@ -173,7 +176,7 @@ int main() {
 	}
 
 	{
-		peff::BitArray bitArr;
+		peff::BitArray bitArr(&globalBufferAlloc);
 
 		bitArr.resize(64);
 
@@ -191,7 +194,7 @@ int main() {
 		char buffer[32768];
 		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
 
-		for(size_t i = 1 ; i < 1024; ++i) {
+		for (size_t i = 1; i < 1024; ++i) {
 			void *p1 = bufferAlloc.alloc(i, i);
 			printf("Allocated: %p\n", p1);
 			void *p2 = bufferAlloc.alloc(i * 2, i * 2);

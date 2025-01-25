@@ -7,6 +7,7 @@
 #include <peff/containers/hashmap.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
+#include <peff/advutils/buffer_alloc.h>
 #include <iostream>
 
 struct SomethingUncopyable {
@@ -181,6 +182,25 @@ int main() {
 
 		for (size_t i = 0; i < bitArr.bitSize(); ++i) {
 			printf("%s", bitArr.getBit(i) ? "1" : "0");
+		}
+
+		puts("");
+	}
+
+	{
+		char buffer[8192];
+		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
+
+		for(size_t i = 1 ; i < 1024; ++i) {
+			void *p1 = bufferAlloc.alloc(i, i);
+			printf("Allocated: %p\n", p1);
+			void *p2 = bufferAlloc.alloc(i * 2, i * 2);
+			printf("Allocated: %p\n", p2);
+			bufferAlloc.release(p1, i, i);
+			bufferAlloc.release(p2, i * 2, i * 2);
+			void *p3 = bufferAlloc.alloc(i * 3, i * 3);
+			printf("Allocated: %p\n", p3);
+			bufferAlloc.release(p3, i * 3, i * 3);
 		}
 	}
 

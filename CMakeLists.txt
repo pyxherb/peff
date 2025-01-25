@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(peff VERSION 0.1.0)
 
+include_directories(BEFORE SYSTEM ${PROJECT_SOURCE_DIR})
+
 add_subdirectory("peff")
 add_subdirectory("example")
 

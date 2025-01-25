@@ -8,73 +8,6 @@
 
 namespace peff {
 	template <typename T>
-	class Uninitialized final {
-	private:
-		char _buf[sizeof(T)];
-		bool _inited;
-
-	public:
-		PEFF_FORCEINLINE explicit Uninitialized() {
-			_inited = false;
-		}
-		Uninitialized(const Uninitialized<T> &) = delete;
-		PEFF_FORCEINLINE explicit Uninitialized(Uninitialized<T> &&rhs) {
-			if ((_inited = rhs._inited)) {
-				memmove(_buf, rhs._buf, sizeof(T));
-				rhs._inited = false;
-			}
-		}
-		PEFF_FORCEINLINE ~Uninitialized() {
-			if (_inited) {
-				std::destroy_at<T>((T *)_buf);
-			}
-		}
-		PEFF_FORCEINLINE T &operator*() {
-			assert(("The value has not initialized yet", _inited));
-			return *(T *)_buf;
-		}
-		PEFF_FORCEINLINE const T &operator*() const {
-			assert(("The value has not initialized yet", _inited));
-			return *(T *)_buf;
-		}
-		PEFF_FORCEINLINE T *operator->() {
-			assert(("The value has not initialized yet", _inited));
-			return (T *)_buf;
-		}
-		PEFF_FORCEINLINE const T *operator->() const {
-			assert(("The value has not initialized yet", _inited));
-			return (T *)_buf;
-		}
-		PEFF_FORCEINLINE T &&release() {
-			assert(("The value has not initialized yet", _inited));
-			_inited = false;
-			return std::move(*(T *)_buf);
-		}
-		PEFF_FORCEINLINE T *data() {
-			return (T *)_buf;
-		}
-		PEFF_FORCEINLINE const T *data() const {
-			return (T *)_buf;
-		}
-		PEFF_FORCEINLINE bool inited() const {
-			return _inited;
-		}
-		PEFF_FORCEINLINE bool copyFrom(const T &src) {
-			assert(!_inited);
-			if (!copy(*(T *)_buf, src)) {
-				return false;
-			}
-			_inited = true;
-			return true;
-		}
-		PEFF_FORCEINLINE void moveFrom(T &&src) {
-			assert(!_inited);
-			constructAt((T *)_buf, std::move(src));
-			_inited = true;
-		}
-	};
-
-	template <typename T>
 	PEFF_FORCEINLINE bool copy(T &out, const T &in) {
 		if constexpr (IsCopyable<T>::value) {
 			return in.copy(out);
@@ -146,6 +79,73 @@ namespace peff {
 		out = in;
 		return true;
 	}
+
+	template <typename T>
+	class Uninitialized final {
+	private:
+		char _buf[sizeof(T)];
+		bool _inited;
+
+	public:
+		PEFF_FORCEINLINE explicit Uninitialized() {
+			_inited = false;
+		}
+		Uninitialized(const Uninitialized<T> &) = delete;
+		PEFF_FORCEINLINE explicit Uninitialized(Uninitialized<T> &&rhs) {
+			if ((_inited = rhs._inited)) {
+				memmove(_buf, rhs._buf, sizeof(T));
+				rhs._inited = false;
+			}
+		}
+		PEFF_FORCEINLINE ~Uninitialized() {
+			if (_inited) {
+				std::destroy_at<T>((T *)_buf);
+			}
+		}
+		PEFF_FORCEINLINE T &operator*() {
+			assert(("The value has not initialized yet", _inited));
+			return *(T *)_buf;
+		}
+		PEFF_FORCEINLINE const T &operator*() const {
+			assert(("The value has not initialized yet", _inited));
+			return *(T *)_buf;
+		}
+		PEFF_FORCEINLINE T *operator->() {
+			assert(("The value has not initialized yet", _inited));
+			return (T *)_buf;
+		}
+		PEFF_FORCEINLINE const T *operator->() const {
+			assert(("The value has not initialized yet", _inited));
+			return (T *)_buf;
+		}
+		PEFF_FORCEINLINE T &&release() {
+			assert(("The value has not initialized yet", _inited));
+			_inited = false;
+			return std::move(*(T *)_buf);
+		}
+		PEFF_FORCEINLINE T *data() {
+			return (T *)_buf;
+		}
+		PEFF_FORCEINLINE const T *data() const {
+			return (T *)_buf;
+		}
+		PEFF_FORCEINLINE bool inited() const {
+			return _inited;
+		}
+		PEFF_FORCEINLINE bool copyFrom(const T &src) {
+			assert(!_inited);
+			if (!copy(*(T *)_buf, src)) {
+				return false;
+			}
+			_inited = true;
+			return true;
+		}
+		PEFF_FORCEINLINE void moveFrom(T &&src) {
+			assert(!_inited);
+			constructAt((T *)_buf, std::move(src));
+			_inited = true;
+		}
+	};
 
 	template <typename T>
 	PEFF_FORCEINLINE bool copyAssign(T &out, const T &in) {

@@ -263,14 +263,15 @@ namespace peff {
 			++_nNodes;
 		}
 
-		PEFF_FORCEINLINE void _remove(Node *node) {
-			AbstractNode *y = _removeFixUp(node);
-			_deleteSingleNode((Node *)y);
+		PEFF_FORCEINLINE Node *_remove(Node *node) {
+			Node *y = (Node*)_removeFixUp(node);
 
 			_cachedMinNode = _getMinNode(_root);
 			_cachedMaxNode = _getMaxNode(_root);
 
 			--_nNodes;
+
+			return y;
 		}
 
 	public:
@@ -315,7 +316,7 @@ namespace peff {
 				_deleteNodeTree((Node *)_root);
 		}
 
-		PEFF_FORCEINLINE ThisType& operator=(ThisType&& other) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
 			verifyAlloc(other._allocator.get(), _allocator.get());
 
 			clear();
@@ -336,13 +337,13 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE Node* getMaxLteqNode(const Node* node) {
-			Node *curNode = (Node*)_root, *maxNode = NULL;
+		PEFF_FORCEINLINE Node *getMaxLteqNode(const Node *node) {
+			Node *curNode = (Node *)_root, *maxNode = NULL;
 
 			while (curNode) {
 				if (_comparator(curNode->value, node->value)) {
 					maxNode = curNode;
-					curNode = (Node*)curNode->r;
+					curNode = (Node *)curNode->r;
 				} else if (_comparator(node->value, curNode->value)) {
 					curNode = (Node *)curNode->l;
 				} else
@@ -358,16 +359,6 @@ namespace peff {
 
 		PEFF_FORCEINLINE const Node *get(const T &key) const {
 			return const_cast<ThisType *>(this)->_get(key);
-		}
-
-		PEFF_FORCEINLINE Node *get(T &&key) {
-			T k = key;
-			return get(k);
-		}
-
-		PEFF_FORCEINLINE const Node *get(T &&key) const {
-			T k = key;
-			return get(k);
 		}
 
 		/// @brief Insert a node into the tree.
@@ -399,8 +390,10 @@ namespace peff {
 			return node;
 		}
 
-		PEFF_FORCEINLINE void remove(Node *node) {
-			_remove(node);
+		PEFF_FORCEINLINE void remove(Node *node, bool deleteNode = true) {
+			Node *y = _remove(node);
+			if (deleteNode)
+				_deleteSingleNode((Node *)y);
 		}
 
 		PEFF_FORCEINLINE void remove(const T &key) {
@@ -420,7 +413,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
-			return const_cast<ThisType*>(this)->_allocator.get();
+			return const_cast<ThisType *>(this)->_allocator.get();
 		}
 
 		PEFF_FORCEINLINE void verify() {
@@ -665,7 +658,7 @@ namespace peff {
 		};
 
 		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
-			return ConstIterator(const_cast<ThisType*>(this)->begin());
+			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
 		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());

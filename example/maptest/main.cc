@@ -188,7 +188,7 @@ int main() {
 	}
 
 	{
-		char buffer[8192];
+		char buffer[32768];
 		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
 
 		for(size_t i = 1 ; i < 1024; ++i) {

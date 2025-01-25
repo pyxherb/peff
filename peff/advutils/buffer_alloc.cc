@@ -27,7 +27,7 @@ PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 
 	size_t actualSize = descOff + sizeof(AllocDesc);
 
-	while (off < bufferSize) {
+	while (off < (bufferSize - actualSize)) {
 		if (size_t alignedDiff = ((uintptr_t)(buffer + off)) % alignment; alignedDiff) {
 			off += alignment - alignedDiff;
 			continue;

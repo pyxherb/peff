@@ -5,16 +5,9 @@
 #include <type_traits>
 
 namespace peff {
-	class Deallocable {
-	public:
-		PEFF_BASE_API Deallocable() noexcept;
-		PEFF_BASE_API virtual ~Deallocable();
-
-		virtual void dealloc() = 0;
-	};
-
+	template<typename T>
 	struct DeallocableDeleter {
-		PEFF_FORCEINLINE void operator()(Deallocable *ptr) {
+		PEFF_FORCEINLINE void operator()(T *ptr) {
 			if (ptr)
 				ptr->dealloc();
 		}

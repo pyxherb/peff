@@ -115,6 +115,14 @@ namespace peff {
 			_dynArray.extractRange(idxStart, idxEnd + 1);
 		}
 
+		PEFF_FORCEINLINE bool build(const std::string_view &src) {
+			clear();
+			if(!resize(src.size()))
+				return false;
+			memcpy(_dynArray.data(), src.data(), src.size());
+			return true;
+		}
+
 		PEFF_FORCEINLINE Iterator begin() {
 			return _dynArray.begin();
 		}

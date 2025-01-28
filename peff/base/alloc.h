@@ -47,12 +47,14 @@ namespace peff {
 	extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
 
 	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
-		// Check if the allocators have the same type.
-		assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
+		if (x && y) {
+			// Check if the allocators have the same type.
+			assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
+		}
 	}
 
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE void constructAt(T *ptr, Args&&... args) {
+	PEFF_FORCEINLINE void constructAt(T *ptr, Args &&...args) {
 #ifdef new
 	#ifdef _MSC_VER
 		#pragma push_macro("new")
@@ -69,7 +71,7 @@ namespace peff {
 	}
 
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args&&... args) {
+	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args &&...args) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 
 		void *ptr = allocatorHolder->alloc(sizeof(T), alignment);

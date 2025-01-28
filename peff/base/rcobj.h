@@ -81,6 +81,26 @@ namespace peff {
 		PEFF_FORCEINLINE T *get() const noexcept {
 			return _ptr;
 		}
+		PEFF_FORCEINLINE T *&getRef() noexcept {
+			reset();
+			return _ptr;
+		}
+		PEFF_FORCEINLINE T *&getRefWithoutRelease() noexcept {
+			return _ptr;
+		}
+		PEFF_FORCEINLINE T *const &getRefWithoutRelease() const noexcept {
+			return _ptr;
+		}
+		PEFF_FORCEINLINE T **getAddressOf() noexcept {
+			reset();
+			return &_ptr;
+		}
+		PEFF_FORCEINLINE T **getAddressOfWithoutRelease() noexcept {
+			return &_ptr;
+		}
+		PEFF_FORCEINLINE T *const *getAddressOfWithoutRelease() const noexcept {
+			return &_ptr;
+		}
 		PEFF_FORCEINLINE T *operator->() const noexcept {
 			return _ptr;
 		}

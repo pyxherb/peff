@@ -169,7 +169,7 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length, bool construct) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length, bool construct, bool forceResizeCapacity) {
 			if (length == _length)
 				return true;
 
@@ -217,8 +217,13 @@ namespace peff {
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
 
-				if (!newData)
-					return false;
+				if (!newData) {
+					if (forceResizeCapacity) {
+						return false;
+					}
+					_length = length;
+					return true;
+				}
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
 					memmove(newData, _data, sizeof(T) * length);
@@ -254,7 +259,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _resizeWith(size_t length, const T &filler) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _resizeWith(size_t length, const T &filler, bool forceResizeCapacity) {
 			if (length == _length)
 				return true;
 
@@ -295,8 +300,13 @@ namespace peff {
 					   newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
 
-				if (!newData)
-					return false;
+				if (!newData) {
+					if (forceResizeCapacity) {
+						return false;
+					}
+					_length = length;
+					return true;
+				}
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
 					memmove(newData, _data, sizeof(T) * length);
@@ -434,12 +444,37 @@ namespace peff {
 
 			if (idxStart) {
 				_moveData(_data, _data + idxStart, newLength);
-				if (!_resize(newLength, false)) {
+				if (!_resize(newLength, false, false)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
 				}
 			} else {
-				if (!_resize(newLength, false)) {
+				if (!_resize(newLength, false, false)) {
+					// Destruct the trailing elements.
+					_destructData(_data + idxStart, idxEnd - idxStart);
+				}
+			}
+		}
+
+		PEFF_FORCEINLINE void extractRangeAndResizeCapacity(size_t idxStart, size_t idxEnd) {
+			const size_t newLength = idxEnd - idxStart;
+
+			if (newLength == _length)
+				return;
+
+			if (!newLength) {
+				clear();
+				return;
+			}
+
+			if (idxStart) {
+				_moveData(_data, _data + idxStart, newLength);
+				if (!_resize(newLength, false, true)) {
+					// Change the length, but keep the capacity unchanged.
+					_length = newLength;
+				}
+			} else {
+				if (!_resize(newLength, false, true)) {
 					// Destruct the trailing elements.
 					_destructData(_data + idxStart, idxEnd - idxStart);
 				}
@@ -459,7 +494,7 @@ namespace peff {
 				oldLength = _length,
 				newLength = _length + length;
 
-			if (!_resize(newLength, construct))
+			if (!_resize(newLength, construct, false))
 				return nullptr;
 
 			T *gapStart = &_data[index];
@@ -519,7 +554,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, _allocator);
 
-			if (!dest._resize(_length, false)) {
+			if (!dest._resize(_length, false, true)) {
 				return false;
 			}
 
@@ -548,11 +583,19 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool resize(size_t length) {
-			return _resize(length, true);
+			return _resize(length, true, false);
+		}
+
+		PEFF_FORCEINLINE bool resizeAndResizeCapacity(size_t length) {
+			return _resize(length, true, true);
 		}
 
 		PEFF_FORCEINLINE bool resizeWith(size_t length, const T &filler) {
-			return _resizeWith(length, filler);
+			return _resizeWith(length, filler, false);
+		}
+
+		PEFF_FORCEINLINE bool resizeWithAndResizeCapacity(size_t length, const T &filler) {
+			return _resizeWith(length, filler, true);
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -560,10 +603,12 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE T &at(size_t index) {
+			assert(index < _length);
 			return _data[index];
 		}
 
 		PEFF_FORCEINLINE const T &at(size_t index) const {
+			assert(index < _length);
 			return _data[index];
 		}
 
@@ -612,7 +657,11 @@ namespace peff {
 			return at(_length - 1);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popBack() {
+		PEFF_FORCEINLINE void popBack() {
+			bool unused = resize(_length - 1);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndResizeCapacity() {
 			return resize(_length - 1);
 		}
 

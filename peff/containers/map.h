@@ -123,6 +123,17 @@ namespace peff {
 				return _iterator != rhs._iterator;
 			}
 
+			PEFF_FORCEINLINE Iterator &operator--() {
+				--_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE Iterator operator--(int) {
+				Iterator it = *this;
+				--*this;
+				return it;
+			}
+
 			PEFF_FORCEINLINE Iterator &operator++() {
 				++_iterator;
 				return *this;
@@ -209,11 +220,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
-			char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
-			return ConstIterator(_set.find(*(QueryPair *)pair));
+			return const_cast<ThisType*>(this)->find(key);
 		}
 
 		PEFF_FORCEINLINE Iterator find(const K &key) {
@@ -222,6 +229,18 @@ namespace peff {
 			_constructKeyOnlyPairByCopy(key, pair);
 
 			return Iterator(_set.find(*(QueryPair *)pair));
+		}
+
+		PEFF_FORCEINLINE ConstIterator findMaxLteq(const K &key) const {
+			return const_cast<ThisType*>(this)->findMaxLteq(key);
+		}
+
+		PEFF_FORCEINLINE Iterator findMaxLteq(const K &key) {
+			char pair[sizeof(QueryPair)];
+
+			_constructKeyOnlyPairByCopy(key, pair);
+
+			return Iterator(_set.findMaxLteq(*(QueryPair *)pair));
 		}
 
 		PEFF_FORCEINLINE bool build(const std::initializer_list<std::pair<K, V>> &initializerList) noexcept {

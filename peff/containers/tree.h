@@ -339,14 +339,14 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE Node *getMaxLteqNode(const Node *node) {
+		PEFF_FORCEINLINE Node *getMaxLteqNode(const T &data) {
 			Node *curNode = (Node *)_root, *maxNode = NULL;
 
 			while (curNode) {
-				if (_comparator(curNode->value, node->value)) {
+				if (_comparator(curNode->value, data)) {
 					maxNode = curNode;
 					curNode = (Node *)curNode->r;
-				} else if (_comparator(node->value, curNode->value)) {
+				} else if (_comparator(data, curNode->value)) {
 					curNode = (Node *)curNode->l;
 				} else
 					return curNode;

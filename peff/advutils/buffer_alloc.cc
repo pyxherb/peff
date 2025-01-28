@@ -34,9 +34,7 @@ PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 		}
 
 		{
-			AllocDesc queryDesc((AllocDesc *)buffer + off);
-
-			AllocDesc *bottomDesc = (AllocDesc *)allocDescs.getMaxLteqNode(&queryDesc);
+			AllocDesc *bottomDesc = (AllocDesc *)allocDescs.getMaxLteqNode(buffer + off);
 
 			if (bottomDesc) {
 				size_t bottomDescOff = (((char*)bottomDesc->descBase) - buffer);
@@ -47,9 +45,7 @@ PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 			}
 		}
 		{
-			AllocDesc queryDesc((AllocDesc *)buffer + off + actualSize);
-
-			AllocDesc *topDesc = (AllocDesc *)allocDescs.getMaxLteqNode(&queryDesc);
+			AllocDesc *topDesc = (AllocDesc *)allocDescs.getMaxLteqNode(buffer + off + actualSize);
 
 			if (topDesc) {
 				size_t topDescOff = (((char*)topDesc->descBase) - buffer);

@@ -120,6 +120,17 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE Iterator &operator--() {
+				--_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE Iterator operator--(int) {
+				Iterator it = *this;
+				--*this;
+				return it;
+			}
+
 			PEFF_FORCEINLINE T &operator*() const {
 				return *_iterator;
 			}
@@ -205,10 +216,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
-			if (auto node = _tree.get(key); node) {
-				return ConstIterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
-			}
-			return _tree.end();
+			return const_cast<ThisType*>(this)->findMaxLteqNode(key);
 		}
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {
@@ -216,6 +224,17 @@ namespace peff {
 				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
 			}
 			return _tree.end();
+		}
+
+		PEFF_FORCEINLINE Iterator findMaxLteq(const T &key) {
+			if (auto node = _tree.getMaxLteqNode(key); node) {
+				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
+			}
+			return _tree.end();
+		}
+
+		PEFF_FORCEINLINE ConstIterator findMaxLteq(const T &key) const {
+			return const_cast<ThisType*>(this)->findMaxLteq(key);
 		}
 
 		PEFF_FORCEINLINE void remove(const Iterator &iterator) {

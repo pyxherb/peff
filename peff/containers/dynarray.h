@@ -78,13 +78,13 @@ namespace peff {
 			}
 		}
 
+		template<bool construct>
 		[[nodiscard]] PEFF_FORCEINLINE bool _expandTo(
 			T *newData,
-			size_t length,
-			bool construct) {
+			size_t length) {
 			assert(length > _length);
 
-			if (construct) {
+			if constexpr (construct) {
 				// Because construction of new objects may throw exceptions,
 				// we choose to construct the new objects first.
 				size_t idxLastConstructedObject;
@@ -169,7 +169,8 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length, bool construct, bool forceResizeCapacity) {
+		template<bool construct>
+		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length, bool forceResizeCapacity) {
 			if (length == _length)
 				return true;
 
@@ -198,7 +199,7 @@ namespace peff {
 							_allocator->release(newData, newCapacityTotalSize, sizeof(std::max_align_t));
 						});
 
-					if (!_expandTo(newData, length, construct))
+					if (!_expandTo<construct>(newData, length))
 						return false;
 
 					scopeGuard.release();
@@ -245,7 +246,7 @@ namespace peff {
 			} else {
 				if (length > _length) {
 					if constexpr (!std::is_trivially_constructible_v<T>) {
-						if (!_expandTo(_data, length, construct))
+						if (!_expandTo<construct>(_data, length))
 							return false;
 					}
 				} else {
@@ -444,12 +445,12 @@ namespace peff {
 
 			if (idxStart) {
 				_moveData(_data, _data + idxStart, newLength);
-				if (!_resize(newLength, false, false)) {
+				if (!_resize<false>(newLength, false)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
 				}
 			} else {
-				if (!_resize(newLength, false, false)) {
+				if (!_resize<false>(newLength, false)) {
 					// Destruct the trailing elements.
 					_destructData(_data + idxStart, idxEnd - idxStart);
 				}
@@ -469,12 +470,12 @@ namespace peff {
 
 			if (idxStart) {
 				_moveData(_data, _data + idxStart, newLength);
-				if (!_resize(newLength, false, true)) {
+				if (!_resize<false>(newLength, true)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
 				}
 			} else {
-				if (!_resize(newLength, false, true)) {
+				if (!_resize<false>(newLength, true)) {
 					// Destruct the trailing elements.
 					_destructData(_data + idxStart, idxEnd - idxStart);
 				}
@@ -486,15 +487,15 @@ namespace peff {
 		/// @param length Length of space to reserve.
 		/// @param construct Determines if to construct objects.
 		/// @return Pointer to the reserved area.
+		template<bool construct>
 		[[nodiscard]] PEFF_FORCEINLINE T *_reserveSlots(
 			size_t index,
-			size_t length,
-			bool construct) {
+			size_t length) {
 			const size_t
 				oldLength = _length,
 				newLength = _length + length;
 
-			if (!_resize(newLength, construct, false))
+			if (!_resize<construct>(newLength, false))
 				return nullptr;
 
 			T *gapStart = &_data[index];
@@ -511,7 +512,7 @@ namespace peff {
 						oldLength - index);
 				}
 
-				if (construct) {
+				if constexpr (construct) {
 					_constructData(gapStart, length);
 				}
 			}
@@ -554,7 +555,7 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, _allocator);
 
-			if (!dest._resize(_length, false, true)) {
+			if (!dest._resize<false>(_length, true)) {
 				return false;
 			}
 
@@ -583,11 +584,11 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool resize(size_t length) {
-			return _resize(length, true, false);
+			return _resize<true>(length, false);
 		}
 
 		PEFF_FORCEINLINE bool resizeAndResizeCapacity(size_t length) {
-			return _resize(length, true, true);
+			return _resize<true>(length, true);
 		}
 
 		PEFF_FORCEINLINE bool resizeWith(size_t length, const T &filler) {
@@ -617,13 +618,13 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool reserveSlots(size_t index, size_t length) {
-			if (!_reserveSlots(index, length, true))
+			if (!_reserveSlots<true>(index, length))
 				return false;
 			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(size_t index, T &&data) {
-			T *gap = (T *)_reserveSlots(index, 1, false);
+			T *gap = (T *)_reserveSlots<false>(index, 1);
 
 			if (!gap)
 				return false;

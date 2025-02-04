@@ -98,7 +98,8 @@ namespace peff {
 
 			if (dest == _first) {
 				_first = dest->next;
-			} else if (dest == _last) {
+			}
+			if (dest == _last) {
 				_last = dest->prev;
 			}
 

@@ -22,7 +22,7 @@ namespace peff {
 		struct PairComparator {
 			Eq eqComparator;
 
-			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<K>(), std::declval<K>())) operator()(const Pair & lhs, const Pair & rhs) const {
+			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<K>(), std::declval<K>())) operator()(const Pair &lhs, const Pair &rhs) const {
 				const K &l = lhs.isForQuery ? *((const QueryPair &)lhs).queryKey : lhs.key,
 						&r = rhs.isForQuery ? *((const QueryPair &)rhs).queryKey : rhs.key;
 				return eqComparator(l, r);
@@ -32,7 +32,7 @@ namespace peff {
 		struct PairHasher {
 			Hasher hasher;
 
-			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const Pair & pair) const {
+			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const Pair &pair) const {
 				const K &k = pair.isForQuery ? *((const QueryPair &)pair).queryKey : pair.key;
 				return hasher(k);
 			}
@@ -56,7 +56,7 @@ namespace peff {
 		PEFF_FORCEINLINE HashMap(ThisType &&rhs) : comparator(std::move(rhs.comparator)), _set(std::move(rhs._set)) {
 		}
 
-		PEFF_FORCEINLINE ThisType& operator=(ThisType&& rhs) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
 			clear();
 
 			comparator = std::move(rhs.comparator);
@@ -232,13 +232,21 @@ namespace peff {
 		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
 		}
+		PEFF_FORCEINLINE ConstIterator begin() const {
+			return beginConst();
+		}
+		PEFF_FORCEINLINE ConstIterator end() const {
+			return endConst();
+		}
+		PEFF_FORCEINLINE ConstIterator beginReversed() const {
+			return beginConstReversed();
+		}
+		PEFF_FORCEINLINE ConstIterator endReversed() const {
+			return endConstReversed();
+		}
 
 		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
-			char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
-			return ConstIterator(_set.find(*(QueryPair *)pair));
+			return ConstIterator(const_cast<ThisType *>(this)->find(key));
 		}
 
 		PEFF_FORCEINLINE Iterator find(const K &key) {

@@ -28,8 +28,8 @@ namespace peff {
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
 
-	extern StdAlloc g_stdAlloc;
-	extern RcObjectPtr<StdAlloc> g_stdAllocKeeper;
+	PEFF_BASE_API extern StdAlloc g_stdAlloc;
+	PEFF_BASE_API extern RcObjectPtr<StdAlloc> g_stdAllocKeeper;
 
 	PEFF_BASE_API StdAlloc *getDefaultAlloc() noexcept;
 
@@ -43,8 +43,8 @@ namespace peff {
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
 
-	extern VoidAlloc g_voidAlloc;
-	extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
+	PEFF_BASE_API extern VoidAlloc g_voidAlloc;
+	PEFF_BASE_API extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
 
 	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
 		if (x && y) {

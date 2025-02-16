@@ -3,8 +3,8 @@
 
 using namespace peff;
 
-StdAlloc peff::g_stdAlloc;
-RcObjectPtr<StdAlloc> peff::g_stdAllocKeeper(&g_stdAlloc);
+PEFF_BASE_API StdAlloc peff::g_stdAlloc;
+PEFF_BASE_API RcObjectPtr<StdAlloc> peff::g_stdAllocKeeper(&g_stdAlloc);
 
 PEFF_BASE_API Alloc::~Alloc() {}
 
@@ -45,8 +45,8 @@ PEFF_BASE_API StdAlloc* peff::getDefaultAlloc() noexcept {
 	return &g_stdAlloc;
 }
 
-VoidAlloc peff::g_voidAlloc;
-RcObjectPtr<VoidAlloc> peff::g_voidAllocKeeper(&g_voidAlloc);
+PEFF_BASE_API VoidAlloc peff::g_voidAlloc;
+PEFF_BASE_API RcObjectPtr<VoidAlloc> peff::g_voidAllocKeeper(&g_voidAlloc);
 
 PEFF_BASE_API void VoidAlloc::onRefZero() noexcept {
 }

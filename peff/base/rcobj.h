@@ -2,13 +2,22 @@
 #define _PEFF_BASE_RCOBJ_H_
 
 #include "basedefs.h"
+#include <mutex>
 #include <cstddef>
 #include <atomic>
 
 namespace peff {
+	struct BaseWeakRcObjectPtr;
+
 	class RcObject {
+	private:
+		PEFF_BASE_API void _onRefZero() noexcept;
+
 	public:
 		std::atomic_size_t refCount = 0;
+
+		BaseWeakRcObjectPtr *weakPtrs = nullptr;
+		std::mutex weakPtrMutex;
 
 		PEFF_BASE_API RcObject() noexcept;
 		PEFF_BASE_API virtual ~RcObject();
@@ -21,10 +30,80 @@ namespace peff {
 
 		PEFF_FORCEINLINE size_t decRef() noexcept {
 			if (!(--refCount)) {
-				onRefZero();
+				_onRefZero();
 				return 0;
 			}
 			return refCount;
+		}
+	};
+
+	struct BaseWeakRcObjectPtr {
+	protected:
+		BaseWeakRcObjectPtr *_prev, *_next;
+		RcObject *_ptr;
+		PEFF_BASE_API void _reset();
+		PEFF_BASE_API void _resetUnchecked();
+		PEFF_BASE_API void _set(RcObject *ptr);
+
+		friend class RcObject;
+
+	public:
+		PEFF_BASE_API BaseWeakRcObjectPtr(RcObject *ptr);
+		PEFF_BASE_API ~BaseWeakRcObjectPtr();
+	};
+
+	template <typename T>
+	struct WeakRcObjectPtr : public BaseWeakRcObjectPtr {
+	public:
+		PEFF_FORCEINLINE void reset() {
+			_reset();
+		}
+
+		PEFF_FORCEINLINE WeakRcObjectPtr() : BaseWeakRcObjectPtr(nullptr) {}
+		PEFF_FORCEINLINE WeakRcObjectPtr(RcObject *ptr) : BaseWeakRcObjectPtr(ptr) {}
+		PEFF_FORCEINLINE WeakRcObjectPtr(WeakRcObjectPtr<T> &&ptr) : BaseWeakRcObjectPtr(ptr._ptr) {
+			ptr->_ptr = nullptr;
+		}
+		PEFF_FORCEINLINE WeakRcObjectPtr(const WeakRcObjectPtr<T> &ptr) : BaseWeakRcObjectPtr(ptr._ptr) {
+		}
+		PEFF_FORCEINLINE ~WeakRcObjectPtr() {}
+
+		PEFF_FORCEINLINE WeakRcObjectPtr<T> &operator=(RcObject *ptr) {
+			if (ptr)
+				_reset();
+			_set(ptr);
+			return *this;
+		}
+		PEFF_FORCEINLINE WeakRcObjectPtr<T> &operator=(WeakRcObjectPtr<T> &&ptr) {
+			if (ptr)
+				_reset();
+			_set(ptr->_ptr);
+			ptr->_ptr = nullptr;
+			return *this;
+		}
+		PEFF_FORCEINLINE WeakRcObjectPtr<T> &operator=(const WeakRcObjectPtr<T> &ptr) {
+			if (ptr)
+				_reset();
+			_set(ptr._ptr);
+			return *this;
+		}
+
+		PEFF_FORCEINLINE T *operator->() const noexcept {
+			assert(_ptr);
+			return _ptr;
+		}
+
+		PEFF_FORCEINLINE T &operator*() const noexcept {
+			assert(*_ptr);
+			return *_ptr;
+		}
+
+		PEFF_FORCEINLINE bool operator<(const WeakRcObjectPtr<T> &rhs) const noexcept {
+			return _ptr < rhs._ptr;
+		}
+
+		PEFF_FORCEINLINE operator bool() const noexcept {
+			return _ptr;
 		}
 	};
 

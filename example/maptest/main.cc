@@ -9,9 +9,20 @@
 #include <peff/containers/bitarray.h>
 #include <peff/advutils/buffer_alloc.h>
 #include <iostream>
+#include <string>
 
 struct SomethingUncopyable {
 	peff::String s;
+};
+
+class RcObj : public peff::RcObject {
+public:
+	RcObj() {}
+	virtual ~RcObj() {}
+	virtual void onRefZero() noexcept {
+		puts("Destructed RcObj");
+		delete this;
+	}
 };
 
 char g_buffer[1048576];
@@ -29,9 +40,12 @@ int main() {
 	assert(s == "123");
 
 	peff::DynArray<SomethingUncopyable> a(&globalBufferAlloc);
+	peff::WeakRcObjectPtr<RcObj> weakRef;
 
 	{
 		peff::Set<int> map(&globalBufferAlloc);
+		peff::RcObjectPtr<RcObj> strongRef = new RcObj();
+		weakRef = strongRef.get();
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -66,6 +80,7 @@ int main() {
 			printf("%d\n", *(k++));
 		}
 	}
+	assert(!weakRef);
 	{
 		peff::HashSet<int> map(&globalBufferAlloc);
 

@@ -21,6 +21,7 @@ generated/
 .vs/
 .vscode/
 .idea/
+.cache/
 CMakePresets.json
 CMakeSettings.json
 *.user

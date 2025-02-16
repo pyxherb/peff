@@ -128,6 +128,7 @@ namespace peff {
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();
 			constructAt<List>(this, std::move(other));
+			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
 		PEFF_FORCEINLINE ~List() {

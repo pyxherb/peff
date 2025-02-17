@@ -115,6 +115,31 @@ namespace peff {
 			_dynArray.extractRange(idxStart, idxEnd + 1);
 		}
 
+		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {
+			const size_t oldSize = _dynArray.size();
+			if(!_dynArray.resize(oldSize + length))
+				return false;
+			memcpy(_dynArray.data() + oldSize, data, length);
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data) {
+			const size_t oldSize = _dynArray.size();
+			const size_t dataLength = strlen(data);
+			if(!_dynArray.resize(oldSize + dataLength))
+				return false;
+			memcpy(_dynArray.data() + oldSize, data, dataLength);
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool append(const String &data) {
+			const size_t oldSize = _dynArray.size();
+			if(!_dynArray.resize(oldSize + data.size()))
+				return false;
+			memcpy(_dynArray.data() + oldSize, data.data(), data.size());
+			return true;
+		}
+
 		PEFF_FORCEINLINE bool build(const std::string_view &src) {
 			clear();
 			if(!resize(src.size()))

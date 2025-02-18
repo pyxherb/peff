@@ -8,6 +8,8 @@ PEFF_BASE_API RcObject::~RcObject() {}
 PEFF_BASE_API void RcObject::_onRefZero() noexcept {
 	{
 		weakPtrMutex.lock();
+		if(refCount)
+			return;
 		for (BaseWeakRcObjectPtr *i = weakPtrs, *next; i; i = next) {
 			next = i->_next;
 			i->_resetUnchecked();

@@ -5,6 +5,7 @@
 #include <mutex>
 #include <cstddef>
 #include <atomic>
+#include <cassert>
 
 namespace peff {
 	struct BaseWeakRcObjectPtr;
@@ -94,7 +95,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE T &operator*() const noexcept {
-			assert(*_ptr);
+			assert(_ptr);
 			return *_ptr;
 		}
 

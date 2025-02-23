@@ -190,8 +190,8 @@ namespace peff {
 				if (!_checkAndResizeBuckets()) {
 					if (forceResizeBuckets) {
 						if (nextNode) {
-							typename Bucket::NodeHandle node = bucket.insertFront(nextNode, node);
-							assert(node);
+							typename Bucket::NodeHandle result = bucket.insertFront(nextNode, node);
+							assert(result);
 						} else {
 							bucket.pushFront(node);
 						}

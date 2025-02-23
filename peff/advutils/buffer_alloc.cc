@@ -8,10 +8,10 @@ RcObjectPtr<BufferAlloc> peff::g_bufferAllocKeeper(&g_bufferAlloc);
 PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc) {
 }
 
-PEFF_BASE_API void BufferAlloc::onRefZero() noexcept {
+PEFF_ADVUTILS_API void BufferAlloc::onRefZero() noexcept {
 }
 
-PEFF_BASE_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
+PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 	size_t off = 0, descSize = sizeof(AllocDesc), descOff;
 
 	size_t actualAvailableSize = size + descSize;
@@ -76,7 +76,7 @@ succeeded:
 	return ptr;
 }
 
-PEFF_BASE_API void BufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
+PEFF_ADVUTILS_API void BufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
 	auto resultDesc = allocDescs.get(ptr);
 	if (!resultDesc)
 		std::terminate();
@@ -91,6 +91,6 @@ PEFF_BASE_API void BufferAlloc::release(void *ptr, size_t size, size_t alignment
 	allocDescs.remove(desc, false);
 }
 
-PEFF_BASE_API Alloc *BufferAlloc::getDefaultAlloc() const noexcept {
+PEFF_ADVUTILS_API Alloc *BufferAlloc::getDefaultAlloc() const noexcept {
 	return g_voidAllocKeeper.get();
 }

@@ -55,6 +55,7 @@ namespace peff {
 
 	template <typename T, typename... Args>
 	PEFF_FORCEINLINE void constructAt(T *ptr, Args &&...args) {
+		static_assert(std::is_constructible_v<T, Args...>, "Provided arguments cannot be used for the construction");
 #ifdef new
 	#ifdef _MSC_VER
 		#pragma push_macro("new")

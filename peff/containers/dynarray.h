@@ -523,7 +523,7 @@ namespace peff {
 		using ThisType = DynArray<T, IsString>;
 
 	public:
-		PEFF_FORCEINLINE DynArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
+		PEFF_FORCEINLINE DynArray(Alloc *allocator) : _allocator(allocator) {
 		}
 		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(rhs.allocator()), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
 			rhs._allocator = nullptr;
@@ -597,6 +597,14 @@ namespace peff {
 
 		PEFF_FORCEINLINE bool resizeWithAndResizeCapacity(size_t length, const T &filler) {
 			return _resizeWith(length, filler, true);
+		}
+
+		PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
+			return _resize<false>(length, false);
+		}
+
+		PEFF_FORCEINLINE bool resizeUninitializedAndResizeCapacity(size_t length) {
+			return _resize<false>(length, false);
 		}
 
 		PEFF_FORCEINLINE void clear() {

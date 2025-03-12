@@ -219,7 +219,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE HashSet(Alloc *allocator = getDefaultAlloc()) : _buckets(allocator) {
+		PEFF_FORCEINLINE HashSet(Alloc *allocator) : _buckets(allocator) {
 		}
 
 		PEFF_FORCEINLINE HashSet(ThisType &&other)

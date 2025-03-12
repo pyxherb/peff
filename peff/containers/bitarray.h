@@ -16,7 +16,7 @@ namespace peff {
 		Alloc *_allocator;
 
 	public:
-		PEFF_FORCEINLINE BitArray(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {
+		PEFF_FORCEINLINE BitArray(Alloc *allocator) : _allocator(allocator) {
 		}
 		PEFF_FORCEINLINE ~BitArray() {
 			if (_buffer)

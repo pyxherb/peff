@@ -18,7 +18,7 @@ namespace peff {
 		using Iterator = char*;
 		using ConstIterator = const char*;
 
-		PEFF_FORCEINLINE String(Alloc *allocator = getDefaultAlloc()) : _dynArray(allocator) {
+		PEFF_FORCEINLINE String(Alloc *allocator) : _dynArray(allocator) {
 		}
 		PEFF_FORCEINLINE String(String &&rhs) noexcept : _dynArray(std::move(rhs._dynArray)) {
 		}
@@ -36,12 +36,9 @@ namespace peff {
 		PEFF_FORCEINLINE bool copy(String &dest) const {
 			constructAt<String>(&dest, _dynArray.allocator());
 
-			ArrayType arrayCopy;
-			if (!(_dynArray.copy(arrayCopy))) {
+			if (!peff::copyAssign(dest._dynArray, _dynArray)) {
 				return false;
 			}
-
-			dest._dynArray = std::move(arrayCopy);
 
 			return true;
 		}

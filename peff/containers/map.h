@@ -45,7 +45,7 @@ namespace peff {
 	public:
 		using NodeType = typename SetType::NodeType;
 
-		PEFF_FORCEINLINE Map(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
+		PEFF_FORCEINLINE Map(Alloc *allocator) : _set(allocator) {}
 		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)), comparator(std::move(rhs.comparator)) {
 		}
 

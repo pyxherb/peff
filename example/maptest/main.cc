@@ -141,7 +141,7 @@ int main() {
 				throw std::bad_alloc();
 		}
 
-		peff::Map<int, peff::String> map2;
+		peff::Map<int, peff::String> map2(peff::getDefaultAlloc());
 		if (!peff::copy(map2, map)) {
 			throw std::bad_alloc();
 		}

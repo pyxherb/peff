@@ -157,7 +157,7 @@ namespace peff {
 		};
 
 		PEFF_FORCEINLINE Node *_copyTree(const Node *node) {
-			List<CopyInfo> copyInfoStack;
+			List<CopyInfo> copyInfoStack(_allocator.get());
 
 			Node *newNode = _allocSingleNode(node->value);
 			if (!newNode)
@@ -277,7 +277,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE RBTree(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {}
+		PEFF_FORCEINLINE RBTree(Alloc *allocator) : _allocator(allocator) {}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			peff::constructAt<ThisType>(&dest, _allocator.get());

@@ -14,7 +14,7 @@ namespace peff {
 	public:
 		using NodeType = typename Tree::NodeType;
 
-		PEFF_FORCEINLINE Set(Alloc *allocator = getDefaultAlloc()) : _tree(allocator) {
+		PEFF_FORCEINLINE Set(Alloc *allocator) : _tree(allocator) {
 		}
 		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
 		}

@@ -112,7 +112,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE List(Alloc *allocator = getDefaultAlloc()) : _allocator(allocator) {}
+		PEFF_FORCEINLINE List(Alloc *allocator) : _allocator(allocator) {}
 		List(const ThisType &other) = delete;
 		PEFF_FORCEINLINE List(ThisType &&other) {
 			_first = other._first;

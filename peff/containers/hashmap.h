@@ -52,7 +52,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE HashMap(Alloc *allocator = getDefaultAlloc()) : _set(allocator) {}
+		PEFF_FORCEINLINE HashMap(Alloc *allocator) : _set(allocator) {}
 		PEFF_FORCEINLINE HashMap(ThisType &&rhs) : comparator(std::move(rhs.comparator)), _set(std::move(rhs._set)) {
 		}
 

@@ -143,9 +143,9 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE bool copy(List &dest) const {
 			constructAt<ThisType>(&dest, _allocator);
-			dest._first = _first;
-			dest._last = _last;
-			dest._length = _length;
+			dest._first = nullptr;
+			dest._last = nullptr;
+			dest._length = 0;
 			dest._allocator = _allocator;
 
 			for (Node *i = _first; i; i = i->next) {

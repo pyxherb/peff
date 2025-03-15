@@ -604,7 +604,31 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool resizeUninitializedAndResizeCapacity(size_t length) {
-			return _resize<false>(length, false);
+			return _resize<false>(length, true);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool build(const ThisType &rhs) {
+			clear();
+
+			if (!resizeUninitializedAndResizeCapacity(rhs.size())) {
+				return false;
+			}
+
+			size_t i = 0;
+
+			while(i < _length) {
+				if (!peff::copy(_data[i], rhs._data[i])) {
+					if constexpr (!std::is_trivially_destructible_v<T>) {
+						for (size_t j = 0; j < i; ++j) {
+							std::destroy_at<T>(&_data[j]);
+						}
+					}
+					return false;
+				}
+				++i;
+			}
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE void clear() {

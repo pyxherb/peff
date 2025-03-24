@@ -92,6 +92,22 @@ namespace peff {
 			return _dynArray.pushBack(std::move(data));
 		}
 
+		[[nodiscard]] PEFF_FORCEINLINE void popFront() {
+			_dynArray.popFront();
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndResizeCapacity() {
+			return _dynArray.popFrontAndResizeCapacity();
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE void popBack() {
+			_dynArray.popBack();
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndResizeCapacity() {
+			return _dynArray.popBackAndResizeCapacity();
+		}
+
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _dynArray.allocator();
 		}

@@ -698,6 +698,16 @@ namespace peff {
 			return resize(_length - 1);
 		}
 
+		PEFF_FORCEINLINE void popFront() {
+			_moveData(_data, _data + 1, _length - 1);
+			bool unused = resize(_length - 1);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndResizeCapacity() {
+			_moveData(_data, _data + 1, _length - 1);
+			return resize(_length - 1);
+		}
+
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _allocator;
 		}

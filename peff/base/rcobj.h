@@ -99,6 +99,11 @@ namespace peff {
 			return *_ptr;
 		}
 
+		PEFF_FORCEINLINE T *get() const noexcept {
+			assert(_ptr);
+			return _ptr;
+		}
+
 		PEFF_FORCEINLINE bool operator<(const WeakRcObjectPtr<T> &rhs) const noexcept {
 			return _ptr < rhs._ptr;
 		}

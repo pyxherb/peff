@@ -122,14 +122,14 @@ namespace peff {
 
 		T *_ptr = nullptr;
 
+		PEFF_FORCEINLINE RcObject *_toBase(T *p) noexcept {
+			return reinterpret_cast<T *>(reinterpret_cast<char *>(p) + _baseOff);
+		}
+
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
 			if (_ptr)
 				_toBase(_ptr)->incRef();
 			this->_ptr = _ptr;
-		}
-
-		PEFF_FORCEINLINE RcObject *_toBase(T *p) noexcept {
-			return reinterpret_cast<T *>(reinterpret_cast<char *>(p) + _baseOff);
 		}
 
 	public:

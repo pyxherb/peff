@@ -22,16 +22,32 @@ peff::RcObjectPtr<RcObj> test;
 
 struct Test {
 	uint8_t test[1024];
+
+	virtual void testA() {
+		puts("testA");
+	}
 };
 
-class RcObj : public Test, public peff::RcObject {
+struct Test2 : public peff::RcObject {
+	uint8_t test2[1024];
+
+	virtual void testB() {
+		puts("testB");
+	}
+};
+
+class RcObj : public Test, public Test2 {
 public:
 	RcObj() {
-		memset(test, 0xff, sizeof(test));
+		memset(test, 0xcc, sizeof(test));
+		memset(test2, 0xdd, sizeof(test2));
 	}
 	virtual ~RcObj() {
 		for(size_t i = 0 ; i < std::size(test); ++i) {
-			assert(test[i] == 0xff);
+			assert(test[i] == 0xcc);
+		}
+		for(size_t i = 0 ; i < std::size(test); ++i) {
+			assert(test2[i] == 0xdd);
 		}
 	}
 	virtual void onRefZero() noexcept {
@@ -57,9 +73,19 @@ int main() {
 
 	{
 		peff::Set<int> map(&globalBufferAlloc);
-		peff::RcObjectPtr<RcObj> strongRef = new RcObj();
+		peff::RcObjectPtr<RcObj> strongRef;
+		strongRef = new RcObj();
+
+		peff::RcObject *weak = strongRef.get();
+
+		weak->weakPtrMutex.lock();
+		weak->weakPtrMutex.unlock();
+
 		test = strongRef;
 		weakRef = strongRef.get();
+
+		strongRef->testA();
+		strongRef->testB();
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -220,7 +246,7 @@ int main() {
 		puts("");
 	}
 
-	{
+	/*{
 		char buffer[32768];
 		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
 
@@ -238,7 +264,7 @@ int main() {
 			memset(p3, 0, i * 3);
 			bufferAlloc.release(p3, i * 3, i * 3);
 		}
-	}
+	}*/
 
 	return 0;
 }

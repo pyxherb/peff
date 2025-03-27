@@ -7,7 +7,7 @@
 namespace peff {
 	template<typename T>
 	struct DeallocableDeleter {
-		PEFF_FORCEINLINE void operator()(T *ptr) noexcept {
+		PEFF_FORCEINLINE void operator()(T *ptr) const noexcept {
 			if (ptr)
 				ptr->dealloc();
 		}

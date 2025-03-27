@@ -15,17 +15,30 @@ struct SomethingUncopyable {
 	peff::String s;
 };
 
-class RcObj : public peff::RcObject {
+class RcObj;
+
+char g_buffer[1048576];
+peff::RcObjectPtr<RcObj> test;
+
+struct Test {
+	uint8_t test[1024];
+};
+
+class RcObj : public Test, public peff::RcObject {
 public:
-	RcObj() {}
-	virtual ~RcObj() {}
+	RcObj() {
+		memset(test, 0xff, sizeof(test));
+	}
+	virtual ~RcObj() {
+		for(size_t i = 0 ; i < std::size(test); ++i) {
+			assert(test[i] == 0xff);
+		}
+	}
 	virtual void onRefZero() noexcept {
 		puts("Destructed RcObj");
 		delete this;
 	}
 };
-
-char g_buffer[1048576];
 
 int main() {
 #ifdef _MSC_VER
@@ -37,7 +50,7 @@ int main() {
 	peff::String s(&globalBufferAlloc);
 	s.resize(3);
 	memcpy(s.data(), "123", 3);
-	assert(s == "123");
+	assert(((std::string_view)s) == "123");
 
 	peff::DynArray<SomethingUncopyable> a(&globalBufferAlloc);
 	peff::WeakRcObjectPtr<RcObj> weakRef;
@@ -45,6 +58,7 @@ int main() {
 	{
 		peff::Set<int> map(&globalBufferAlloc);
 		peff::RcObjectPtr<RcObj> strongRef = new RcObj();
+		test = strongRef;
 		weakRef = strongRef.get();
 
 		for (int i = 0; i < 16; i++) {
@@ -80,6 +94,7 @@ int main() {
 			printf("%d\n", *(k++));
 		}
 	}
+	test.reset();
 	assert(!weakRef);
 	{
 		peff::HashSet<int> map(&globalBufferAlloc);

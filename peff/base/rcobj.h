@@ -15,7 +15,7 @@ namespace peff {
 		PEFF_BASE_API void _onRefZero() noexcept;
 
 	public:
-		std::atomic_size_t refCount = 0;
+		std::atomic_size_t refCount;
 
 		BaseWeakRcObjectPtr *weakPtrs = nullptr;
 		std::mutex weakPtrMutex;
@@ -116,29 +116,47 @@ namespace peff {
 	template <typename T>
 	class RcObjectPtr {
 	private:
+		using ThisType = RcObjectPtr<T>;
+
+		ptrdiff_t _baseOff;
+
 		T *_ptr = nullptr;
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
-			this->_ptr = _ptr;
 			if (_ptr)
-				_ptr->incRef();
+				_toBase(_ptr)->incRef();
+			this->_ptr = _ptr;
+		}
+
+		PEFF_FORCEINLINE RcObject *_toBase(T *p) noexcept {
+			return reinterpret_cast<T *>(reinterpret_cast<char *>(p) + _baseOff);
 		}
 
 	public:
 		PEFF_FORCEINLINE void reset() noexcept {
-			if (_ptr)
-				_ptr->decRef();
+			if (_ptr) {
+				_toBase(_ptr)->decRef();
+			}
 			_ptr = nullptr;
 		}
 
-		PEFF_FORCEINLINE RcObjectPtr(T *ptr = nullptr) noexcept {
+		PEFF_FORCEINLINE RcObjectPtr() : _ptr(nullptr), _baseOff(0) {
+		}
+		PEFF_FORCEINLINE RcObjectPtr(
+			T *ptr,
+			ptrdiff_t baseOff =
+				reinterpret_cast<char *>(
+					static_cast<RcObject *>((T *)nullptr)) -
+				reinterpret_cast<char *>((T *)nullptr)) noexcept
+			: _baseOff(_baseOff) {
 			_setAndIncRef(ptr);
 		}
-		PEFF_FORCEINLINE RcObjectPtr(const RcObjectPtr<T> &other) noexcept {
+		PEFF_FORCEINLINE RcObjectPtr(const ThisType &other) noexcept {
 			_setAndIncRef(other._ptr);
 		}
-		PEFF_FORCEINLINE RcObjectPtr(RcObjectPtr<T> &&other) noexcept {
+		PEFF_FORCEINLINE RcObjectPtr(ThisType &&other) noexcept {
 			_ptr = other._ptr;
+			_baseOff = other._baseOff;
 			other._ptr = nullptr;
 		}
 		PEFF_FORCEINLINE ~RcObjectPtr() {
@@ -152,11 +170,13 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE RcObjectPtr<T> &operator=(const RcObjectPtr<T> &other) noexcept {
 			reset();
+			_baseOff = other._baseOff;
 			_setAndIncRef(other._ptr);
 			return *this;
 		}
 		PEFF_FORCEINLINE RcObjectPtr<T> &operator=(RcObjectPtr<T> &&other) noexcept {
 			reset();
+			_baseOff = other._baseOff;
 			_ptr = other._ptr;
 			other._ptr = nullptr;
 
@@ -190,7 +210,7 @@ namespace peff {
 			return _ptr;
 		}
 
-		PEFF_FORCEINLINE bool operator<(const RcObjectPtr<T> &rhs) const noexcept {
+		PEFF_FORCEINLINE bool operator<(const ThisType &rhs) const noexcept {
 			return _ptr < rhs._ptr;
 		}
 

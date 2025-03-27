@@ -135,8 +135,8 @@ namespace peff {
 
 		PEFF_FORCEINLINE constexpr static ptrdiff_t _calcBaseOff() {
 			return reinterpret_cast<char *>(
-				static_cast<RcObject *>((T *)(PTRDIFF_MAX / 2))) -
-			reinterpret_cast<char *>((T *)(PTRDIFF_MAX / 2));
+				static_cast<RcObject *>((T *)(INTPTR_MAX))) -
+			reinterpret_cast<char *>((T *)(INTPTR_MAX));
 		}
 
 	public:

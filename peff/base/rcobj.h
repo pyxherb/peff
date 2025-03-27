@@ -133,10 +133,10 @@ namespace peff {
 			this->_ptr = _ptr;
 		}
 
-		PEFF_FORCEINLINE constexpr static ptrdiff_t _calcBaseOff() {
+		PEFF_FORCEINLINE static ptrdiff_t _calcBaseOff(T *ptr) {
 			return reinterpret_cast<char *>(
-				static_cast<RcObject *>((T *)(INTPTR_MAX))) -
-			reinterpret_cast<char *>((T *)(INTPTR_MAX));
+					   static_cast<RcObject *>((T *)(ptr))) -
+				   reinterpret_cast<char *>((T *)(ptr));
 		}
 
 	public:
@@ -149,11 +149,15 @@ namespace peff {
 
 		PEFF_FORCEINLINE RcObjectPtr() : _ptr(nullptr), _baseOff(0) {
 		}
-		PEFF_FORCEINLINE RcObjectPtr(T *ptr) noexcept {
-			_setAndIncRef(ptr, _calcBaseOff());
+		PEFF_FORCEINLINE RcObjectPtr(T *ptr) noexcept : _ptr(nullptr), _baseOff(0) {
+			if (ptr) {
+				_setAndIncRef(ptr, _calcBaseOff(ptr));
+			}
 		}
-		PEFF_FORCEINLINE RcObjectPtr(const ThisType &other) noexcept {
-			_setAndIncRef(other._ptr, _calcBaseOff());
+		PEFF_FORCEINLINE RcObjectPtr(const ThisType &other) noexcept : _ptr(nullptr), _baseOff(0) {
+			if (other._ptr) {
+				_setAndIncRef(other._ptr, _calcBaseOff(other._ptr));
+			}
 		}
 		PEFF_FORCEINLINE RcObjectPtr(ThisType &&other) noexcept {
 			_ptr = other._ptr;
@@ -166,20 +170,24 @@ namespace peff {
 
 		PEFF_FORCEINLINE RcObjectPtr<T> &operator=(T *_ptr) noexcept {
 			reset();
-			_setAndIncRef(_ptr, _calcBaseOff());
+			if (_ptr) {
+				_setAndIncRef(_ptr, _calcBaseOff(_ptr));
+			}
 			return *this;
 		}
 		PEFF_FORCEINLINE RcObjectPtr<T> &operator=(const RcObjectPtr<T> &other) noexcept {
 			reset();
-			_baseOff = other._baseOff;
-			_setAndIncRef(other._ptr, _calcBaseOff());
+			_setAndIncRef(other._ptr, other._baseOff);
 			return *this;
 		}
 		PEFF_FORCEINLINE RcObjectPtr<T> &operator=(RcObjectPtr<T> &&other) noexcept {
 			reset();
+
 			_baseOff = other._baseOff;
 			_ptr = other._ptr;
+
 			other._ptr = nullptr;
+			other._baseOff = 0;
 
 			return *this;
 		}

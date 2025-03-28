@@ -26,7 +26,7 @@ namespace peff {
 			return _tree.copy(dest._tree);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE ThisType &operator=(ThisType &&dest) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&dest) noexcept {
 			_tree = std::move(dest._tree);
 			return *this;
 		}

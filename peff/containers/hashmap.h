@@ -168,7 +168,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE std::pair<K &, V &> operator*() const {
-				return { _iterator->key, _iterator->value };
+				return { _iterator.key(), _iterator.value() };
 			}
 		};
 
@@ -224,7 +224,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE std::pair<const K &, const V &> operator*() const {
-				return { _iterator->key, _iterator->value };
+				return { _iterator.key(), _iterator.value() };
 			}
 		};
 

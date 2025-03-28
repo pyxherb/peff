@@ -43,10 +43,10 @@ public:
 		memset(test2, 0xdd, sizeof(test2));
 	}
 	virtual ~RcObj() {
-		for(size_t i = 0 ; i < std::size(test); ++i) {
+		for (size_t i = 0; i < std::size(test); ++i) {
 			assert(test[i] == 0xcc);
 		}
-		for(size_t i = 0 ; i < std::size(test); ++i) {
+		for (size_t i = 0; i < std::size(test); ++i) {
 			assert(test2[i] == 0xdd);
 		}
 	}
@@ -213,10 +213,12 @@ int main() {
 		}
 
 		arr.extractRange(10, 20);
-		arr.eraseRange(0, 7);
+		if (!arr.eraseRange(0, 7))
+			throw std::bad_alloc();
 
 		str.extractRange(10, 20);
-		str.eraseRange(0, 7);
+		if (!str.eraseRange(0, 7))
+			throw std::bad_alloc();
 
 		for (size_t i = 0; i < arr.size(); ++i) {
 			printf("%d ", arr.at(i));

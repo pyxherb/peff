@@ -15,8 +15,8 @@ namespace peff {
 			constructAt<T>(&out, in);
 			return true;
 		} else {
-			assert(("The type is not copyable", false));
-			return false;
+			// The type is not copyable!
+			std::terminate();
 		}
 	}
 

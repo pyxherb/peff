@@ -2,11 +2,11 @@
 #define _PEFF_BASE_BASEDEFS_H_
 
 #if defined(_MSC_VER)
-#define PEFF_DLLEXPORT __declspec(dllexport)
-#define PEFF_DLLIMPORT __declspec(dllimport)
+	#define PEFF_DLLEXPORT __declspec(dllexport)
+	#define PEFF_DLLIMPORT __declspec(dllimport)
 #elif defined(__GNUC__) || defined(__clang__)
-#define PEFF_DLLEXPORT __attribute__((__visibility__("default")))
-#define PEFF_DLLIMPORT __attribute__((__visibility__("default")))
+	#define PEFF_DLLEXPORT __attribute__((__visibility__("default")))
+	#define PEFF_DLLIMPORT __attribute__((__visibility__("default")))
 #endif
 
 #if defined(_MSC_VER)
@@ -36,10 +36,14 @@
 
 #define PEFF_CONTAINER_OF(t, m, p) ((t *)(((char *)p) - offsetof(t, m)))
 
-#if IS_PEFF_BASE_BUILDING
-	#define PEFF_BASE_API PEFF_DLLEXPORT
+#if PEFF_DYNAMIC_LINK
+	#if IS_PEFF_BASE_BUILDING
+		#define PEFF_BASE_API PEFF_DLLEXPORT
+	#else
+		#define PEFF_BASE_API PEFF_DLLIMPORT
+	#endif
 #else
-	#define PEFF_BASE_API PEFF_DLLIMPORT
+	#define PEFF_BASE_API
 #endif
 
 namespace peff {

@@ -3,10 +3,14 @@
 
 #include <peff/base/basedefs.h>
 
-#if IS_PEFF_ADVUTILS_BUILDING
-	#define PEFF_ADVUTILS_API PEFF_DLLEXPORT
+#if PEFF_DYNAMIC_LINK
+	#if IS_PEFF_ADVUTILS_BUILDING
+		#define PEFF_ADVUTILS_API PEFF_DLLEXPORT
+	#else
+		#define PEFF_ADVUTILS_API PEFF_DLLIMPORT
+	#endif
 #else
-	#define PEFF_ADVUTILS_API PEFF_DLLIMPORT
+	#define PEFF_ADVUTILS_API
 #endif
 
 namespace peff {

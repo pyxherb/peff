@@ -3,6 +3,7 @@ file(GLOB SRC *.cc)
 
 add_library(peff_utils SHARED)
 target_compile_definitions(peff_utils PRIVATE PEFF_DYNAMIC_LINK=1 IS_PEFF_UTILS_BUILDING=1)
+target_compile_definitions(peff_utils PUBLIC PEFF_DYNAMIC_LINK=1)
 set_target_properties(peff_utils PROPERTIES CXX_STANDARD 17)
 target_sources(peff_utils PRIVATE ${HEADERS} ${SRC})
 target_link_libraries(peff_utils PUBLIC peff_base)
@@ -15,7 +16,7 @@ set_target_properties(peff_utils PROPERTIES
 )
 
 add_library(peff_utils_static STATIC)
-target_compile_definitions(peff_utils_static PRIVATE PEFF_STATIC_LINK=1 IS_PEFF_UTILS_BUILDING=1)
+target_compile_definitions(peff_utils_static PRIVATE PEFF_STATIC_LINK=0 IS_PEFF_UTILS_BUILDING=1)
 set_target_properties(peff_utils_static PROPERTIES CXX_STANDARD 17)
 target_sources(peff_utils_static PRIVATE ${HEADERS} ${SRC})
 target_link_libraries(peff_utils_static PUBLIC peff_base_static)

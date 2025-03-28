@@ -2,7 +2,8 @@ file(GLOB HEADERS *.h)
 file(GLOB SRC *.cc)
 
 add_library(peff_advutils SHARED)
-target_compile_definitions(peff_advutils PRIVATE PEFF_DYNAMIC_LINK=1 IS_PEFF_ADVUTILS_BUILDING=1)
+target_compile_definitions(peff_advutils PRIVATE IS_PEFF_ADVUTILS_BUILDING=1)
+target_compile_definitions(peff_advutils PUBLIC PEFF_DYNAMIC_LINK=1)
 set_target_properties(peff_advutils PROPERTIES CXX_STANDARD 17)
 target_sources(peff_advutils PRIVATE ${HEADERS} ${SRC})
 target_link_libraries(peff_advutils PUBLIC peff_base peff_containers)
@@ -15,7 +16,7 @@ set_target_properties(peff_advutils PROPERTIES
 )
 
 add_library(peff_advutils_static STATIC)
-target_compile_definitions(peff_advutils_static PRIVATE PEFF_STATIC_LINK=1 IS_PEFF_ADVUTILS_BUILDING=1)
+target_compile_definitions(peff_advutils_static PRIVATE IS_PEFF_ADVUTILS_BUILDING=1)
 set_target_properties(peff_advutils_static PROPERTIES CXX_STANDARD 17)
 target_sources(peff_advutils_static PRIVATE ${HEADERS} ${SRC})
 target_link_libraries(peff_advutils_static PUBLIC peff_base_static peff_containers_static)

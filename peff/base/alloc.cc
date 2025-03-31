@@ -63,3 +63,20 @@ PEFF_BASE_API void VoidAlloc::release(void *ptr, size_t size, size_t alignment) 
 PEFF_BASE_API Alloc *VoidAlloc::getDefaultAlloc() const noexcept {
 	return g_voidAllocKeeper.get();
 }
+
+PEFF_BASE_API NullAlloc peff::g_nullAlloc;
+PEFF_BASE_API RcObjectPtr<NullAlloc> peff::g_nullAllocKeeper(&g_nullAlloc);
+
+PEFF_BASE_API void NullAlloc::onRefZero() noexcept {
+}
+
+PEFF_BASE_API void *NullAlloc::alloc(size_t size, size_t alignment) noexcept {
+	return nullptr;
+}
+
+PEFF_BASE_API void NullAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
+}
+
+PEFF_BASE_API Alloc *NullAlloc::getDefaultAlloc() const noexcept {
+	return g_nullAllocKeeper.get();
+}

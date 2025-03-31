@@ -46,6 +46,19 @@ namespace peff {
 	PEFF_BASE_API extern VoidAlloc g_voidAlloc;
 	PEFF_BASE_API extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
 
+	class NullAlloc : public Alloc {
+	public:
+		PEFF_BASE_API virtual void onRefZero() noexcept override;
+
+		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
+		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
+
+		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
+	};
+
+	PEFF_BASE_API extern NullAlloc g_nullAlloc;
+	PEFF_BASE_API extern RcObjectPtr<NullAlloc> g_nullAllocKeeper;
+
 	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.

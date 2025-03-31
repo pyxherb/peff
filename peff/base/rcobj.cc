@@ -8,8 +8,6 @@ PEFF_BASE_API RcObject::~RcObject() {}
 PEFF_BASE_API void RcObject::_onRefZero() noexcept {
 	{
 		std::lock_guard weakPtrMutexGuard(weakPtrMutex);
-		if(refCount)
-			return;
 		for (BaseWeakRcObjectPtr *i = weakPtrs, *next; i; i = next) {
 			next = i->_next;
 			i->_resetUnchecked();
@@ -20,14 +18,9 @@ PEFF_BASE_API void RcObject::_onRefZero() noexcept {
 
 PEFF_BASE_API void BaseWeakRcObjectPtr::_reset() {
 	if (_ptr) {
-		_ptr->weakPtrMutex.lock();
-		if (_prev)
-			_prev->_next = _next;
-		if (_next)
-			_next->_prev = _prev;
-		_ptr->weakPtrMutex.unlock();
+		std::lock_guard weakPtrMutexGuard(_ptr->weakPtrMutex);
+		_resetUnchecked();
 	}
-	_ptr = nullptr;
 }
 
 PEFF_BASE_API void BaseWeakRcObjectPtr::_resetUnchecked() {
@@ -40,13 +33,11 @@ PEFF_BASE_API void BaseWeakRcObjectPtr::_resetUnchecked() {
 
 PEFF_BASE_API void BaseWeakRcObjectPtr::_set(RcObject *ptr) {
 	if (ptr) {
-		ptr->weakPtrMutex.lock();
-		_next = ptr->weakPtrs;
-		if (ptr->weakPtrs)
+		std::lock_guard weakPtrMutexGuard(ptr->weakPtrMutex);
+		_prev = nullptr;
+		if ((_next = ptr->weakPtrs))
 			_next->_prev = this;
 		ptr->weakPtrs = this;
-		_prev = nullptr;
-		ptr->weakPtrMutex.unlock();
 	}
 	_ptr = ptr;
 }

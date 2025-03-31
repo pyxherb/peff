@@ -26,6 +26,8 @@ PEFF_BASE_API void BaseWeakRcObjectPtr::_reset() {
 PEFF_BASE_API void BaseWeakRcObjectPtr::_resetUnchecked() {
 	if (_prev)
 		_prev->_next = _next;
+	else
+		_ptr->weakPtrs = _next;
 	if (_next)
 		_next->_prev = _prev;
 	_ptr = nullptr;
@@ -38,6 +40,10 @@ PEFF_BASE_API void BaseWeakRcObjectPtr::_set(RcObject *ptr) {
 		if ((_next = ptr->weakPtrs))
 			_next->_prev = this;
 		ptr->weakPtrs = this;
+	}
+	else {
+		_prev = nullptr;
+		_next = nullptr;
 	}
 	_ptr = ptr;
 }

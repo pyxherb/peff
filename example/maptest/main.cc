@@ -69,7 +69,6 @@ int main() {
 	assert(((std::string_view)s) == "123");
 
 	peff::DynArray<SomethingUncopyable> a(&globalBufferAlloc);
-	peff::WeakRcObjectPtr<RcObj> weakRef;
 
 	{
 		peff::Set<int> map(&globalBufferAlloc);
@@ -78,11 +77,7 @@ int main() {
 
 		peff::RcObject *weak = strongRef.get();
 
-		weak->weakPtrMutex.lock();
-		weak->weakPtrMutex.unlock();
-
 		test = strongRef;
-		weakRef = strongRef.get();
 
 		strongRef->testA();
 		strongRef->testB();
@@ -121,7 +116,6 @@ int main() {
 		}
 	}
 	test.reset();
-	assert(!weakRef);
 	{
 		peff::HashSet<int> map(&globalBufferAlloc);
 

@@ -7,6 +7,7 @@
 #include <peff/containers/hashmap.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
+#include <peff/utils/memory.h>
 #include <peff/advutils/buffer_alloc.h>
 #include <iostream>
 #include <string>
@@ -38,7 +39,8 @@ struct Test2 : public peff::RcObject {
 
 class RcObj : public Test, public Test2 {
 public:
-	RcObj() {
+	const char *name;
+	RcObj(const char *name): name(name) {
 		memset(test, 0xcc, sizeof(test));
 		memset(test2, 0xdd, sizeof(test2));
 	}
@@ -49,9 +51,9 @@ public:
 		for (size_t i = 0; i < std::size(test); ++i) {
 			assert(test2[i] == 0xdd);
 		}
+		printf("Destructed %s\n", name);
 	}
 	virtual void onRefZero() noexcept {
-		puts("Destructed RcObj");
 		delete this;
 	}
 };
@@ -70,10 +72,16 @@ int main() {
 
 	peff::DynArray<SomethingUncopyable> a(&globalBufferAlloc);
 
+	peff::SharedPtr<RcObj> outerSharedPtr;
+
 	{
+		peff::SharedPtr<RcObj> sharedPtr = peff::makeShared<RcObj>(peff::getDefaultAlloc(), "SharedPtr");
+
+		outerSharedPtr = sharedPtr;
+
 		peff::Set<int> map(&globalBufferAlloc);
 		peff::RcObjectPtr<RcObj> strongRef;
-		strongRef = new RcObj();
+		strongRef = new RcObj("StrongRef");
 
 		peff::RcObject *weak = strongRef.get();
 
@@ -116,6 +124,7 @@ int main() {
 		}
 	}
 	test.reset();
+	outerSharedPtr.reset();
 	{
 		peff::HashSet<int> map(&globalBufferAlloc);
 

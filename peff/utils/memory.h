@@ -2,6 +2,7 @@
 #define _PEFF_UTILS_MEMORY_H_
 
 #include "basedefs.h"
+#include <peff/base/alloc.h>
 #include <memory>
 #include <atomic>
 
@@ -46,6 +47,17 @@ namespace peff {
 			}
 		};
 
+		struct DefaultSharedPtrControlBlock : public SharedPtrControlBlock {
+			peff::RcObjectPtr<peff::Alloc> allocator;
+
+			PEFF_FORCEINLINE DefaultSharedPtrControlBlock(peff::Alloc *allocator, T *ptr) : SharedPtrControlBlock(ptr), allocator(allocator) {}
+			inline virtual ~DefaultSharedPtrControlBlock() {}
+
+			inline virtual void onRefZero() noexcept override {
+				peff::destroyAndRelease<T>(allocator.get(), this->ptr, sizeof(std::max_align_t));
+			}
+		};
+
 		SharedPtrControlBlock *controlBlock;
 
 		PEFF_FORCEINLINE void reset() {
@@ -54,7 +66,10 @@ namespace peff {
 			controlBlock = nullptr;
 		}
 
+		PEFF_FORCEINLINE SharedPtr() : controlBlock(nullptr) {
+		}
 		PEFF_FORCEINLINE SharedPtr(SharedPtrControlBlock *controlBlock) : controlBlock(controlBlock) {
+			controlBlock->incStrongRef();
 		}
 		PEFF_FORCEINLINE ~SharedPtr() {
 			reset();
@@ -101,6 +116,26 @@ namespace peff {
 			return *controlBlock->ptr;
 		}
 	};
+
+	template <typename T, typename... Args>
+	SharedPtr<T> makeShared(peff::Alloc *allocator, Args &&...args) {
+		T *ptr = peff::allocAndConstruct<T>(allocator, sizeof(std::max_align_t), std::forward<Args>(args)...);
+		if (!ptr)
+			return nullptr;
+		peff::ScopeGuard releasePtrGuard([allocator, ptr]() noexcept {
+			peff::destroyAndRelease<T>(allocator, ptr, sizeof(std::max_align_t));
+		});
+
+		typename SharedPtr<T>::DefaultSharedPtrControlBlock *controlBlock =
+			peff::allocAndConstruct<typename SharedPtr<T>::DefaultSharedPtrControlBlock>(
+				allocator, sizeof(std::max_align_t),
+				allocator, ptr);
+		if (!controlBlock)
+			return nullptr;
+		releasePtrGuard.release();
+
+		return SharedPtr<T>(controlBlock);
+	}
 }
 
 #endif

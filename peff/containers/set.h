@@ -4,7 +4,7 @@
 #include "tree.h"
 
 namespace peff {
-	template <typename T, typename Comparator = LtComparator<T>>
+	template <typename T, typename Comparator = std::less<T>>
 	class Set final {
 	private:
 		using Tree = RBTree<T, Comparator>;

@@ -7,7 +7,7 @@
 #include <peff/containers/hashmap.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
-#include <peff/utils/memory.h>
+#include <peff/advutils/shared_ptr.h>
 #include <peff/advutils/buffer_alloc.h>
 #include <iostream>
 #include <string>
@@ -29,7 +29,7 @@ struct Test {
 	}
 };
 
-struct Test2 : public peff::RcObject {
+struct Test2 : public peff::RcObject, public peff::SharedFromThis<Test2> {
 	uint8_t test2[1024];
 
 	virtual void testB() {
@@ -76,8 +76,12 @@ int main() {
 
 	{
 		peff::SharedPtr<RcObj> sharedPtr = peff::makeShared<RcObj>(peff::getDefaultAlloc(), "SharedPtr");
+		peff::SharedPtr<Test2> test2Ptr = sharedPtr.castTo<Test2>();
 
 		outerSharedPtr = sharedPtr;
+
+		auto test2PtrLocked = peff::WeakPtr<Test2>(test2Ptr).lock();
+		auto test2PtrFromThis = test2Ptr->sharedFromThis();
 
 		peff::Set<int> map(&globalBufferAlloc);
 		peff::RcObjectPtr<RcObj> strongRef;

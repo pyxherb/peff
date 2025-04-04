@@ -4,7 +4,7 @@
 #include "set.h"
 
 namespace peff {
-	template <typename K, typename V, typename Lt = LtComparator<K>>
+	template <typename K, typename V, typename Lt = std::less<K>>
 	class Map final {
 	private:
 		struct Pair {

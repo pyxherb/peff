@@ -4,7 +4,7 @@
 #include "hashset.h"
 
 namespace peff {
-	template <typename K, typename V, typename Eq = EqComparator<K>, typename Hasher = Hasher<K>>
+	template <typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
 	class HashMap final {
 	private:
 		struct Pair {

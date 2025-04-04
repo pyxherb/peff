@@ -11,7 +11,6 @@
 #include "misc.h"
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
-#include <peff/utils/comparator.h>
 #include <peff/base/scope_guard.h>
 #include "list.h"
 
@@ -58,7 +57,7 @@ namespace peff {
 	};
 
 	template <typename T,
-		typename Comparator = LtComparator<T>>
+		typename Comparator = std::less<T>>
 	class RBTree : private RBTreeBase {
 	public:
 		struct Node : public RBTreeBase::AbstractNode {

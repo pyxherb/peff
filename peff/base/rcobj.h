@@ -8,8 +8,6 @@
 #include <cassert>
 
 namespace peff {
-	struct BaseWeakRcObjectPtr;
-
 	class RcObject {
 	public:
 		std::atomic_size_t refCount;
@@ -30,21 +28,6 @@ namespace peff {
 			}
 			return refCount;
 		}
-	};
-
-	struct BaseWeakRcObjectPtr {
-	protected:
-		BaseWeakRcObjectPtr *_prev, *_next;
-		RcObject *_ptr;
-		PEFF_BASE_API void _reset();
-		PEFF_BASE_API void _resetUnchecked();
-		PEFF_BASE_API void _set(RcObject *ptr);
-
-		friend class RcObject;
-
-	public:
-		PEFF_BASE_API BaseWeakRcObjectPtr(RcObject *ptr);
-		PEFF_BASE_API ~BaseWeakRcObjectPtr();
 	};
 
 	template <typename T>
@@ -147,7 +130,7 @@ namespace peff {
 	};
 
 	struct RcObjectUniquePtrDeleter {
-		PEFF_FORCEINLINE void operator()(RcObject *ptr) {
+		PEFF_FORCEINLINE void operator()(RcObject *ptr) const {
 			if (ptr)
 				ptr->onRefZero();
 		}

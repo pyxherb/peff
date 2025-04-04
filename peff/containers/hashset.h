@@ -5,14 +5,13 @@
 #include "dynarray.h"
 #include "misc.h"
 #include <peff/utils/hash.h>
-#include <peff/utils/comparator.h>
 #include <peff/base/scope_guard.h>
 #include <memory>
 
 namespace peff {
 	template <
 		typename T,
-		typename EqCmp = EqComparator<T>,
+		typename EqCmp = std::equal_to<T>,
 		typename Hasher = Hasher<T>>
 	class HashSet {
 	public:

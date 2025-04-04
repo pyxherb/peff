@@ -3,7 +3,9 @@
 include("${CMAKE_CURRENT_LIST_DIR}/peffBaseTargets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/peffUtilsTargets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/peffContainersTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/peffAdvutilsTargets.cmake")
 
 check_required_components("peff_base")
 check_required_components("peff_utils")
 check_required_components("peff_containers")
+check_required_components("peff_advutils")

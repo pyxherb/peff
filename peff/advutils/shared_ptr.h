@@ -126,9 +126,18 @@ namespace peff {
 			return *get();
 		}
 
+		PEFF_FORCEINLINE operator bool() const {
+			return (bool)ptr;
+		}
+
 		template <typename T1>
 		PEFF_FORCEINLINE SharedPtr<T1> castTo() const {
 			return SharedPtr<T1>(controlBlock, static_cast<T1 *>(ptr));
+		}
+
+		template <typename T1>
+		PEFF_FORCEINLINE operator T1*() const {
+			return static_cast<T1 *>(ptr);
 		}
 	};
 

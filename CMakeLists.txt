@@ -66,3 +66,7 @@ install(EXPORT peffContainersTargets
     FILE peffContainersTargets.cmake
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
+install(EXPORT peffAdvutilsTargets
+    FILE peffAdvutilsTargets.cmake
+    DESTINATION lib/cmake/${PROJECT_NAME}
+)

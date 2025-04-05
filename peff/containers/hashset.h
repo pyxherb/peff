@@ -25,6 +25,18 @@ namespace peff {
 
 			Element(Element &&rhs) = default;
 			Element &operator=(Element &&rhs) = default;
+
+			PEFF_FORCEINLINE bool copy(Element &dest) const {
+				peff::Uninitialized<T> copiedData;
+
+				if(!copiedData.copyFrom(data)) {
+					return false;
+				}
+
+				peff::constructAt(&dest, copiedData.release(), hashCode);
+
+				return true;
+			}
 		};
 		using Bucket = List<Element>;
 

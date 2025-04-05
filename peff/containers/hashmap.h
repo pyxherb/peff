@@ -13,6 +13,23 @@ namespace peff {
 			bool isForQuery;
 
 			Pair(Pair &&rhs) = default;
+
+			PEFF_FORCEINLINE bool copy(Pair &dest) const {
+				peff::Uninitialized<K> copiedKey;
+				peff::Uninitialized<V> copiedValue;
+
+				if(!copiedKey.copyFrom(key)) {
+					return false;
+				}
+
+				if(!copiedValue.copyFrom(value)) {
+					return false;
+				}
+
+				peff::constructAt(&dest, Pair { copiedKey.release(), copiedValue.release(), false });
+
+				return true;
+			}
 		};
 
 		struct QueryPair : Pair {

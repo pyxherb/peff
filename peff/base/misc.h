@@ -11,12 +11,12 @@ namespace peff {
 	PEFF_FORCEINLINE bool copy(T &out, const T &in) {
 		if constexpr (IsCopyable<T>::value) {
 			return in.copy(out);
-		} else if constexpr (std::is_nothrow_constructible_v<T>) {
+		} else if constexpr (std::is_nothrow_copy_constructible_v<T>) {
 			constructAt<T>(&out, in);
 			return true;
 		} else {
 			// The type is not copyable!
-			std::terminate();
+			static_assert(!std::is_same_v<T, T>, "The type is not copyable");
 		}
 	}
 

@@ -61,6 +61,19 @@ namespace peff {
 			}
 		};
 
+		class SharedFromThis {
+		private:
+			SharedPtrControlBlock *controlBlock;
+			T *ptr;
+
+			friend class SharedPtr<T>;
+
+		public:
+			PEFF_FORCEINLINE SharedPtr<T> sharedFromThis() {
+				return SharedPtr<T>(controlBlock, ptr);
+			}
+		};
+
 		SharedPtrControlBlock *controlBlock;
 		T *ptr;
 
@@ -74,8 +87,9 @@ namespace peff {
 		PEFF_FORCEINLINE SharedPtr() : controlBlock(nullptr), ptr(nullptr) {
 		}
 		PEFF_FORCEINLINE SharedPtr(SharedPtrControlBlock *controlBlock, T *ptr) : controlBlock(controlBlock), ptr(ptr) {
-			if constexpr (std::is_base_of_v<SharedFromThis<T>, T>) {
-				ptr->_sharedFromThisWeakRef = WeakPtr<T>(controlBlock, ptr);
+			if constexpr (std::is_base_of_v<SharedFromThis, T>) {
+				((SharedFromThis*)ptr)->controlBlock = controlBlock;
+				((SharedFromThis*)ptr)->ptr = ptr;
 			}
 
 			if (controlBlock) {
@@ -136,7 +150,7 @@ namespace peff {
 		}
 
 		template <typename T1>
-		PEFF_FORCEINLINE operator T1*() const {
+		PEFF_FORCEINLINE operator T1 *() const {
 			return static_cast<T1 *>(ptr);
 		}
 	};
@@ -207,22 +221,12 @@ namespace peff {
 
 		template <typename T1>
 		PEFF_FORCEINLINE WeakPtr<T1> castTo() const {
-			return WeakPtr<T1>(controlBlock, ptr + (((char *)static_cast<T *>(get())) - (char *)static_cast<T1 *>(get())));
+			return WeakPtr<T1>(controlBlock, ptr + (((char *)static_cast<T *>(ptr)) - (char *)static_cast<T1 *>(ptr)));
 		}
 	};
 
-	template <typename T>
-	class SharedFromThis {
-	private:
-		WeakPtr<T> _sharedFromThisWeakRef;
-
-		friend class SharedPtr<T>;
-
-	public:
-		PEFF_FORCEINLINE SharedPtr<T> sharedFromThis() {
-			return _sharedFromThisWeakRef.lock();
-		}
-	};
+	template<typename T>
+	using SharedFromThis = typename SharedPtr<T>::SharedFromThis;
 
 	template <typename T, typename... Args>
 	PEFF_FORCEINLINE SharedPtr<T> makeShared(peff::Alloc *allocator, Args &&...args) {

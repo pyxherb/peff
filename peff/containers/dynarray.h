@@ -186,7 +186,7 @@ namespace peff {
 					newCapacity <<= 1;
 
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
 
 				if (!newData)
 					return false;
@@ -196,7 +196,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, sizeof(std::max_align_t));
+							_allocator->release(newData, newCapacityTotalSize, alignof(T));
 						});
 
 					if (!_expandTo<construct>(newData, length))
@@ -206,7 +206,7 @@ namespace peff {
 				}
 
 				if (_data)
-					_allocator->release(_data, _capacity * sizeof(T), sizeof(std::max_align_t));
+					_allocator->release(_data, _capacity * sizeof(T), alignof(T));
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
@@ -216,7 +216,7 @@ namespace peff {
 					newCapacity >>= 1;
 
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
 
 				if (!newData) {
 					if (forceResizeCapacity) {
@@ -231,7 +231,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, sizeof(std::max_align_t));
+							_allocator->release(newData, newCapacityTotalSize, alignof(T));
 						});
 
 					_shrink(newData, length);
@@ -240,7 +240,7 @@ namespace peff {
 				}
 
 				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, sizeof(std::max_align_t));
+					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
 				_capacity = newCapacity;
 				_data = newData;
 			} else {
@@ -276,14 +276,14 @@ namespace peff {
 				while (newCapacity < length)
 					newCapacity <<= 1;
 
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
 
 				if (!newData)
 					return false;
 
 				ScopeGuard scopeGuard(
 					[this, newCapacityTotalSize, newData]() noexcept {
-						_allocator->release(newData, newCapacityTotalSize, sizeof(std::max_align_t));
+						_allocator->release(newData, newCapacityTotalSize, alignof(T));
 					});
 
 				if (!_expandToWith(newData, length, filler)) {
@@ -293,13 +293,13 @@ namespace peff {
 				scopeGuard.release();
 
 				if (_data)
-					_allocator->release(_data, _capacity * sizeof(T), sizeof(std::max_align_t));
+					_allocator->release(_data, _capacity * sizeof(T), alignof(T));
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
 
 				if (!newData) {
 					if (forceResizeCapacity) {
@@ -314,7 +314,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, sizeof(std::max_align_t));
+							_allocator->release(newData, newCapacityTotalSize, alignof(T));
 						});
 
 					_shrink(newData, length);
@@ -323,7 +323,7 @@ namespace peff {
 				}
 
 				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, sizeof(std::max_align_t));
+					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
 				_capacity = newCapacity;
 				_data = newData;
 			} else {
@@ -349,7 +349,7 @@ namespace peff {
 				return;
 
 			size_t newTotalSize = length * sizeof(T);
-			T *newData = (T *)_allocator->alloc(newTotalSize, sizeof(std::max_align_t));
+			T *newData = (T *)_allocator->alloc(newTotalSize, alignof(T));
 
 			if constexpr (std::is_trivially_move_assignable_v<T>) {
 				memmove(newData, _data, length * sizeof(T));
@@ -371,7 +371,7 @@ namespace peff {
 					std::destroy_at<T>(&_data[i]);
 			}
 			if (_capacity) {
-				_allocator->release(_data, sizeof(T) * _capacity, sizeof(std::max_align_t));
+				_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
 			}
 
 			_data = nullptr;
@@ -392,7 +392,7 @@ namespace peff {
 			if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, sizeof(std::max_align_t));
+				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
 
 				if (!newData)
 					return false;
@@ -403,7 +403,7 @@ namespace peff {
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, sizeof(std::max_align_t));
+							_allocator->release(newData, newCapacityTotalSize, alignof(T));
 						});
 
 					_moveData(newData, _data, idxStart);
@@ -413,7 +413,7 @@ namespace peff {
 				}
 
 				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, sizeof(std::max_align_t));
+					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
 				_capacity = newCapacity;
 				_data = newData;
 			} else {

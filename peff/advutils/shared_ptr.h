@@ -53,11 +53,11 @@ namespace peff {
 			inline virtual ~DefaultSharedPtrControlBlock() {}
 
 			inline virtual void onStrongRefZero() noexcept override {
-				peff::destroyAndRelease<T>(allocator.get(), ptr, sizeof(std::max_align_t));
+				peff::destroyAndRelease<T>(allocator.get(), ptr, alignof(T));
 			}
 
 			inline virtual void onRefZero() noexcept override {
-				peff::destroyAndRelease<DefaultSharedPtrControlBlock>(allocator.get(), this, sizeof(std::max_align_t));
+				peff::destroyAndRelease<DefaultSharedPtrControlBlock>(allocator.get(), this, alignof(DefaultSharedPtrControlBlock));
 			}
 		};
 
@@ -230,16 +230,16 @@ namespace peff {
 
 	template <typename T, typename... Args>
 	PEFF_FORCEINLINE SharedPtr<T> makeShared(peff::Alloc *allocator, Args &&...args) {
-		T *ptr = peff::allocAndConstruct<T>(allocator, sizeof(std::max_align_t), std::forward<Args>(args)...);
+		T *ptr = peff::allocAndConstruct<T>(allocator, alignof(T), std::forward<Args>(args)...);
 		if (!ptr)
 			return {};
 		peff::ScopeGuard releasePtrGuard([allocator, ptr]() noexcept {
-			peff::destroyAndRelease<T>(allocator, ptr, sizeof(std::max_align_t));
+			peff::destroyAndRelease<T>(allocator, ptr, alignof(T));
 		});
 
 		typename SharedPtr<T>::DefaultSharedPtrControlBlock *controlBlock =
 			peff::allocAndConstruct<typename SharedPtr<T>::DefaultSharedPtrControlBlock>(
-				allocator, sizeof(std::max_align_t),
+				allocator, alignof(typename SharedPtr<T>::DefaultSharedPtrControlBlock),
 				allocator, ptr);
 		if (!controlBlock)
 			return {};

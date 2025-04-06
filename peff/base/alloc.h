@@ -12,8 +12,8 @@ namespace peff {
 	public:
 		PEFF_BASE_API virtual ~Alloc();
 
-		virtual void *alloc(size_t size, size_t alignment = alignof(std::max_align_t)) noexcept = 0;
-		virtual void release(void *ptr, size_t size, size_t alignment = alignof(std::max_align_t)) noexcept = 0;
+		virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
+		virtual void release(void *ptr, size_t size, size_t alignment) noexcept = 0;
 
 		virtual Alloc *getDefaultAlloc() const noexcept = 0;
 	};
@@ -22,7 +22,7 @@ namespace peff {
 	public:
 		PEFF_BASE_API virtual void onRefZero() noexcept override;
 
-		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = alignof(std::max_align_t)) noexcept override;
+		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
@@ -92,7 +92,7 @@ namespace peff {
 			return nullptr;
 
 		ScopeGuard releasePtrGuard([&allocatorHolder, ptr, alignment]() noexcept {
-			allocatorHolder->release(ptr, alignment);
+			allocatorHolder->release(ptr, sizeof(T), alignment);
 		});
 
 		constructAt<T>((T *)ptr, std::forward<Args>(args)...);

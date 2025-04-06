@@ -76,13 +76,13 @@ namespace peff {
 		RcObjectPtr<Alloc> _allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(const T &value) {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard(
 				[this, node]() noexcept {
-					_allocator->release(node, sizeof(Node));
+					_allocator->release(node, sizeof(Node), alignof(Node));
 				});
 			Uninitialized<T> copiedData;
 			if (copiedData.copyFrom(value)) {
@@ -96,13 +96,13 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(T &&value) {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard(
 				[this, node]() noexcept {
-					_allocator->release(node, sizeof(Node));
+					_allocator->release(node, sizeof(Node), alignof(Node));
 				});
 			constructAt<Node>(node, std::move(value));
 			scopeGuard.release();
@@ -112,7 +112,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _deleteSingleNode(Node *node) {
 			std::destroy_at<Node>(node);
-			_allocator->release(node, sizeof(Node));
+			_allocator->release(node, sizeof(Node), alignof(Node));
 		}
 
 		PEFF_FORCEINLINE void _deleteNodeTree(Node *node) {

@@ -8,9 +8,9 @@
 
 namespace peff {
 	struct SharedPtrControlBlock {
-		std::atomic_size_t nWeakRefs, nStrongRefs;
+		std::atomic_size_t nWeakRefs = 0, nStrongRefs = 0;
 
-		PEFF_FORCEINLINE SharedPtrControlBlock() : nWeakRefs(0), nStrongRefs(0) {}
+		PEFF_FORCEINLINE SharedPtrControlBlock() {}
 		inline virtual ~SharedPtrControlBlock() {}
 
 		PEFF_FORCEINLINE void incStrongRef() noexcept {
@@ -49,7 +49,7 @@ namespace peff {
 			T *ptr;
 			peff::RcObjectPtr<peff::Alloc> allocator;
 
-			PEFF_FORCEINLINE DefaultSharedPtrControlBlock(peff::Alloc *allocator, T *ptr) : allocator(allocator), ptr(ptr) {}
+			PEFF_FORCEINLINE DefaultSharedPtrControlBlock(peff::Alloc *allocator, T *ptr) noexcept : allocator(allocator), ptr(ptr) {}
 			inline virtual ~DefaultSharedPtrControlBlock() {}
 
 			inline virtual void onStrongRefZero() noexcept override {
@@ -69,7 +69,7 @@ namespace peff {
 			friend class SharedPtr<T>;
 
 		public:
-			PEFF_FORCEINLINE SharedPtr<T> sharedFromThis() {
+			PEFF_FORCEINLINE SharedPtr<T> sharedFromThis() noexcept {
 				return SharedPtr<T>(controlBlock, ptr);
 			}
 		};
@@ -77,39 +77,39 @@ namespace peff {
 		SharedPtrControlBlock *controlBlock;
 		T *ptr;
 
-		PEFF_FORCEINLINE void reset() {
+		PEFF_FORCEINLINE void reset() noexcept {
 			if (controlBlock)
 				controlBlock->decStrongRef();
 			controlBlock = nullptr;
-			ptr = 0;
+			ptr = nullptr;
 		}
 
-		PEFF_FORCEINLINE SharedPtr() : controlBlock(nullptr), ptr(nullptr) {
+		PEFF_FORCEINLINE SharedPtr() noexcept : controlBlock(nullptr), ptr(nullptr) {
 		}
-		PEFF_FORCEINLINE SharedPtr(SharedPtrControlBlock *controlBlock, T *ptr) : controlBlock(controlBlock), ptr(ptr) {
+		PEFF_FORCEINLINE SharedPtr(SharedPtrControlBlock *controlBlock, T *ptr) noexcept : controlBlock(controlBlock), ptr(ptr) {
+			if (controlBlock) {
+				controlBlock->incStrongRef();
+			}
+
 			if constexpr (std::is_base_of_v<SharedFromThis, T>) {
 				((SharedFromThis*)ptr)->controlBlock = controlBlock;
 				((SharedFromThis*)ptr)->ptr = ptr;
-			}
-
-			if (controlBlock) {
-				controlBlock->incStrongRef();
 			}
 		}
 		PEFF_FORCEINLINE ~SharedPtr() {
 			reset();
 		}
 
-		PEFF_FORCEINLINE SharedPtr(const SharedPtr<T> &rhs) : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
+		PEFF_FORCEINLINE SharedPtr(const SharedPtr<T> &rhs) noexcept : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
 			if (controlBlock) {
 				controlBlock->incStrongRef();
 			}
 		}
-		PEFF_FORCEINLINE SharedPtr(SharedPtr<T> &&rhs) : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
+		PEFF_FORCEINLINE SharedPtr(SharedPtr<T> &&rhs) noexcept : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
 			rhs.controlBlock = nullptr;
 		}
 
-		PEFF_FORCEINLINE SharedPtr<T> &operator=(const SharedPtr<T> &rhs) {
+		PEFF_FORCEINLINE SharedPtr<T> &operator=(const SharedPtr<T> &rhs) noexcept {
 			reset();
 			controlBlock = rhs.controlBlock;
 			if (controlBlock) {
@@ -119,38 +119,38 @@ namespace peff {
 
 			return *this;
 		}
-		PEFF_FORCEINLINE SharedPtr<T> &operator=(SharedPtr<T> &&rhs) {
+		PEFF_FORCEINLINE SharedPtr<T> &operator=(SharedPtr<T> &&rhs) noexcept {
 			reset();
 			controlBlock = rhs.controlBlock;
 			ptr = rhs.ptr;
 			rhs.controlBlock = nullptr;
-			rhs.ptr = 0;
+			rhs.ptr = nullptr;
 
 			return *this;
 		}
 
-		PEFF_FORCEINLINE T *get() const {
+		PEFF_FORCEINLINE T *get() const noexcept {
 			return (T *)ptr;
 		}
 
-		PEFF_FORCEINLINE T *operator->() const {
+		PEFF_FORCEINLINE T *operator->() const noexcept {
 			return get();
 		}
-		PEFF_FORCEINLINE T &operator*() const {
+		PEFF_FORCEINLINE T &operator*() const noexcept {
 			return *get();
 		}
 
-		PEFF_FORCEINLINE operator bool() const {
+		PEFF_FORCEINLINE operator bool() const noexcept {
 			return (bool)ptr;
 		}
 
 		template <typename T1>
-		PEFF_FORCEINLINE SharedPtr<T1> castTo() const {
+		PEFF_FORCEINLINE SharedPtr<T1> castTo() const noexcept {
 			return SharedPtr<T1>(controlBlock, static_cast<T1 *>(ptr));
 		}
 
 		template <typename T1>
-		PEFF_FORCEINLINE operator T1 *() const {
+		PEFF_FORCEINLINE operator T1 *() const noexcept {
 			return static_cast<T1 *>(ptr);
 		}
 	};
@@ -165,17 +165,17 @@ namespace peff {
 			if (controlBlock)
 				controlBlock->decWeakRef();
 			controlBlock = nullptr;
-			ptr = 0;
+			ptr = nullptr;
 		}
 
-		PEFF_FORCEINLINE WeakPtr() : controlBlock(nullptr), ptr(nullptr) {
+		PEFF_FORCEINLINE WeakPtr() noexcept : controlBlock(nullptr), ptr(nullptr) {
 		}
-		PEFF_FORCEINLINE WeakPtr(SharedPtrControlBlock *controlBlock, T *ptr) : controlBlock(controlBlock), ptr(ptr) {
+		PEFF_FORCEINLINE explicit WeakPtr(SharedPtrControlBlock *controlBlock, T *ptr) noexcept : controlBlock(controlBlock), ptr(ptr) {
 			if (controlBlock) {
 				controlBlock->incWeakRef();
 			}
 		}
-		PEFF_FORCEINLINE WeakPtr(const SharedPtr<T> &ptr) : controlBlock(ptr.controlBlock), ptr(ptr.ptr) {
+		PEFF_FORCEINLINE explicit WeakPtr(const SharedPtr<T> &ptr) noexcept : controlBlock(ptr.controlBlock), ptr(ptr.ptr) {
 			if (controlBlock) {
 				controlBlock->incWeakRef();
 			}
@@ -184,16 +184,17 @@ namespace peff {
 			reset();
 		}
 
-		PEFF_FORCEINLINE WeakPtr(const WeakPtr<T> &rhs) : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
+		PEFF_FORCEINLINE WeakPtr(const WeakPtr<T> &rhs) noexcept : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
 			if (controlBlock) {
 				controlBlock->incWeakRef();
 			}
 		}
-		PEFF_FORCEINLINE WeakPtr(WeakPtr<T> &&rhs) : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
+		PEFF_FORCEINLINE WeakPtr(WeakPtr<T> &&rhs) noexcept : controlBlock(rhs.controlBlock), ptr(rhs.ptr) {
 			rhs.controlBlock = nullptr;
+			rhs.ptr = nullptr;
 		}
 
-		PEFF_FORCEINLINE WeakPtr<T> &operator=(const WeakPtr<T> &rhs) {
+		PEFF_FORCEINLINE WeakPtr<T> &operator=(const WeakPtr<T> &rhs) noexcept {
 			reset();
 			controlBlock = rhs.controlBlock;
 			if (controlBlock) {
@@ -203,24 +204,24 @@ namespace peff {
 
 			return *this;
 		}
-		PEFF_FORCEINLINE WeakPtr<T> &operator=(WeakPtr<T> &&rhs) {
+		PEFF_FORCEINLINE WeakPtr<T> &operator=(WeakPtr<T> &&rhs) noexcept {
 			reset();
 			controlBlock = rhs.controlBlock;
 			ptr = rhs.ptr;
 			rhs.controlBlock = nullptr;
-			rhs.ptr = 0;
+			rhs.ptr = nullptr;
 
 			return *this;
 		}
 
-		PEFF_FORCEINLINE SharedPtr<T> lock() const {
+		PEFF_FORCEINLINE SharedPtr<T> lock() const noexcept {
 			if ((!controlBlock) || (!controlBlock->nStrongRefs))
 				std::terminate();
 			return SharedPtr<T>(controlBlock, ptr);
 		}
 
 		template <typename T1>
-		PEFF_FORCEINLINE WeakPtr<T1> castTo() const {
+		PEFF_FORCEINLINE WeakPtr<T1> castTo() const noexcept {
 			return WeakPtr<T1>(controlBlock, ptr + (((char *)static_cast<T *>(ptr)) - (char *)static_cast<T1 *>(ptr)));
 		}
 	};

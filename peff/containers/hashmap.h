@@ -34,6 +34,18 @@ namespace peff {
 
 		struct QueryPair : Pair {
 			const K *queryKey;
+
+			QueryPair(QueryPair &&rhs) = default;
+
+			PEFF_FORCEINLINE bool copy(QueryPair &dest) const {
+				if (!Pair::copy((Pair&)dest)) {
+					return false;
+				}
+
+				dest.queryKey = queryKey;
+
+				return true;
+			}
 		};
 
 		struct PairComparator {

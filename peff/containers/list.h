@@ -36,12 +36,12 @@ namespace peff {
 		Alloc *_allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node));
+			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
 			if (!node)
 				return nullptr;
 
 			ScopeGuard scopeGuard([this, node]() noexcept {
-				_allocator->release(node, sizeof(Node));
+				_allocator->release(node, sizeof(Node), alignof(Node));
 			});
 			constructAt<Node>(node, std::move(data));
 			scopeGuard.release();
@@ -52,7 +52,7 @@ namespace peff {
 		PEFF_FORCEINLINE void _deleteNode(Node *node) {
 			std::destroy_at<Node>(node);
 
-			_allocator->release(node, sizeof(Node));
+			_allocator->release(node, sizeof(Node), alignof(Node));
 		}
 
 		PEFF_FORCEINLINE void _prepend(Node *dest, Node *node) noexcept {

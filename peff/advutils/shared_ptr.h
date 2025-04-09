@@ -224,6 +224,10 @@ namespace peff {
 		PEFF_FORCEINLINE WeakPtr<T1> castTo() const noexcept {
 			return WeakPtr<T1>(controlBlock, ptr + (((char *)static_cast<T *>(ptr)) - (char *)static_cast<T1 *>(ptr)));
 		}
+
+		PEFF_FORCEINLINE bool isValid() const noexcept {
+			return controlBlock->nStrongRefs;
+		}
 	};
 
 	template<typename T>

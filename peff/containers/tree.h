@@ -211,11 +211,12 @@ namespace peff {
 		PEFF_FORCEINLINE Node *_get(const T &key) {
 			Node *i = (Node *)_root;
 			while (i) {
-				if (_comparator(i->value, key))
+				if (_comparator(i->value, key)) {
+					assert(!_comparator(key, i->value));
 					i = (Node *)i->r;
-				else if (_comparator(key, i->value))
+				} else if (_comparator(key, i->value)) {
 					i = (Node *)i->l;
-				else
+				} else
 					return i;
 			}
 			return nullptr;
@@ -226,10 +227,12 @@ namespace peff {
 			while (*i) {
 				parentOut = *i;
 
-				if (_comparator((*i)->value, key))
+				if (_comparator((*i)->value, key)) {
+					assert(!_comparator(key, (*i)->value));
 					i = (Node **)&((*i)->r);
-				else if (_comparator(key, (*i)->value))
+				} else if (_comparator(key, (*i)->value)) {
 					i = (Node **)&((*i)->l);
+				}
 				else
 					return nullptr;
 			}
@@ -265,7 +268,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Node *_remove(Node *node) {
-			Node *y = (Node*)_removeFixUp(node);
+			Node *y = (Node *)_removeFixUp(node);
 
 			_cachedMinNode = _getMinNode(_root);
 			_cachedMaxNode = _getMaxNode(_root);
@@ -343,6 +346,7 @@ namespace peff {
 
 			while (curNode) {
 				if (_comparator(curNode->value, data)) {
+					assert(!_comparator(data, curNode->value));
 					maxNode = curNode;
 					curNode = (Node *)curNode->r;
 				} else if (_comparator(data, curNode->value)) {

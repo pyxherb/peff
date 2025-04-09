@@ -175,7 +175,7 @@ namespace peff {
 				controlBlock->incWeakRef();
 			}
 		}
-		PEFF_FORCEINLINE explicit WeakPtr(const SharedPtr<T> &ptr) noexcept : controlBlock(ptr.controlBlock), ptr(ptr.ptr) {
+		PEFF_FORCEINLINE WeakPtr(const SharedPtr<T> &ptr) noexcept : controlBlock(ptr.controlBlock), ptr(ptr.ptr) {
 			if (controlBlock) {
 				controlBlock->incWeakRef();
 			}

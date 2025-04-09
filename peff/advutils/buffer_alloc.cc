@@ -5,7 +5,7 @@ using namespace peff;
 BufferAlloc peff::g_bufferAlloc(nullptr, 0);
 RcObjectPtr<BufferAlloc> peff::g_bufferAllocKeeper(&g_bufferAlloc);
 
-PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc) {
+PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc, AllocDescComparator()) {
 }
 
 PEFF_ADVUTILS_API void BufferAlloc::onRefZero() noexcept {

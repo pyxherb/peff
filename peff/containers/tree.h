@@ -232,8 +232,7 @@ namespace peff {
 					i = (Node **)&((*i)->r);
 				} else if (_comparator(key, (*i)->value)) {
 					i = (Node **)&((*i)->l);
-				}
-				else
+				} else
 					return nullptr;
 			}
 			return i;
@@ -279,13 +278,14 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE RBTree(Alloc *allocator) : _allocator(allocator) {}
+		PEFF_FORCEINLINE RBTree(Alloc *allocator, Comparator &&comparator) : _allocator(allocator), _comparator(std::move(comparator)) {}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			peff::constructAt<ThisType>(&dest, _allocator.get());
-
-			if (!peff::copy(dest._comparator, _comparator))
+			peff::Uninitialized<Comparator> copiedComparator;
+			if (!copiedComparator.copyFrom(_comparator))
 				return false;
+
+			peff::constructAt<ThisType>(&dest, _allocator.get(), copiedComparator.release());
 
 			if (_root) {
 				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root)))
@@ -300,19 +300,18 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE RBTree(ThisType &&other) {
+		PEFF_FORCEINLINE RBTree(ThisType &&other)
+			: _comparator(std::move(other._comparator)),
+			  _allocator(std::move(other._allocator)) {
 			_root = other._root;
 			_cachedMinNode = other._cachedMinNode;
 			_cachedMaxNode = other._cachedMaxNode;
 			_nNodes = other._nNodes;
-			_comparator = std::move(other._comparator);
-			_allocator = other._allocator;
 
 			other._root = nullptr;
 			other._cachedMinNode = nullptr;
 			other._cachedMaxNode = nullptr;
 			other._nNodes = 0;
-			other._allocator = nullptr;
 		}
 
 		virtual inline ~RBTree() {
@@ -419,6 +418,14 @@ namespace peff {
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return const_cast<ThisType *>(this)->_allocator.get();
+		}
+
+		PEFF_FORCEINLINE Comparator &comparator() {
+			return _comparator;
+		}
+
+		PEFF_FORCEINLINE const Comparator &comparator() const {
+			return _comparator;
 		}
 
 		PEFF_FORCEINLINE void verify() {

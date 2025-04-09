@@ -33,7 +33,7 @@ namespace peff {
 
 		Node *_first = nullptr, *_last = nullptr;
 		size_t _length = 0;
-		Alloc *_allocator;
+		RcObjectPtr<Alloc> _allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
 			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));

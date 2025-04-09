@@ -14,7 +14,7 @@ namespace peff {
 	public:
 		using NodeType = typename Tree::NodeType;
 
-		PEFF_FORCEINLINE Set(Alloc *allocator) : _tree(allocator) {
+		PEFF_FORCEINLINE Set(Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
 		}
 		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
 		}
@@ -62,6 +62,14 @@ namespace peff {
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _tree.allocator();
+		}
+
+		PEFF_FORCEINLINE Comparator& comparator() {
+			return _tree.comparator();
+		}
+
+		PEFF_FORCEINLINE const Comparator &comparator() const {
+			return _tree.comparator();
 		}
 
 		PEFF_FORCEINLINE void clear() {

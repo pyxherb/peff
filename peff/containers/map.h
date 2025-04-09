@@ -22,14 +22,14 @@ namespace peff {
 		struct PairComparator {
 			Lt ltComparator;
 
+			PEFF_FORCEINLINE PairComparator(Lt &&ltComparator) : ltComparator(std::move(ltComparator)) {}
+
 			PEFF_FORCEINLINE decltype(std::declval<Lt>()(std::declval<K>(), std::declval<K>())) operator()(const Pair &lhs, const Pair &rhs) const {
 				const K &l = lhs.isForQuery ? *((const QueryPair &)lhs).queryKey : lhs.key,
 						&r = rhs.isForQuery ? *((const QueryPair &)rhs).queryKey : rhs.key;
 				return ltComparator(l, r);
 			}
 		};
-
-		PairComparator comparator;
 
 		using SetType = Set<Pair, PairComparator>;
 
@@ -45,8 +45,8 @@ namespace peff {
 	public:
 		using NodeType = typename SetType::NodeType;
 
-		PEFF_FORCEINLINE Map(Alloc *allocator) : _set(allocator) {}
-		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)), comparator(std::move(rhs.comparator)) {
+		PEFF_FORCEINLINE Map(Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
+		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)) {
 		}
 
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
@@ -88,6 +88,14 @@ namespace peff {
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _set.allocator();
+		}
+
+		PEFF_FORCEINLINE Lt& comparator() {
+			return _set.comparator().ltComparator;
+		}
+		
+		PEFF_FORCEINLINE const Lt& comparator() const {
+			return _set.comparator().ltComparator;
 		}
 
 		PEFF_FORCEINLINE void clear() {

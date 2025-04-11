@@ -142,7 +142,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool copy(List &dest) const {
-			constructAt<ThisType>(&dest, _allocator);
+			constructAt<ThisType>(&dest, _allocator.get());
 			dest._first = nullptr;
 			dest._last = nullptr;
 			dest._length = 0;
@@ -615,7 +615,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
-			return _allocator;
+			return _allocator.get();
 		}
 
 		PEFF_FORCEINLINE bool build(const std::initializer_list<T> &initializerList) {

@@ -65,9 +65,11 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE static bool _resizeBuckets(size_t newSize, BucketsType &oldBuckets, BucketsType &newBuckets) {
 			{
-				Bucket fillerBucket(newBuckets.allocator());
-				if (!newBuckets.resizeWith(newSize, fillerBucket)) {
+				if (!newBuckets.resizeUninitialized(newSize)) {
 					return false;
+				}
+				for (size_t i = 0; i < newBuckets.size(); ++i) {
+					peff::constructAt<Bucket>(&newBuckets.at(i), newBuckets.allocator());
 				}
 			}
 
@@ -151,10 +153,11 @@ namespace peff {
 		/// @return true for succeeded, false if failed.
 		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data, bool forceResizeBuckets) {
 			if (!_buckets.size()) {
-				Bucket fillerBucket(_buckets.allocator());
-				if (!_buckets.resizeWith(1, fillerBucket)) {
+				if (!_buckets.resizeUninitialized(1)) {
 					return false;
 				}
+
+				peff::constructAt<Bucket>(&_buckets.at(0), _buckets.allocator());
 			}
 
 			T tmpData = std::move(data);

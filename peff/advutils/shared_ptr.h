@@ -42,6 +42,20 @@ namespace peff {
 		virtual void onRefZero() noexcept = 0;
 	};
 
+	class SharedFromThisBase {
+	protected:
+		SharedPtrControlBlock *controlBlock;
+
+		friend class _SharedFromThisHelper;
+	};
+
+	class _SharedFromThisHelper {
+	public:
+		PEFF_FORCEINLINE static void setControlBlock(SharedFromThisBase* sft, SharedPtrControlBlock* controlBlock) noexcept {
+			sft->controlBlock = controlBlock;
+		}
+	};
+
 	template <typename T>
 	class SharedPtr {
 	public:
@@ -61,16 +75,13 @@ namespace peff {
 			}
 		};
 
-		class SharedFromThis {
-		private:
-			SharedPtrControlBlock *controlBlock;
-			T *ptr;
-
+		class SharedFromThis : public SharedFromThisBase {
+		protected:
 			friend class SharedPtr<T>;
 
 		public:
 			PEFF_FORCEINLINE SharedPtr<T> sharedFromThis() noexcept {
-				return SharedPtr<T>(controlBlock, ptr);
+				return SharedPtr<T>(controlBlock, static_cast<T *>(this));
 			}
 		};
 
@@ -91,9 +102,8 @@ namespace peff {
 				controlBlock->incStrongRef();
 			}
 
-			if constexpr (std::is_base_of_v<SharedFromThis, T>) {
-				((SharedFromThis*)ptr)->controlBlock = controlBlock;
-				((SharedFromThis*)ptr)->ptr = ptr;
+			if constexpr (std::is_base_of_v<SharedFromThisBase, T>) {
+				_SharedFromThisHelper::setControlBlock(static_cast<SharedFromThisBase *>(ptr), controlBlock);
 			}
 		}
 		PEFF_FORCEINLINE ~SharedPtr() {
@@ -140,12 +150,22 @@ namespace peff {
 			return *get();
 		}
 
+		PEFF_FORCEINLINE bool operator<(const SharedPtr<T> &rhs) const noexcept {
+			return controlBlock < rhs.controlBlock;
+		}
+
+		PEFF_FORCEINLINE bool operator==(const SharedPtr<T> &rhs) const noexcept {
+			return controlBlock == rhs.controlBlock;
+		}
+
 		PEFF_FORCEINLINE operator bool() const noexcept {
 			return (bool)ptr;
 		}
 
 		template <typename T1>
 		PEFF_FORCEINLINE SharedPtr<T1> castTo() const noexcept {
+			if ((!controlBlock) || (!ptr))
+				return {};
 			return SharedPtr<T1>(controlBlock, static_cast<T1 *>(ptr));
 		}
 
@@ -226,11 +246,13 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool isValid() const noexcept {
+			if (!controlBlock)
+				return false;
 			return controlBlock->nStrongRefs;
 		}
 	};
 
-	template<typename T>
+	template <typename T>
 	using SharedFromThis = typename SharedPtr<T>::SharedFromThis;
 
 	template <typename T, typename... Args>

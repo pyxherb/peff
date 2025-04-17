@@ -23,8 +23,9 @@ namespace peff {
 
 		PEFF_FORCEINLINE void decStrongRef() noexcept {
 			if (!--nStrongRefs) {
-				onStrongRefZero();
-				if (!nWeakRefs) {
+				if(nWeakRefs) {
+					onStrongRefZero();
+				} else {
 					onRefZero();
 				}
 			}

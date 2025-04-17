@@ -287,6 +287,9 @@ namespace peff {
 
 				i = nextNode;
 			}
+			_length = 0;
+			_first = nullptr;
+			_last = nullptr;
 		}
 
 		PEFF_FORCEINLINE size_t size() const {

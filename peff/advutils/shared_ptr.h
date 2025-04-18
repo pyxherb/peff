@@ -26,6 +26,7 @@ namespace peff {
 				if(nWeakRefs) {
 					onStrongRefZero();
 				} else {
+					onStrongRefZero();
 					onRefZero();
 				}
 			}

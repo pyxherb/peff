@@ -40,7 +40,7 @@ struct Test2 : public peff::RcObject, public peff::SharedFromThis<Test2> {
 class RcObj : public Test, public Test2 {
 public:
 	const char *name;
-	RcObj(const char *name): name(name) {
+	RcObj(const char *name) : name(name) {
 		memset(test, 0xcc, sizeof(test));
 		memset(test2, 0xdd, sizeof(test2));
 	}
@@ -55,6 +55,20 @@ public:
 	}
 	virtual void onRefZero() noexcept {
 		delete this;
+	}
+};
+
+struct B {
+	char *p;
+	B() {
+		p = new char[128];
+	}
+	~B() {
+		if (p)
+			delete[] p;
+	}
+	B(B &&rhs) : p(rhs.p) {
+		rhs.p = nullptr;
 	}
 };
 
@@ -253,6 +267,13 @@ int main() {
 		}
 
 		puts("");
+	}
+
+	peff::DynArray<B> arr(&globalBufferAlloc);
+	for (int i = 0; i < 32; i++) {
+		int tmp = i + 1048576;
+		if (!arr.pushFront(B()))
+			throw std::bad_alloc();
 	}
 
 	/*{

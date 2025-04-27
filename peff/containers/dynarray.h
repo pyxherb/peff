@@ -46,8 +46,8 @@ namespace peff {
 			if constexpr (std::is_trivially_move_assignable_v<T>) {
 				memmove(newData, oldData, sizeof(T) * length);
 			} else {
-				for (size_t i = 0; i < length; ++i) {
-					newData[i] = std::move(oldData[i]);
+				for (size_t i = length; i > 0; --i) {
+					newData[i - 1] = std::move(oldData[i - 1]);
 				}
 			}
 		}
@@ -56,8 +56,8 @@ namespace peff {
 			if constexpr (std::is_trivially_move_constructible_v<T>) {
 				memmove(newData, oldData, sizeof(T) * length);
 			} else {
-				for (size_t i = 0; i < length; ++i) {
-					constructAt<T>(&newData[i], std::move(oldData[i]));
+				for (size_t i = length; i > 0; --i) {
+					constructAt<T>(&newData[i - 1], std::move(oldData[i - 1]));
 				}
 			}
 		}
@@ -205,8 +205,7 @@ namespace peff {
 					scopeGuard.release();
 				}
 
-				if (_data)
-					_allocator->release(_data, _capacity * sizeof(T), alignof(T));
+				_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
@@ -239,8 +238,7 @@ namespace peff {
 					scopeGuard.release();
 				}
 
-				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
+				_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else {
@@ -292,8 +290,7 @@ namespace peff {
 
 				scopeGuard.release();
 
-				if (_data)
-					_allocator->release(_data, _capacity * sizeof(T), alignof(T));
+				_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
@@ -322,8 +319,7 @@ namespace peff {
 					scopeGuard.release();
 				}
 
-				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
+				_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else {

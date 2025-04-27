@@ -64,8 +64,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void clear() {
-			bool result = _dynArray.resizeWith(1, '\0');
-			assert(result);
+			_dynArray.clear();
 		}
 
 		PEFF_FORCEINLINE char& at(size_t index) {

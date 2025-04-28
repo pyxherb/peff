@@ -46,8 +46,14 @@ namespace peff {
 			if constexpr (std::is_trivially_move_assignable_v<T>) {
 				memmove(newData, oldData, sizeof(T) * length);
 			} else {
-				for (size_t i = length; i > 0; --i) {
-					newData[i - 1] = std::move(oldData[i - 1]);
+				if (newData + length < oldData) {
+					for (size_t i = 0; i < length; ++i) {
+						newData[i] = std::move(oldData[i]);
+					}
+				} else {
+					for (size_t i = length; i > 0; --i) {
+						newData[i - 1] = std::move(oldData[i - 1]);
+					}
 				}
 			}
 		}
@@ -56,8 +62,14 @@ namespace peff {
 			if constexpr (std::is_trivially_move_constructible_v<T>) {
 				memmove(newData, oldData, sizeof(T) * length);
 			} else {
-				for (size_t i = length; i > 0; --i) {
-					constructAt<T>(&newData[i - 1], std::move(oldData[i - 1]));
+				if (newData + length < oldData) {
+					for (size_t i = 0; i < length; ++i) {
+						constructAt<T>(&newData[i], std::move(oldData[i]));
+					}
+				} else {
+					for (size_t i = length; i > 0; --i) {
+						constructAt<T>(&newData[i - 1], std::move(oldData[i - 1]));
+					}
 				}
 			}
 		}

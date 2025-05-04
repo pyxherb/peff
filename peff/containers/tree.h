@@ -302,7 +302,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE RBTree(ThisType &&other)
 			: _comparator(std::move(other._comparator)),
-			  _allocator(std::move(other._allocator)) {
+			  _allocator(other._allocator) {
 			_root = other._root;
 			_cachedMinNode = other._cachedMinNode;
 			_cachedMaxNode = other._cachedMaxNode;

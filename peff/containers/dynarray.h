@@ -534,7 +534,6 @@ namespace peff {
 		PEFF_FORCEINLINE DynArray(Alloc *allocator) : _allocator(allocator) {
 		}
 		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(rhs.allocator()), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
-			rhs._allocator = nullptr;
 			rhs._data = nullptr;
 			rhs._length = 0;
 			rhs._capacity = 0;
@@ -552,7 +551,6 @@ namespace peff {
 			_length = rhs._length;
 			_capacity = rhs._capacity;
 
-			rhs._allocator = nullptr;
 			rhs._data = nullptr;
 			rhs._length = 0;
 			rhs._capacity = 0;

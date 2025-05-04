@@ -114,16 +114,10 @@ namespace peff {
 	public:
 		PEFF_FORCEINLINE List(Alloc *allocator) : _allocator(allocator) {}
 		List(const ThisType &other) = delete;
-		PEFF_FORCEINLINE List(ThisType &&other) {
-			_first = other._first;
-			_last = other._last;
-			_length = other._length;
-			_allocator = other._allocator;
-
+		PEFF_FORCEINLINE List(ThisType &&other): _first(other._first), _last(other._last), _length(other._length), _allocator(other._allocator) {
 			other._first = nullptr;
 			other._last = nullptr;
 			other._length = 0;
-			other._allocator = nullptr;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();

@@ -45,7 +45,7 @@ bool lzwhatCompress(peff::BitArray &bitArray, const char *buf, size_t size, size
 					size_t disp = (searchEndPtr - (searchBufPtr + offStart));
 					size_t len = matchLen;
 					printf("(%zu, %zu)\n", disp, len);
-					if (!bitArray.pushBackByte(false))
+					if (!bitArray.pushBack(false))
 						return false;
 					if (!bitArray.pushBackBytes((char *)&disp, sizeof(disp)))
 						return false;
@@ -57,7 +57,7 @@ bool lzwhatCompress(peff::BitArray &bitArray, const char *buf, size_t size, size
 			}
 		}
 
-		if (!bitArray.pushBackByte(true))
+		if (!bitArray.pushBack(true))
 			return false;
 		if (!bitArray.pushBackByte(*(uint8_t*)matchBufPtr))
 			return false;
@@ -108,8 +108,8 @@ bool lzwhatDecompress(const peff::BitArray &bitArray, peff::Alloc *allocator, si
 	#define INC_CUR_PTR(i, size, bitArray) if (((i) += (size)) > (bitArray).bitSize()) return false;
 
 	while (i < bitArray.bitSize()) {
-		bool b = bitArray.getByte(i);
-		INC_CUR_PTR(i, 8, bitArray);
+		bool b = bitArray.getBit(i);
+		INC_CUR_PTR(i, 1, bitArray);
 
 		if (b) {
 			uint8_t c = bitArray.getByte(i);

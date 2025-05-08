@@ -64,17 +64,85 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void _setByte(size_t bitIndex, uint8_t b) {
-			if (bitIndex & 7) {
-				_buffer[bitIndex >> 3] |= b << (bitIndex & 7);
-				_buffer[(bitIndex + 8) >> 3] = b >> (7 - (bitIndex & 7));
-			} else {
-				_buffer[bitIndex >> 3] = b;
+			size_t index = (bitIndex >> 3), inBitIndex = (bitIndex & 7);
+
+			switch (inBitIndex) {
+				case 7:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 1);
+					_buffer[(bitIndex >> 3)] |= (b << 7);
+					break;
+				case 6:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 2);
+					_buffer[(bitIndex >> 3)] |= (b << 6);
+					break;
+				case 5:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 3);
+					_buffer[(bitIndex >> 3)] |= (b << 5);
+					break;
+				case 4:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 4);
+					_buffer[(bitIndex >> 3)] |= (b << 4);
+					break;
+				case 3:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 5);
+					_buffer[(bitIndex >> 3)] |= (b << 3);
+					break;
+				case 2:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 6);
+					_buffer[(bitIndex >> 3)] |= (b << 2);
+					break;
+				case 1:
+					_buffer[(bitIndex >> 3)] &= (0xff >> 7);
+					_buffer[(bitIndex >> 3)] |= (b << 1);
+					break;
+				case 0:
+					_buffer[(bitIndex >> 3)] = b;
+					break;
 			}
+
+			size_t tailSize = inBitIndex;
+
+			switch (tailSize) {
+				case 7:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 7);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 1);
+					break;
+				case 6:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 6);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 2);
+					break;
+				case 5:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 5);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 3);
+					break;
+				case 4:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 4);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 4);
+					break;
+				case 3:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 3);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 5);
+					break;
+				case 2:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 2);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 6);
+					break;
+				case 1:
+					_buffer[(bitIndex >> 3) + 1] &= (0xff << 1);
+					_buffer[(bitIndex >> 3) + 1] |= (b >> 7);
+					break;
+				case 0:
+					break;
+			}
+
+			uint8_t test = _getByte(bitIndex);
+			assert(test == b);
 		}
 
 		PEFF_FORCEINLINE uint8_t _getByte(size_t bitIndex) const {
 			if (bitIndex & 7) {
-				return (_buffer[bitIndex >> 3] >> (bitIndex & 7)) | (_buffer[(bitIndex + 8) >> 3] << (7 - (bitIndex & 7)));
+				size_t byteIndex = bitIndex >> 3, bitOffset = bitIndex & 7;
+				return (_buffer[byteIndex] >> (bitOffset)) | ((_buffer[byteIndex + 1] << (8 - bitOffset)));
 			}
 			return _buffer[bitIndex >> 3];
 		}

@@ -63,88 +63,57 @@ namespace peff {
 			_buffer[(bitIndex >> 3)] &= ~(1 << (bitIndex & 7));
 		}
 
-		PEFF_FORCEINLINE void _setByte(size_t bitIndex, uint8_t b) {
+		PEFF_FORCEINLINE void _setByte(size_t bitIndex, uint8_t b, uint8_t nBits) {
 			size_t index = (bitIndex >> 3), inBitIndex = (bitIndex & 7);
 
-			switch (inBitIndex) {
-				case 7:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 1);
-					_buffer[(bitIndex >> 3)] |= (b << 7);
-					break;
-				case 6:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 2);
-					_buffer[(bitIndex >> 3)] |= (b << 6);
-					break;
-				case 5:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 3);
-					_buffer[(bitIndex >> 3)] |= (b << 5);
-					break;
-				case 4:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 4);
-					_buffer[(bitIndex >> 3)] |= (b << 4);
-					break;
-				case 3:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 5);
-					_buffer[(bitIndex >> 3)] |= (b << 3);
-					break;
-				case 2:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 6);
-					_buffer[(bitIndex >> 3)] |= (b << 2);
-					break;
-				case 1:
-					_buffer[(bitIndex >> 3)] &= (0xff >> 7);
-					_buffer[(bitIndex >> 3)] |= (b << 1);
-					break;
-				case 0:
-					_buffer[(bitIndex >> 3)] = b;
-					break;
+			if ((bitIndex + (nBits - 1)) >> 3 == index) {
+				// Does not across the byte boundary and inside a single byte.
+				// Such as 000|111|00
+				if (inBitIndex) {
+					uint8_t mask = ~((0xff >> (8 - inBitIndex)) << inBitIndex);
+
+					_buffer[index] &= mask;
+					_buffer[index] |= b << inBitIndex;
+				} else {
+					uint8_t mask = 0xff >> (8 - inBitIndex);
+
+					_buffer[index] &= mask;
+					_buffer[index] |= b << inBitIndex;
+				}
+			} else {
+				// Acrosses the byte boundary.
+				// Such as 000|10010 110|00000
+				uint8_t mask = 0xff >> (8 - inBitIndex);
+
+				_buffer[index] &= mask;
+				_buffer[index] |= b << inBitIndex;
+
+				uint8_t bitsRemaining = nBits - (8 - inBitIndex);
+
+				mask = 0xff << bitsRemaining;
+				_buffer[index + 1] &= mask;
+				_buffer[index + 1] |= b >> (nBits - bitsRemaining);
 			}
 
-			size_t tailSize = inBitIndex;
-
-			switch (tailSize) {
-				case 7:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 7);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 1);
-					break;
-				case 6:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 6);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 2);
-					break;
-				case 5:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 5);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 3);
-					break;
-				case 4:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 4);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 4);
-					break;
-				case 3:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 3);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 5);
-					break;
-				case 2:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 2);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 6);
-					break;
-				case 1:
-					_buffer[(bitIndex >> 3) + 1] &= (0xff << 1);
-					_buffer[(bitIndex >> 3) + 1] |= (b >> 7);
-					break;
-				case 0:
-					break;
+			uint8_t test = _getByte(bitIndex, nBits);
+			if (nBits < 8) {
+				test &= (0xff >> (8 - nBits));
+				b &= (0xff >> (8 - nBits));
 			}
-
-			uint8_t test = _getByte(bitIndex);
 			assert(test == b);
 		}
 
-		PEFF_FORCEINLINE uint8_t _getByte(size_t bitIndex) const {
+		PEFF_FORCEINLINE uint8_t _getByte(size_t bitIndex, uint8_t nBits) const {
 			if (bitIndex & 7) {
 				size_t byteIndex = bitIndex >> 3, bitOffset = bitIndex & 7;
-				return (_buffer[byteIndex] >> (bitOffset)) | ((_buffer[byteIndex + 1] << (8 - bitOffset)));
+				if (((bitIndex + (nBits - 1)) >> 3) > byteIndex) {
+					uint8_t l = _buffer[byteIndex] >> (bitOffset), h = _buffer[byteIndex + 1] << (8 - bitOffset);
+					return (l | h) & (0xff >> (8 - nBits));
+				} else {
+					return _buffer[byteIndex] >> (bitOffset);
+				}
 			}
-			return _buffer[bitIndex >> 3];
+			return _buffer[bitIndex >> 3] & (0xff >> (8 - nBits));
 		}
 
 	public:
@@ -191,7 +160,11 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE bool resize(size_t nBits) {
+		PEFF_FORCEINLINE bool resizeUninitialized(size_t nBits) {
+			if (!_autoResizeCapacity(nBits))
+				return false;
+			_nBits = nBits;
+			return true;
 		}
 
 		PEFF_FORCEINLINE bool pushBack(bool bit) {
@@ -212,18 +185,18 @@ namespace peff {
 			if (!_resizeOrExpandUninitialized(_nBits + 8)) {
 				return false;
 			}
-			_setByte(_nBits, b);
+			_setByte(_nBits, b, 8);
 			_nBits += 8;
 
 			return true;
 		}
 
-		PEFF_FORCEINLINE bool pushBackBytes(char* data, size_t len) {
+		PEFF_FORCEINLINE bool pushBackBytes(char *data, size_t len) {
 			if (!_resizeOrExpandUninitialized(_nBits + len * 8)) {
 				return false;
 			}
 			for (size_t i = 0; i < len; ++i) {
-				_setByte(_nBits, data[i]);
+				_setByte(_nBits, data[i], 8);
 				_nBits += 8;
 			}
 			return true;
@@ -270,6 +243,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool getBit(size_t bitIndex) const {
+			assert(bitIndex < _nBits);
 			return (_buffer[(bitIndex >> 3)] >> (bitIndex & 7)) & 1;
 		}
 
@@ -324,13 +298,27 @@ namespace peff {
 		PEFF_FORCEINLINE void setByte(size_t bitIndex, uint8_t b) {
 			assert(bitIndex + 8 <= _nBits);
 
-			_setByte(bitIndex, b);
+			_setByte(bitIndex, b, 8);
+		}
+
+		PEFF_FORCEINLINE void setByte(size_t bitIndex, uint8_t b, uint8_t nBits) {
+			assert(bitIndex + nBits <= _nBits);
+
+			_setByte(bitIndex, b, nBits);
 		}
 
 		PEFF_FORCEINLINE uint8_t getByte(size_t bitIndex) const {
 			assert(bitIndex + 8 <= _nBits);
 
-			return _getByte(bitIndex);
+			return _getByte(bitIndex, 8);
+		}
+
+		PEFF_FORCEINLINE uint8_t getByte(size_t bitIndex, uint8_t nBits) const {
+			assert(nBits);
+			assert(nBits <= 8);
+			assert(bitIndex + nBits <= _nBits);
+
+			return _getByte(bitIndex, nBits);
 		}
 
 		PEFF_FORCEINLINE void getBytes(char *buf, size_t len, size_t bitIndex) const {
@@ -341,7 +329,7 @@ namespace peff {
 			} else {
 				size_t curIndex = bitIndex;
 				for (size_t i = 0; i < len; ++i) {
-					buf[i] = _getByte(curIndex);
+					buf[i] = _getByte(curIndex, 8);
 					curIndex += 8;
 				}
 			}

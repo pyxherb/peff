@@ -160,6 +160,10 @@ namespace peff {
 			return controlBlock == rhs.controlBlock;
 		}
 
+		PEFF_FORCEINLINE bool operator!=(const SharedPtr<T> &rhs) const noexcept {
+			return controlBlock != rhs.controlBlock;
+		}
+
 		PEFF_FORCEINLINE operator bool() const noexcept {
 			return (bool)ptr;
 		}

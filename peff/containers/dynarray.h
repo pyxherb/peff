@@ -188,6 +188,7 @@ namespace peff {
 
 			if (!length) {
 				_clear();
+				return true;
 			}
 
 			int capacityStatus = _checkCapacity(length, _capacity);
@@ -697,11 +698,11 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void popBack() {
-			bool unused = resize(_length - 1);
+			bool unused = resizeUninitialized(_length - 1);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndResizeCapacity() {
-			return resize(_length - 1);
+			return resizeUninitialized(_length - 1);
 		}
 
 		PEFF_FORCEINLINE void popFront() {

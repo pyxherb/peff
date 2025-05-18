@@ -88,7 +88,18 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool pushBack(char &&data) {
-			return _dynArray.pushBack(std::move(data));
+			if (size_t index = _dynArray.size(); index) {
+				if (!_dynArray.pushBack('\0')) {
+					return false;
+				}
+				_dynArray.at(index - 1) = data;
+			} else {
+				if (!_dynArray.resize(2))
+					return false;
+				_dynArray.at(0) = data;
+				_dynArray.at(1) = '\0';
+			}
+			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE void popFront() {
@@ -101,10 +112,14 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE void popBack() {
 			_dynArray.popBack();
+			_dynArray.back() = '\0';
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndResizeCapacity() {
-			return _dynArray.popBackAndResizeCapacity();
+			if(!_dynArray.popBackAndResizeCapacity())
+				return false;
+			_dynArray.back() = '\0';
+			return true;
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
@@ -128,35 +143,35 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {
-			const size_t oldSize = _dynArray.size();
-			if(!_dynArray.resize(oldSize + length))
+			const size_t oldSize = size();
+			if(!resize(oldSize + length))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data, length);
 			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data) {
-			const size_t oldSize = _dynArray.size();
+			const size_t oldSize = size();
 			const size_t dataLength = strlen(data);
-			if(!_dynArray.resize(oldSize + dataLength))
+			if(!resize(oldSize + dataLength))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data, dataLength);
 			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const String &data) {
-			const size_t oldSize = _dynArray.size();
-			if(!_dynArray.resize(oldSize + data.size()))
+			const size_t oldSize = size();
+			if(!resize(oldSize + data.size()))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data.data(), data.size());
 			return true;
 		}
 
 		PEFF_FORCEINLINE bool build(const std::string_view &src) {
-			clear();
-			if(!resize(src.size()))
+			if (!resize(src.size()))
 				return false;
 			memcpy(_dynArray.data(), src.data(), src.size());
+			_dynArray.data()[src.size()] = '\0';
 			return true;
 		}
 
@@ -177,9 +192,9 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE operator std::string_view() const {
-			if (!_dynArray.size())
+			if (!size())
 				return std::string_view(_dynArray.data(), 0);
-			return std::string_view(_dynArray.data(), size());
+			return std::string_view(_dynArray.data(), _dynArray.size() - 1);
 		}
 
 		PEFF_FORCEINLINE bool operator==(const std::string_view& rhs) const {

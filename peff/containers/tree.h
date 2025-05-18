@@ -410,6 +410,8 @@ namespace peff {
 				_root = nullptr;
 				_nNodes = 0;
 			}
+			_cachedMaxNode = nullptr;
+			_cachedMinNode = nullptr;
 		}
 
 		PEFF_FORCEINLINE size_t size() {

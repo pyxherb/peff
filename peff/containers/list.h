@@ -114,7 +114,7 @@ namespace peff {
 	public:
 		PEFF_FORCEINLINE List(Alloc *allocator) : _allocator(allocator) {}
 		List(const ThisType &other) = delete;
-		PEFF_FORCEINLINE List(ThisType &&other): _first(other._first), _last(other._last), _length(other._length), _allocator(other._allocator) {
+		PEFF_FORCEINLINE List(ThisType &&other) : _first(other._first), _last(other._last), _length(other._length), _allocator(std::move(other._allocator)) {
 			other._first = nullptr;
 			other._last = nullptr;
 			other._length = 0;
@@ -613,6 +613,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _allocator.get();
+		}
+
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+			verifyReplaceable(_allocator.get(), rhs);
+
+			_allocator = rhs;
 		}
 
 		PEFF_FORCEINLINE bool build(const std::initializer_list<T> &initializerList) {

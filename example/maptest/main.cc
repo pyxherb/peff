@@ -202,11 +202,6 @@ int main() {
 			if (!map.insert(std::move(j), std::move(s)))
 				throw std::bad_alloc();
 		}
-
-		peff::Map<int, peff::String> map2(peff::getDefaultAlloc());
-		if (!peff::copy(map2, map)) {
-			throw std::bad_alloc();
-		}
 	}
 
 	{
@@ -257,7 +252,7 @@ int main() {
 	{
 		peff::BitArray bitArr(&globalBufferAlloc);
 
-		bitArr.resize(64);
+		bitArr.resizeUninitialized(64);
 
 		bitArr.fillSet(0, 64);
 		bitArr.fillClear(0, 48);

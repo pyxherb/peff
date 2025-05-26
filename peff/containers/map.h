@@ -90,10 +90,14 @@ namespace peff {
 			return _set.allocator();
 		}
 
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+			_set.replaceAllocator(rhs);
+		}
+
 		PEFF_FORCEINLINE Lt& comparator() {
 			return _set.comparator().ltComparator;
 		}
-		
+
 		PEFF_FORCEINLINE const Lt& comparator() const {
 			return _set.comparator().ltComparator;
 		}

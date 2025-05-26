@@ -14,7 +14,7 @@ namespace peff {
 		size_t _nBits = 0;
 		size_t _capacity = 0;
 		uint8_t *_buffer = nullptr;
-		Alloc *_allocator;
+		peff::RcObjectPtr<Alloc> _allocator;
 
 		PEFF_FORCEINLINE bool _autoResizeCapacity(size_t nBits) {
 			if (nBits < (_capacity >> 1)) {
@@ -336,7 +336,13 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
-			return _allocator;
+			return _allocator.get();
+		}
+
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) {
+			verifyReplaceable(_allocator.get(), rhs);
+
+			_allocator = rhs;
 		}
 	};
 }

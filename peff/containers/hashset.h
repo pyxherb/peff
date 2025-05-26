@@ -29,7 +29,7 @@ namespace peff {
 			PEFF_FORCEINLINE bool copy(Element &dest) const {
 				peff::Uninitialized<T> copiedData;
 
-				if(!copiedData.copyFrom(data)) {
+				if (!copiedData.copyFrom(data)) {
 					return false;
 				}
 
@@ -289,6 +289,13 @@ namespace peff {
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _buckets.allocator();
+		}
+
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+			for (auto &i : _buckets) {
+				i.replaceAllocator(rhs);
+			}
+			_buckets.replaceAllocator(rhs);
 		}
 
 		struct Iterator {

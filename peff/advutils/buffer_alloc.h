@@ -35,6 +35,8 @@ namespace peff {
 		PEFF_ADVUTILS_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_ADVUTILS_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
+		PEFF_ADVUTILS_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
+
 		PEFF_ADVUTILS_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
 

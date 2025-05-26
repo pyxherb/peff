@@ -64,6 +64,10 @@ namespace peff {
 			return _tree.allocator();
 		}
 
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+			_tree.replaceAllocator(rhs);
+		}
+
 		PEFF_FORCEINLINE Comparator& comparator() {
 			return _tree.comparator();
 		}

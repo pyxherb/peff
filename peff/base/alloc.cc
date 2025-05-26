@@ -37,11 +37,15 @@ PEFF_BASE_API void StdAlloc::release(void *ptr, size_t size, size_t alignment) n
 #endif
 }
 
+PEFF_BASE_API bool StdAlloc::isReplaceable(const Alloc *rhs) const noexcept {
+	return true;
+}
+
 PEFF_BASE_API Alloc *StdAlloc::getDefaultAlloc() const noexcept {
 	return g_stdAllocKeeper.get();
 }
 
-PEFF_BASE_API StdAlloc* peff::getDefaultAlloc() noexcept {
+PEFF_BASE_API StdAlloc *peff::getDefaultAlloc() noexcept {
 	return &g_stdAlloc;
 }
 
@@ -60,6 +64,10 @@ PEFF_BASE_API void VoidAlloc::release(void *ptr, size_t size, size_t alignment) 
 	assert(("Cannot free memory by VoidAlloc", false));
 }
 
+PEFF_BASE_API bool VoidAlloc::isReplaceable(const Alloc *rhs) const noexcept {
+	return true;
+}
+
 PEFF_BASE_API Alloc *VoidAlloc::getDefaultAlloc() const noexcept {
 	return g_voidAllocKeeper.get();
 }
@@ -75,6 +83,10 @@ PEFF_BASE_API void *NullAlloc::alloc(size_t size, size_t alignment) noexcept {
 }
 
 PEFF_BASE_API void NullAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
+}
+
+PEFF_BASE_API bool NullAlloc::isReplaceable(const Alloc *rhs) const noexcept {
+	return true;
 }
 
 PEFF_BASE_API Alloc *NullAlloc::getDefaultAlloc() const noexcept {

@@ -127,6 +127,14 @@ namespace peff {
 		PEFF_FORCEINLINE operator bool() const noexcept {
 			return _ptr;
 		}
+
+		PEFF_FORCEINLINE bool operator==(const ThisType &rhs) const noexcept {
+			return _ptr == rhs._ptr;
+		}
+
+		PEFF_FORCEINLINE bool operator!=(const ThisType &rhs) const noexcept {
+			return _ptr != rhs._ptr;
+		}
 	};
 
 	struct RcObjectUniquePtrDeleter {

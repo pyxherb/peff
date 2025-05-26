@@ -15,6 +15,8 @@ namespace peff {
 		virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
 		virtual void release(void *ptr, size_t size, size_t alignment) noexcept = 0;
 
+		virtual bool isReplaceable(const Alloc *rhs) const noexcept = 0;
+
 		virtual Alloc *getDefaultAlloc() const noexcept = 0;
 	};
 
@@ -24,6 +26,8 @@ namespace peff {
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
+
+		PEFF_BASE_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
 
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
@@ -40,6 +44,8 @@ namespace peff {
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
+		PEFF_BASE_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
+
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
 
@@ -53,6 +59,8 @@ namespace peff {
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
+		PEFF_BASE_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
+
 		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
 	};
 
@@ -63,6 +71,13 @@ namespace peff {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
+		}
+	}
+
+	PEFF_FORCEINLINE void verifyReplaceable(const Alloc *x, const Alloc *y) {
+		if (x && y) {
+			// Check if the allocators have the same type.
+			assert(("Incompatible allocators", x->isReplaceable(y)));
 		}
 	}
 

@@ -148,6 +148,10 @@ namespace peff {
 			return _set.allocator();
 		}
 
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+			_set.replaceAllocator(rhs);
+		}
+
 		PEFF_FORCEINLINE void clear() {
 			_set.clear();
 		}

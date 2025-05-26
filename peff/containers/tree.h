@@ -302,7 +302,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE RBTree(ThisType &&other)
 			: _comparator(std::move(other._comparator)),
-			  _allocator(other._allocator) {
+			  _allocator(std::move(other._allocator)) {
 			_root = other._root;
 			_cachedMinNode = other._cachedMinNode;
 			_cachedMaxNode = other._cachedMaxNode;
@@ -420,6 +420,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return const_cast<ThisType *>(this)->_allocator.get();
+		}
+
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) {
+			verifyReplaceable(_allocator.get(), rhs);
+
+			_allocator = rhs;
 		}
 
 		PEFF_FORCEINLINE Comparator &comparator() {

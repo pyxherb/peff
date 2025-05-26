@@ -91,6 +91,22 @@ PEFF_ADVUTILS_API void BufferAlloc::release(void *ptr, size_t size, size_t align
 	allocDescs.remove(desc, false);
 }
 
+PEFF_ADVUTILS_API bool BufferAlloc::isReplaceable(const Alloc* rhs) const noexcept {
+	if (rhs->getDefaultAlloc() != getDefaultAlloc()) {
+		return false;
+	}
+
+	const BufferAlloc *r = (const BufferAlloc *)rhs;
+
+	if (buffer != r->buffer)
+		return false;
+
+	if (bufferSize != r->bufferSize)
+		return false;
+
+	return true;
+}
+
 PEFF_ADVUTILS_API Alloc *BufferAlloc::getDefaultAlloc() const noexcept {
 	return g_voidAllocKeeper.get();
 }

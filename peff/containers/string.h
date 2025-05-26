@@ -126,6 +126,10 @@ namespace peff {
 			return _dynArray.allocator();
 		}
 
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+			_dynArray.replaceAllocator(rhs);
+		}
+
 		PEFF_FORCEINLINE char *data() {
 			return _dynArray.data();
 		}

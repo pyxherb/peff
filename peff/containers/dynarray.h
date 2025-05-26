@@ -31,7 +31,7 @@ namespace peff {
 		T *_data = nullptr;
 		size_t _length = 0;
 		size_t _capacity = 0;
-		Alloc *_allocator;
+		peff::RcObjectPtr<Alloc> _allocator;
 		DynArrayPlaceholderElement<T, IsString> _placeholderElement;
 
 		PEFF_FORCEINLINE static int _checkCapacity(size_t length, size_t capacity) {
@@ -534,7 +534,7 @@ namespace peff {
 	public:
 		PEFF_FORCEINLINE DynArray(Alloc *allocator) : _allocator(allocator) {
 		}
-		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(rhs.allocator()), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
+		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(std::move(rhs._allocator)), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
 			rhs._data = nullptr;
 			rhs._length = 0;
 			rhs._capacity = 0;
@@ -544,7 +544,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
-			verifyAlloc(_allocator, rhs._allocator);
+			verifyAlloc(_allocator.get(), rhs._allocator.get());
 			_clear();
 
 			_allocator = rhs._allocator;
@@ -560,7 +560,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			constructAt<ThisType>(&dest, _allocator);
+			constructAt<ThisType>(&dest, _allocator.get());
 
 			if (!dest._resize<false>(_length, true)) {
 				return false;
@@ -716,7 +716,13 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
-			return _allocator;
+			return _allocator.get();
+		}
+
+		PEFF_FORCEINLINE void replaceAllocator(Alloc* rhs) {
+			verifyReplaceable(_allocator.get(), rhs);
+
+			_allocator = rhs;
 		}
 
 		PEFF_FORCEINLINE T *data() {

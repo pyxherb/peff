@@ -9,6 +9,10 @@
 
 namespace peff {
 	class RcObject {
+	protected:
+		PEFF_BASE_API virtual void onIncRef(size_t counter);
+		PEFF_BASE_API virtual void onDecRef(size_t counter);
+
 	public:
 		std::atomic_size_t refCount;
 
@@ -17,36 +21,44 @@ namespace peff {
 
 		virtual void onRefZero() noexcept = 0;
 
-		PEFF_FORCEINLINE size_t incRef() noexcept {
+		PEFF_FORCEINLINE size_t incRef(size_t counter) noexcept {
+			onIncRef(counter);
 			return ++refCount;
 		}
 
-		PEFF_FORCEINLINE size_t decRef() noexcept {
-			if (!(--refCount)) {
+		PEFF_FORCEINLINE size_t decRef(size_t counter) noexcept {
+			if (counter != SIZE_MAX)
+				onDecRef(counter);
+			if (!(--this->refCount)) {
 				onRefZero();
 				return 0;
 			}
-			return refCount;
+			return this->refCount;
 		}
 	};
 
+	PEFF_BASE_API extern std::atomic_size_t g_rcObjectPtrCounter;
+
 	template <typename T>
 	class RcObjectPtr {
+	public:
+		size_t _counter = SIZE_MAX;
+
 	private:
 		using ThisType = RcObjectPtr<T>;
 
 		T *_ptr = nullptr;
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
-			if (_ptr)
-				_ptr->incRef();
+			_counter = g_rcObjectPtrCounter++;
+			_ptr->incRef(_counter);
 			this->_ptr = _ptr;
 		}
 
 	public:
 		PEFF_FORCEINLINE void reset() noexcept {
 			if (_ptr) {
-				_ptr->decRef();
+				_ptr->decRef(_counter);
 			}
 			_ptr = nullptr;
 		}
@@ -65,7 +77,9 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE RcObjectPtr(ThisType &&other) noexcept {
 			_ptr = other._ptr;
+			_counter = other._counter;
 			other._ptr = nullptr;
+			other._counter = SIZE_MAX;
 		}
 		PEFF_FORCEINLINE ~RcObjectPtr() {
 			reset();
@@ -87,8 +101,10 @@ namespace peff {
 			reset();
 
 			_ptr = other._ptr;
+			_counter = other._counter;
 
 			other._ptr = nullptr;
+			other._counter = SIZE_MAX;
 
 			return *this;
 		}

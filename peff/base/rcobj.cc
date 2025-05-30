@@ -2,7 +2,7 @@
 
 using namespace peff;
 
-PEFF_BASE_API std::atomic_size_t g_rcObjectPtrCounter = 0;
+PEFF_BASE_API std::atomic_size_t peff::g_rcObjectPtrCounter = 0;
 
 PEFF_BASE_API RcObject::RcObject() noexcept: refCount(0) {}
 PEFF_BASE_API RcObject::~RcObject() {}

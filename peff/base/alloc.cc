@@ -17,11 +17,15 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 		return malloc(size);
 	return _aligned_malloc(size, alignment);
 #else
+	#if __ANDROID__
+	return memalign(size, alignment);
+	#else
 	size_t sizeDiff = size % alignment;
 	if (sizeDiff) {
 		size += alignment - sizeDiff;
 	}
 	return aligned_alloc(alignment, size);
+	#endif
 #endif
 }
 

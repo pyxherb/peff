@@ -29,6 +29,6 @@ namespace peff {
 }
 
 #define PEFF_UUID(a, b, c, d, e) \
-	clench::base::UUID { 0x##a##U, 0x##b##U, 0x##c##U, 0x##d##U, 0x##e##UL }
+	peff::UUID { 0x##a##U, 0x##b##U, 0x##c##U, 0x##d##U, 0x##e##UL }
 
 #endif

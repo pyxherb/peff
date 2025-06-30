@@ -122,6 +122,8 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE SharedPtr<T> &operator=(const SharedPtr<T> &rhs) noexcept {
+			if (this == &rhs)
+				return *this;
 			reset();
 			controlBlock = rhs.controlBlock;
 			if (controlBlock) {
@@ -132,6 +134,8 @@ namespace peff {
 			return *this;
 		}
 		PEFF_FORCEINLINE SharedPtr<T> &operator=(SharedPtr<T> &&rhs) noexcept {
+			if (this == &rhs)
+				return *this;
 			reset();
 			controlBlock = rhs.controlBlock;
 			ptr = rhs.ptr;

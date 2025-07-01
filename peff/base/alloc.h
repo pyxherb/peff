@@ -126,6 +126,20 @@ namespace peff {
 		std::destroy_at<T>(ptr);
 		allocatorHolder->release((void *)ptr, sizeof(T), alignment);
 	}
+
+	template <typename T>
+	struct ParamBasedAllocUniquePtrDeleter {
+		peff::RcObjectPtr<peff::Alloc> allocator;
+		size_t alignment;
+
+		PEFF_FORCEINLINE AllocUniquePtr(peff::Alloc *allocator, size_t alignment = alignof(T)) : allocator(allocator), alignment(alignment) {
+		}
+
+		PEFF_FORCEINLINE void operator()(T *ptr) const {
+			if (ptr)
+				peff::destroyAndRelease<T>(allocator.get(), ptr, alignment);
+		}
+	};
 }
 
 #endif

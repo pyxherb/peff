@@ -132,7 +132,7 @@ namespace peff {
 		peff::RcObjectPtr<peff::Alloc> allocator;
 		size_t alignment;
 
-		PEFF_FORCEINLINE AllocUniquePtr(peff::Alloc *allocator, size_t alignment = alignof(T)) : allocator(allocator), alignment(alignment) {
+		PEFF_FORCEINLINE ParamBasedAllocUniquePtrDeleter(peff::Alloc *allocator, size_t alignment = alignof(T)) : allocator(allocator), alignment(alignment) {
 		}
 
 		PEFF_FORCEINLINE void operator()(T *ptr) const {

@@ -286,6 +286,28 @@ namespace peff {
 
 		return p;
 	}
+
+	template <typename T, typename D, typename... Args>
+	PEFF_FORCEINLINE SharedPtr<T> makeSharedWithControlBlock(peff::Alloc *allocator, Args &&...args) {
+		T *ptr = peff::allocAndConstruct<T>(allocator, alignof(T), std::forward<Args>(args)...);
+		if (!ptr)
+			return {};
+		peff::ScopeGuard releasePtrGuard([allocator, ptr]() noexcept {
+			peff::destroyAndRelease<T>(allocator, ptr, alignof(T));
+		});
+
+		D *controlBlock =
+			peff::allocAndConstruct<D>(
+				allocator, alignof(D),
+				allocator, ptr);
+		if (!controlBlock)
+			return {};
+		releasePtrGuard.release();
+
+		SharedPtr<T> p(controlBlock, ptr);
+
+		return p;
+	}
 }
 
 #endif

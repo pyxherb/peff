@@ -244,6 +244,18 @@ namespace peff {
 			return *this;
 		}
 
+		PEFF_FORCEINLINE bool operator<(const WeakPtr<T> &rhs) const noexcept {
+			return controlBlock < rhs.controlBlock;
+		}
+
+		PEFF_FORCEINLINE bool operator==(const WeakPtr<T> &rhs) const noexcept {
+			return controlBlock == rhs.controlBlock;
+		}
+
+		PEFF_FORCEINLINE bool operator!=(const WeakPtr<T> &rhs) const noexcept {
+			return controlBlock != rhs.controlBlock;
+		}
+
 		PEFF_FORCEINLINE SharedPtr<T> lock() const noexcept {
 			if ((!controlBlock) || (!controlBlock->nStrongRefs))
 				std::terminate();

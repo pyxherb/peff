@@ -3,6 +3,7 @@
 
 #include "basedefs.h"
 #include <cstdint>
+#include <cstring>
 
 namespace peff {
 	struct UUID {

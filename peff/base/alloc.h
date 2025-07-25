@@ -92,7 +92,6 @@ namespace peff {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
-			std::terminate();
 		}
 	}
 
@@ -100,7 +99,6 @@ namespace peff {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			assert(("Incompatible allocators", x->isReplaceable(y)));
-			std::terminate();
 		}
 	}
 

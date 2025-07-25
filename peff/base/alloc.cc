@@ -13,8 +13,10 @@ PEFF_BASE_API size_t StdAlloc::incRef() noexcept {
 }
 
 PEFF_BASE_API size_t StdAlloc::decRef() noexcept {
-	if (!--_refCount)
+	if (!--_refCount) {
 		onRefZero();
+		return 0;
+	}
 	return _refCount;
 }
 
@@ -71,8 +73,10 @@ PEFF_BASE_API size_t VoidAlloc::incRef() noexcept {
 }
 
 PEFF_BASE_API size_t VoidAlloc::decRef() noexcept {
-	if (!--_refCount)
+	if (!--_refCount) {
 		onRefZero();
+		return 0;
+	}
 	return _refCount;
 }
 
@@ -100,12 +104,14 @@ PEFF_BASE_API NullAlloc peff::g_nullAlloc;
 PEFF_BASE_API RcObjectPtr<NullAlloc> peff::g_nullAllocKeeper(&g_nullAlloc);
 
 PEFF_BASE_API size_t NullAlloc::incRef() noexcept {
-	++_refCount;
+	return ++_refCount;
 }
 
 PEFF_BASE_API size_t NullAlloc::decRef() noexcept {
-	if (!--_refCount)
+	if (!--_refCount) {
 		onRefZero();
+		return 0;
+	}
 	return _refCount;
 }
 

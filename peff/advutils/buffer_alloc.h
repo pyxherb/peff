@@ -7,6 +7,9 @@
 
 namespace peff {
 	class BufferAlloc : public Alloc {
+	protected:
+		std::atomic_size_t _refCount = 0;
+
 	public:
 		struct AllocDesc;
 
@@ -30,7 +33,9 @@ namespace peff {
 
 		PEFF_ADVUTILS_API BufferAlloc(char *buffer, size_t bufferSize);
 
-		PEFF_ADVUTILS_API virtual void onRefZero() noexcept override;
+		PEFF_ADVUTILS_API virtual size_t incRef() noexcept override;
+		PEFF_ADVUTILS_API virtual size_t decRef() noexcept override;
+		PEFF_ADVUTILS_API virtual void onRefZero() noexcept;
 
 		PEFF_ADVUTILS_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_ADVUTILS_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;

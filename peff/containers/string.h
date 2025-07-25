@@ -102,7 +102,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE void popFront() {
+		PEFF_FORCEINLINE void popFront() {
 			_dynArray.popFront();
 		}
 
@@ -110,7 +110,7 @@ namespace peff {
 			return _dynArray.popFrontAndResizeCapacity();
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE void popBack() {
+		PEFF_FORCEINLINE void popBack() {
 			_dynArray.popBack();
 			_dynArray.back() = '\0';
 		}

@@ -8,57 +8,30 @@
 #include <cassert>
 
 namespace peff {
-	class RcObject {
-	protected:
-		PEFF_BASE_API virtual void onIncRef(size_t counter);
-		PEFF_BASE_API virtual void onDecRef(size_t counter);
-
-	public:
-		std::atomic_size_t refCount;
-
-		PEFF_BASE_API RcObject() noexcept;
-		PEFF_BASE_API virtual ~RcObject();
-
-		virtual void onRefZero() noexcept = 0;
-
-		PEFF_FORCEINLINE size_t incRef(size_t counter) noexcept {
-			onIncRef(counter);
-			return ++refCount;
-		}
-
-		PEFF_FORCEINLINE size_t decRef(size_t counter) noexcept {
-			if (counter != SIZE_MAX)
-				onDecRef(counter);
-			if (!(--this->refCount)) {
-				onRefZero();
-				return 0;
-			}
-			return this->refCount;
-		}
+	template <typename T, typename V = void, typename W = void>
+	struct IsRcObject : std::false_type {
 	};
 
-	PEFF_BASE_API extern std::atomic_size_t g_rcObjectPtrCounter;
+	template <typename T>
+	struct IsRcObject<T, std::void_t<decltype(std::declval<T>().incRef())>, std::void_t<decltype(std::declval<T>().decRef())>> : std::true_type {
+	};
 
 	template <typename T>
 	class RcObjectPtr {
-	public:
-		size_t _counter = SIZE_MAX;
-
 	private:
 		using ThisType = RcObjectPtr<T>;
 
 		T *_ptr = nullptr;
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
-			_counter = g_rcObjectPtrCounter++;
-			_ptr->incRef(_counter);
+			_ptr->incRef();
 			this->_ptr = _ptr;
 		}
 
 	public:
 		PEFF_FORCEINLINE void reset() noexcept {
 			if (_ptr) {
-				_ptr->decRef(_counter);
+				_ptr->decRef();
 			}
 			_ptr = nullptr;
 		}
@@ -77,9 +50,7 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE RcObjectPtr(ThisType &&other) noexcept {
 			_ptr = other._ptr;
-			_counter = other._counter;
 			other._ptr = nullptr;
-			other._counter = SIZE_MAX;
 		}
 		PEFF_FORCEINLINE ~RcObjectPtr() {
 			reset();
@@ -101,7 +72,6 @@ namespace peff {
 			reset();
 
 			_ptr = other._ptr;
-			_counter = other._counter;
 
 			other._ptr = nullptr;
 			other._counter = SIZE_MAX;
@@ -150,13 +120,6 @@ namespace peff {
 
 		PEFF_FORCEINLINE bool operator!=(const ThisType &rhs) const noexcept {
 			return _ptr != rhs._ptr;
-		}
-	};
-
-	struct RcObjectUniquePtrDeleter {
-		PEFF_FORCEINLINE void operator()(RcObject *ptr) const {
-			if (ptr)
-				ptr->onRefZero();
 		}
 	};
 }

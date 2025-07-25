@@ -8,9 +8,12 @@
 #include <memory>
 
 namespace peff {
-	class Alloc : public RcObject {
+	class Alloc {
 	public:
 		PEFF_BASE_API virtual ~Alloc();
+
+		virtual size_t incRef() noexcept = 0;
+		virtual size_t decRef() noexcept = 0;
 
 		virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
 		virtual void release(void *ptr, size_t size, size_t alignment) noexcept = 0;
@@ -21,8 +24,14 @@ namespace peff {
 	};
 
 	class StdAlloc : public Alloc {
+	private:
+		std::atomic_size_t _refCount = 0;
+
 	public:
-		PEFF_BASE_API virtual void onRefZero() noexcept override;
+		PEFF_BASE_API virtual size_t incRef() noexcept override;
+		PEFF_BASE_API virtual size_t decRef() noexcept override;
+
+		PEFF_BASE_API virtual void onRefZero() noexcept;
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
@@ -38,8 +47,14 @@ namespace peff {
 	PEFF_BASE_API StdAlloc *getDefaultAlloc() noexcept;
 
 	class VoidAlloc : public Alloc {
+	private:
+		std::atomic_size_t _refCount = 0;
+
 	public:
-		PEFF_BASE_API virtual void onRefZero() noexcept override;
+		PEFF_BASE_API virtual size_t incRef() noexcept override;
+		PEFF_BASE_API virtual size_t decRef() noexcept override;
+
+		PEFF_BASE_API virtual void onRefZero() noexcept;
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
@@ -53,8 +68,14 @@ namespace peff {
 	PEFF_BASE_API extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
 
 	class NullAlloc : public Alloc {
+	private:
+		std::atomic_size_t _refCount = 0;
+
 	public:
-		PEFF_BASE_API virtual void onRefZero() noexcept override;
+		PEFF_BASE_API virtual size_t incRef() noexcept override;
+		PEFF_BASE_API virtual size_t decRef() noexcept override;
+
+		PEFF_BASE_API virtual void onRefZero() noexcept;
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
@@ -71,6 +92,7 @@ namespace peff {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
+			std::terminate();
 		}
 	}
 
@@ -78,6 +100,7 @@ namespace peff {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			assert(("Incompatible allocators", x->isReplaceable(y)));
+			std::terminate();
 		}
 	}
 

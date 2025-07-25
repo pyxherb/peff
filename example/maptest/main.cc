@@ -8,7 +8,6 @@
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
 #include <peff/advutils/shared_ptr.h>
-#include <peff/advutils/buffer_alloc.h>
 #include <iostream>
 #include <string>
 
@@ -29,7 +28,21 @@ struct Test {
 	}
 };
 
-struct Test2 : public peff::RcObject, public peff::SharedFromThis<Test2> {
+struct Test2 : public peff::SharedFromThis<Test2> {
+	std::atomic_size_t ref = 0;
+
+	virtual void onRefZero() noexcept = 0;
+
+	size_t incRef() {
+		return ++ref;
+	}
+
+	size_t decRef() {
+		if (!--ref)
+			onRefZero();
+		return ref;
+	}
+
 	uint8_t test2[1024];
 
 	virtual void testB() {
@@ -77,14 +90,12 @@ int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	peff::BufferAlloc globalBufferAlloc(g_buffer, sizeof(g_buffer));
-
-	peff::String s(&globalBufferAlloc);
+	peff::String s(&peff::g_stdAlloc);
 	s.resize(3);
 	memcpy(s.data(), "123", 3);
 	assert(((std::string_view)s) == "123");
 
-	peff::DynArray<SomethingUncopyable> a(&globalBufferAlloc);
+	peff::DynArray<SomethingUncopyable> a(&peff::g_stdAlloc);
 
 	peff::SharedPtr<RcObj> outerSharedPtr;
 
@@ -97,11 +108,9 @@ int main() {
 		auto test2PtrLocked = peff::WeakPtr<Test2>(test2Ptr).lock();
 		auto test2PtrFromThis = test2Ptr->sharedFromThis();
 
-		peff::Set<int> map(&globalBufferAlloc);
+		peff::Set<int> map(&peff::g_stdAlloc);
 		peff::RcObjectPtr<RcObj> strongRef;
 		strongRef = new RcObj("StrongRef");
-
-		peff::RcObject *weak = strongRef.get();
 
 		test = strongRef;
 
@@ -132,7 +141,7 @@ int main() {
 
 			map.verify();
 		}
-		peff::Set<int> map2(&globalBufferAlloc);
+		peff::Set<int> map2(&peff::g_stdAlloc);
 		if (!peff::copyAssign(map2, map))
 			throw std::bad_alloc();
 
@@ -144,7 +153,7 @@ int main() {
 	test.reset();
 	outerSharedPtr.reset();
 	{
-		peff::HashSet<int> map(&globalBufferAlloc);
+		peff::HashSet<int> map(&peff::g_stdAlloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -182,12 +191,12 @@ int main() {
 		}*/
 	}
 	{
-		peff::Map<int, peff::String> map(&globalBufferAlloc);
+		peff::Map<int, peff::String> map(&peff::g_stdAlloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
 
-			peff::String s(&globalBufferAlloc);
+			peff::String s(&peff::g_stdAlloc);
 			{
 				std::string stdString = std::to_string(j);
 				if (!s.resize(stdString.size()))
@@ -205,8 +214,8 @@ int main() {
 	}
 
 	{
-		peff::DynArray<int> arr(&globalBufferAlloc);
-		peff::String str(&globalBufferAlloc);
+		peff::DynArray<int> arr(&peff::g_stdAlloc);
+		peff::String str(&peff::g_stdAlloc);
 
 		for (int i = 0; i < 32; i++) {
 			int tmp = i;
@@ -250,7 +259,7 @@ int main() {
 	}
 
 	{
-		peff::BitArray bitArr(&globalBufferAlloc);
+		peff::BitArray bitArr(&peff::g_stdAlloc);
 
 		bitArr.resizeUninitialized(64);
 
@@ -264,7 +273,7 @@ int main() {
 		puts("");
 	}
 
-	peff::DynArray<B> arr(&globalBufferAlloc);
+	peff::DynArray<B> arr(&peff::g_stdAlloc);
 	for (int i = 0; i < 32; i++) {
 		int tmp = i + 1048576;
 		if (!arr.pushFront(B()))

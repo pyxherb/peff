@@ -8,7 +8,6 @@
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
 #include <peff/advutils/shared_ptr.h>
-#include <peff/advutils/buffer_alloc.h>
 #include <iostream>
 #include <string>
 

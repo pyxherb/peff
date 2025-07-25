@@ -5,6 +5,14 @@
 #include <type_traits>
 
 namespace peff {
+	template <typename T, typename V = void>
+	struct IsDeallocable : std::false_type {
+	};
+
+	template <typename T>
+	struct IsDeallocable<T, std::void_t<decltype(std::declval<const T>().dealloc())>> : std::true_type {
+	};
+
 	template<typename T>
 	struct DeallocableDeleter {
 		PEFF_FORCEINLINE void operator()(T *ptr) const noexcept {

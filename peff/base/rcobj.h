@@ -74,7 +74,6 @@ namespace peff {
 			_ptr = other._ptr;
 
 			other._ptr = nullptr;
-			other._counter = SIZE_MAX;
 
 			return *this;
 		}

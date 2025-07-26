@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <atomic>
 #include <cassert>
+#include <type_traits>
 
 namespace peff {
 	template <typename T, typename V = void, typename W = void>
@@ -13,25 +14,31 @@ namespace peff {
 	};
 
 	template <typename T>
-	struct IsRcObject<T, std::void_t<decltype(std::declval<T>().incRef())>, std::void_t<decltype(std::declval<T>().decRef())>> : std::true_type {
+	struct IsRcObject<T, std::void_t<decltype(std::declval<T>().incRef((size_t)0))>, std::void_t<decltype(std::declval<T>().decRef((size_t)0))>> : std::true_type {
 	};
+
+	PEFF_BASE_API extern std::atomic_size_t g_rcObjectPtrCounter;
 
 	template <typename T>
 	class RcObjectPtr {
+	public:
+		size_t _counter = SIZE_MAX;
+
 	private:
 		using ThisType = RcObjectPtr<T>;
 
 		T *_ptr = nullptr;
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
-			_ptr->incRef();
+			_counter = g_rcObjectPtrCounter++;
+			_ptr->incRef(_counter);
 			this->_ptr = _ptr;
 		}
 
 	public:
 		PEFF_FORCEINLINE void reset() noexcept {
 			if (_ptr) {
-				_ptr->decRef();
+				_ptr->decRef(_counter);
 			}
 			_ptr = nullptr;
 		}
@@ -50,7 +57,9 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE RcObjectPtr(ThisType &&other) noexcept {
 			_ptr = other._ptr;
+			_counter = other._counter;
 			other._ptr = nullptr;
+			other._counter = SIZE_MAX;
 		}
 		PEFF_FORCEINLINE ~RcObjectPtr() {
 			reset();
@@ -72,8 +81,10 @@ namespace peff {
 			reset();
 
 			_ptr = other._ptr;
+			_counter = other._counter;
 
 			other._ptr = nullptr;
+			other._counter = SIZE_MAX;
 
 			return *this;
 		}

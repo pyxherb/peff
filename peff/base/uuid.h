@@ -11,20 +11,40 @@ namespace peff {
 		uint16_t b, c, d;
 		uint64_t e;
 
-		PEFF_FORCEINLINE bool operator<(const UUID &other) const {
-			return memcmp(this, &other, sizeof(UUID)) < 0;
+		PEFF_FORCEINLINE constexpr bool operator<(const UUID &rhs) const {
+			if (a < rhs.a)
+				return true;
+			if (a > rhs.a)
+				return false;
+			if (b < rhs.b)
+				return true;
+			if (b > rhs.b)
+				return false;
+			if (c < rhs.c)
+				return true;
+			if (c > rhs.c)
+				return false;
+			if (d < rhs.d)
+				return true;
+			if (d > rhs.d)
+				return false;
+			if (e < rhs.e)
+				return true;
+			if (e > rhs.e)
+				return false;
+			return false;
 		}
 
-		PEFF_FORCEINLINE bool operator>(const UUID &other) const {
-			return memcmp(this, &other, sizeof(UUID)) > 0;
+		PEFF_FORCEINLINE bool operator>(const UUID &rhs) const {
+			return memcmp(this, &rhs, sizeof(UUID)) > 0;
 		}
 
-		PEFF_FORCEINLINE bool operator==(const UUID &other) const {
-			return !memcmp((void *)this, (void *)&other, sizeof(UUID));
+		PEFF_FORCEINLINE bool operator==(const UUID &rhs) const {
+			return !memcmp((void *)this, (void *)&rhs, sizeof(UUID));
 		}
 
-		PEFF_FORCEINLINE bool operator!=(const UUID &other) const {
-			return memcmp((void *)this, (void *)&other, sizeof(UUID));
+		PEFF_FORCEINLINE bool operator!=(const UUID &rhs) const {
+			return memcmp((void *)this, (void *)&rhs, sizeof(UUID));
 		}
 	};
 }

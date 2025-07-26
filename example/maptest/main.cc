@@ -33,11 +33,11 @@ struct Test2 : public peff::SharedFromThis<Test2> {
 
 	virtual void onRefZero() noexcept = 0;
 
-	size_t incRef() {
+	size_t incRef(size_t globalRc) {
 		return ++ref;
 	}
 
-	size_t decRef() {
+	size_t decRef(size_t globalRc) {
 		if (!--ref)
 			onRefZero();
 		return ref;

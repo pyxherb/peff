@@ -12,8 +12,8 @@ namespace peff {
 	public:
 		PEFF_BASE_API virtual ~Alloc();
 
-		virtual size_t incRef() noexcept = 0;
-		virtual size_t decRef() noexcept = 0;
+		virtual size_t incRef(size_t globalRc) noexcept = 0;
+		virtual size_t decRef(size_t globalRc) noexcept = 0;
 
 		virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
 		virtual void release(void *ptr, size_t size, size_t alignment) noexcept = 0;
@@ -28,8 +28,8 @@ namespace peff {
 		std::atomic_size_t _refCount = 0;
 
 	public:
-		PEFF_BASE_API virtual size_t incRef() noexcept override;
-		PEFF_BASE_API virtual size_t decRef() noexcept override;
+		PEFF_BASE_API virtual size_t incRef(size_t globalRc) noexcept override;
+		PEFF_BASE_API virtual size_t decRef(size_t globalRc) noexcept override;
 
 		PEFF_BASE_API virtual void onRefZero() noexcept;
 
@@ -51,8 +51,8 @@ namespace peff {
 		std::atomic_size_t _refCount = 0;
 
 	public:
-		PEFF_BASE_API virtual size_t incRef() noexcept override;
-		PEFF_BASE_API virtual size_t decRef() noexcept override;
+		PEFF_BASE_API virtual size_t incRef(size_t globalRc) noexcept override;
+		PEFF_BASE_API virtual size_t decRef(size_t globalRc) noexcept override;
 
 		PEFF_BASE_API virtual void onRefZero() noexcept;
 
@@ -72,8 +72,8 @@ namespace peff {
 		std::atomic_size_t _refCount = 0;
 
 	public:
-		PEFF_BASE_API virtual size_t incRef() noexcept override;
-		PEFF_BASE_API virtual size_t decRef() noexcept override;
+		PEFF_BASE_API virtual size_t incRef(size_t globalRc) noexcept override;
+		PEFF_BASE_API virtual size_t decRef(size_t globalRc) noexcept override;
 
 		PEFF_BASE_API virtual void onRefZero() noexcept;
 

@@ -8,7 +8,7 @@ RcObjectPtr<BufferAlloc> peff::g_bufferAllocKeeper(&g_bufferAlloc);
 PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc, AllocDescComparator()) {
 }
 
-PEFF_ADVUTILS_API size_t BufferAlloc::decRef() noexcept {
+PEFF_ADVUTILS_API size_t BufferAlloc::decRef(size_t globalRc) noexcept {
 	if (!--_refCount) {
 		onRefZero();
 		return 0;
@@ -16,7 +16,7 @@ PEFF_ADVUTILS_API size_t BufferAlloc::decRef() noexcept {
 	return _refCount;
 }
 
-PEFF_ADVUTILS_API size_t BufferAlloc::incRef() noexcept {
+PEFF_ADVUTILS_API size_t BufferAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
 }
 

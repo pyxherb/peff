@@ -33,8 +33,8 @@ namespace peff {
 
 		PEFF_ADVUTILS_API BufferAlloc(char *buffer, size_t bufferSize);
 
-		PEFF_ADVUTILS_API virtual size_t incRef() noexcept override;
-		PEFF_ADVUTILS_API virtual size_t decRef() noexcept override;
+		PEFF_ADVUTILS_API virtual size_t incRef(size_t globalRc) noexcept override;
+		PEFF_ADVUTILS_API virtual size_t decRef(size_t globalRc) noexcept override;
 		PEFF_ADVUTILS_API virtual void onRefZero() noexcept;
 
 		PEFF_ADVUTILS_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;

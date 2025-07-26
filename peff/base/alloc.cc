@@ -8,11 +8,11 @@ PEFF_BASE_API RcObjectPtr<StdAlloc> peff::g_stdAllocKeeper(&g_stdAlloc);
 
 PEFF_BASE_API Alloc::~Alloc() {}
 
-PEFF_BASE_API size_t StdAlloc::incRef() noexcept {
+PEFF_BASE_API size_t StdAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
 }
 
-PEFF_BASE_API size_t StdAlloc::decRef() noexcept {
+PEFF_BASE_API size_t StdAlloc::decRef(size_t globalRc) noexcept {
 	if (!--_refCount) {
 		onRefZero();
 		return 0;
@@ -68,11 +68,11 @@ PEFF_BASE_API StdAlloc *peff::getDefaultAlloc() noexcept {
 PEFF_BASE_API VoidAlloc peff::g_voidAlloc;
 PEFF_BASE_API RcObjectPtr<VoidAlloc> peff::g_voidAllocKeeper(&g_voidAlloc);
 
-PEFF_BASE_API size_t VoidAlloc::incRef() noexcept {
+PEFF_BASE_API size_t VoidAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
 }
 
-PEFF_BASE_API size_t VoidAlloc::decRef() noexcept {
+PEFF_BASE_API size_t VoidAlloc::decRef(size_t globalRc) noexcept {
 	if (!--_refCount) {
 		onRefZero();
 		return 0;
@@ -103,11 +103,11 @@ PEFF_BASE_API Alloc *VoidAlloc::getDefaultAlloc() const noexcept {
 PEFF_BASE_API NullAlloc peff::g_nullAlloc;
 PEFF_BASE_API RcObjectPtr<NullAlloc> peff::g_nullAllocKeeper(&g_nullAlloc);
 
-PEFF_BASE_API size_t NullAlloc::incRef() noexcept {
+PEFF_BASE_API size_t NullAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
 }
 
-PEFF_BASE_API size_t NullAlloc::decRef() noexcept {
+PEFF_BASE_API size_t NullAlloc::decRef(size_t globalRc) noexcept {
 	if (!--_refCount) {
 		onRefZero();
 		return 0;

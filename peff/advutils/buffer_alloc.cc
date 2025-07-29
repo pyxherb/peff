@@ -8,6 +8,22 @@ RcObjectPtr<BufferAlloc> peff::g_bufferAllocKeeper(&g_bufferAlloc);
 PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc, AllocDescComparator()) {
 }
 
+PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(BufferAlloc&& rhs) noexcept: buffer(rhs.buffer), bufferSize(rhs.bufferSize), allocDescs(std::move(rhs.allocDescs)) {
+	rhs.buffer = nullptr;
+	rhs.bufferSize = 0;
+}
+
+PEFF_ADVUTILS_API BufferAlloc& BufferAlloc::operator=(BufferAlloc&& rhs) noexcept {
+	buffer = rhs.buffer;
+	bufferSize = rhs.bufferSize;
+	allocDescs = std::move(rhs.allocDescs);
+
+	rhs.buffer = nullptr;
+	rhs.bufferSize = 0;
+
+	return *this;
+}
+
 PEFF_ADVUTILS_API size_t BufferAlloc::decRef(size_t globalRc) noexcept {
 	if (!--_refCount) {
 		onRefZero();
@@ -24,22 +40,11 @@ PEFF_ADVUTILS_API void BufferAlloc::onRefZero() noexcept {
 }
 
 PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexcept {
-	size_t off = 0, descSize = sizeof(AllocDesc), descOff;
+	size_t off = 0, descOff;
 
-	size_t actualAvailableSize = size + descSize;
+	size_t actualSize = calcAllocSize(size, alignment, &descOff);
 
-	if (size_t alignedDiff = actualAvailableSize % alignment; alignedDiff) {
-		actualAvailableSize += alignment - alignedDiff;
-	}
-
-	descOff = actualAvailableSize;
-	if (size_t alignedDiff = descOff % alignof(AllocDesc); descOff) {
-		descSize += alignof(AllocDesc) - alignedDiff;
-	}
-
-	size_t actualSize = descOff + sizeof(AllocDesc);
-
-	while (off < (bufferSize - actualSize)) {
+	while (off <= (bufferSize - actualSize)) {
 		if (size_t alignedDiff = ((uintptr_t)(buffer + off)) % alignment; alignedDiff) {
 			off += alignment - alignedDiff;
 			continue;

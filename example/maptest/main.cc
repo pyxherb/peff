@@ -8,6 +8,7 @@
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
 #include <peff/advutils/shared_ptr.h>
+#include <peff/advutils/buffer_alloc.h>
 #include <iostream>
 #include <string>
 
@@ -279,6 +280,31 @@ int main() {
 		if (!arr.pushFront(B()))
 			throw std::bad_alloc();
 	}
+
+	size_t szBuffer = peff::BufferAlloc::calcAllocSize(sizeof(peff::Map<size_t, size_t>::NodeType), alignof(std::max_align_t)) *
+							32,
+				 alignment = alignof(std::max_align_t);
+
+	char *b = (char *)peff::g_stdAlloc.alloc(szBuffer, alignment);
+	{
+		peff::BufferAlloc ba(b, szBuffer);
+		peff::Map<size_t, size_t> m(&ba);
+
+		for (size_t i = 0; i < 32; ++i) {
+			if (!m.insert(+i, +i))
+				std::terminate();
+		}
+
+		for (size_t i = 0; i < 32; i += 2) {
+			m.remove(i);
+		}
+
+		for (auto &[k, v] : m) {
+			if (k != v)
+				std::terminate();
+		}
+	}
+	peff::g_stdAlloc.release(b, szBuffer, alignment);
 
 	/*{
 		char buffer[32768];

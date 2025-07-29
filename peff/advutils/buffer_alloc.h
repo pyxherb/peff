@@ -32,6 +32,9 @@ namespace peff {
 		RBTree<void *, AllocDescComparator> allocDescs;
 
 		PEFF_ADVUTILS_API BufferAlloc(char *buffer, size_t bufferSize);
+		PEFF_ADVUTILS_API BufferAlloc(BufferAlloc &&rhs) noexcept;
+
+		PEFF_ADVUTILS_API BufferAlloc &operator=(BufferAlloc &&rhs) noexcept;
 
 		PEFF_ADVUTILS_API virtual size_t incRef(size_t globalRc) noexcept override;
 		PEFF_ADVUTILS_API virtual size_t decRef(size_t globalRc) noexcept override;
@@ -43,6 +46,26 @@ namespace peff {
 		PEFF_ADVUTILS_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
 
 		PEFF_ADVUTILS_API virtual Alloc *getDefaultAlloc() const noexcept override;
+
+		PEFF_FORCEINLINE static size_t calcAllocSize(size_t size, size_t alignment, size_t *descOffOut = nullptr) noexcept {
+			size_t descSize = sizeof(AllocDesc);
+
+			size_t actualAvailableSize = size + descSize;
+
+			if (size_t alignedDiff = actualAvailableSize % alignment; alignedDiff) {
+				actualAvailableSize += alignment - alignedDiff;
+			}
+
+			size_t descOff = actualAvailableSize;
+			if (size_t alignedDiff = descOff % alignof(AllocDesc); alignedDiff) {
+				descSize += alignof(AllocDesc) - alignedDiff;
+			}
+
+			if (descOffOut)
+				*descOffOut = descOff;
+
+			return descOff + sizeof(AllocDesc);
+		}
 	};
 
 	extern BufferAlloc g_bufferAlloc;

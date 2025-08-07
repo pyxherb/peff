@@ -299,7 +299,7 @@ int main() {
 			m.remove(i);
 		}
 
-		for (auto &[k, v] : m) {
+		for (auto [k, v] : m) {
 			if (k != v)
 				std::terminate();
 		}

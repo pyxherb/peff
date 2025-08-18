@@ -4,6 +4,7 @@
 #include "traits.h"
 #include "rcobj.h"
 #include "scope_guard.h"
+#include "uuid.h"
 #include <cassert>
 #include <memory>
 
@@ -20,7 +21,7 @@ namespace peff {
 
 		virtual bool isReplaceable(const Alloc *rhs) const noexcept = 0;
 
-		virtual Alloc *getDefaultAlloc() const noexcept = 0;
+		virtual UUID getTypeId() const noexcept = 0;
 	};
 
 	class StdAlloc : public Alloc {
@@ -38,11 +39,10 @@ namespace peff {
 
 		PEFF_BASE_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
 
-		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
+		PEFF_BASE_API virtual UUID getTypeId() const noexcept override;
 	};
 
 	PEFF_BASE_API extern StdAlloc g_stdAlloc;
-	PEFF_BASE_API extern RcObjectPtr<StdAlloc> g_stdAllocKeeper;
 
 	PEFF_BASE_API StdAlloc *getDefaultAlloc() noexcept;
 
@@ -61,11 +61,10 @@ namespace peff {
 
 		PEFF_BASE_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
 
-		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
+		PEFF_BASE_API virtual UUID getTypeId() const noexcept override;
 	};
 
 	PEFF_BASE_API extern VoidAlloc g_voidAlloc;
-	PEFF_BASE_API extern RcObjectPtr<VoidAlloc> g_voidAllocKeeper;
 
 	class NullAlloc : public Alloc {
 	private:
@@ -82,16 +81,13 @@ namespace peff {
 
 		PEFF_BASE_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
 
-		PEFF_BASE_API virtual Alloc *getDefaultAlloc() const noexcept override;
+		PEFF_BASE_API virtual UUID getTypeId() const noexcept override;
 	};
-
-	PEFF_BASE_API extern NullAlloc g_nullAlloc;
-	PEFF_BASE_API extern RcObjectPtr<NullAlloc> g_nullAllocKeeper;
 
 	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
-			assert(("Incompatible allocators", x->getDefaultAlloc() == y->getDefaultAlloc()));
+			assert(("Incompatible allocators", x->getTypeId() == y->getTypeId()));
 		}
 	}
 

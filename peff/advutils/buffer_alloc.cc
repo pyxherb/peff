@@ -2,9 +2,6 @@
 
 using namespace peff;
 
-BufferAlloc peff::g_bufferAlloc(nullptr, 0);
-RcObjectPtr<BufferAlloc> peff::g_bufferAllocKeeper(&g_bufferAlloc);
-
 PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc, AllocDescComparator()) {
 }
 
@@ -109,7 +106,7 @@ PEFF_ADVUTILS_API void BufferAlloc::release(void *ptr, size_t size, size_t align
 }
 
 PEFF_ADVUTILS_API bool BufferAlloc::isReplaceable(const Alloc* rhs) const noexcept {
-	if (rhs->getDefaultAlloc() != getDefaultAlloc()) {
+	if (rhs->getTypeId() != getTypeId()) {
 		return false;
 	}
 
@@ -124,6 +121,6 @@ PEFF_ADVUTILS_API bool BufferAlloc::isReplaceable(const Alloc* rhs) const noexce
 	return true;
 }
 
-PEFF_ADVUTILS_API Alloc *BufferAlloc::getDefaultAlloc() const noexcept {
-	return g_voidAllocKeeper.get();
+PEFF_ADVUTILS_API UUID BufferAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(8c2a0e1b, 4d3a, 4e6f, 8a2c, 6b0e1d9f4c8);
 }

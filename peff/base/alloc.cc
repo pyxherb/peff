@@ -3,10 +3,9 @@
 
 using namespace peff;
 
-PEFF_BASE_API StdAlloc peff::g_stdAlloc;
-PEFF_BASE_API RcObjectPtr<StdAlloc> peff::g_stdAllocKeeper(&g_stdAlloc);
-
 PEFF_BASE_API Alloc::~Alloc() {}
+
+PEFF_BASE_API StdAlloc peff::g_stdAlloc;
 
 PEFF_BASE_API size_t StdAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
@@ -57,8 +56,8 @@ PEFF_BASE_API bool StdAlloc::isReplaceable(const Alloc *rhs) const noexcept {
 	return true;
 }
 
-PEFF_BASE_API Alloc *StdAlloc::getDefaultAlloc() const noexcept {
-	return g_stdAllocKeeper.get();
+PEFF_BASE_API UUID StdAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(c8a4e1b0, 4d3a, 4e6c, 8a2f, 6b1c0e9f4d8);
 }
 
 PEFF_BASE_API StdAlloc *peff::getDefaultAlloc() noexcept {
@@ -66,7 +65,6 @@ PEFF_BASE_API StdAlloc *peff::getDefaultAlloc() noexcept {
 }
 
 PEFF_BASE_API VoidAlloc peff::g_voidAlloc;
-PEFF_BASE_API RcObjectPtr<VoidAlloc> peff::g_voidAllocKeeper(&g_voidAlloc);
 
 PEFF_BASE_API size_t VoidAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
@@ -96,12 +94,9 @@ PEFF_BASE_API bool VoidAlloc::isReplaceable(const Alloc *rhs) const noexcept {
 	return true;
 }
 
-PEFF_BASE_API Alloc *VoidAlloc::getDefaultAlloc() const noexcept {
-	return g_voidAllocKeeper.get();
+PEFF_BASE_API UUID VoidAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(e3a0c8b2, 1d4e, 4a8f, 8c2d, 6e0f1b9a4c6);
 }
-
-PEFF_BASE_API NullAlloc peff::g_nullAlloc;
-PEFF_BASE_API RcObjectPtr<NullAlloc> peff::g_nullAllocKeeper(&g_nullAlloc);
 
 PEFF_BASE_API size_t NullAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
@@ -129,6 +124,6 @@ PEFF_BASE_API bool NullAlloc::isReplaceable(const Alloc *rhs) const noexcept {
 	return true;
 }
 
-PEFF_BASE_API Alloc *NullAlloc::getDefaultAlloc() const noexcept {
-	return g_nullAllocKeeper.get();
+PEFF_BASE_API UUID NullAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(a2b8e0c4, 3d1a, 4e8c, 8a2f, 6d0e1b9f4c8);
 }

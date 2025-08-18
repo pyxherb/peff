@@ -40,7 +40,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool operator==(const UUID &rhs) const {
-			return !memcmp((void *)this, (void *)&rhs, sizeof(UUID));
+			return (a == rhs.a) && (b == rhs.b) && (c == rhs.c) && (d == rhs.d) && (e == rhs.e);
 		}
 
 		PEFF_FORCEINLINE bool operator!=(const UUID &rhs) const {

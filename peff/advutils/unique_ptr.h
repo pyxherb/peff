@@ -2,7 +2,6 @@
 #define _PEFF_ADVUTILS_UNIQUE_PTR_H_
 
 #include "basedefs.h"
-#include <peff/containers/tree.h>
 #include <memory>
 #include <atomic>
 

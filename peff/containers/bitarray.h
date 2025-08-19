@@ -69,32 +69,23 @@ namespace peff {
 			if ((bitIndex + (nBits - 1)) >> 3 == index) {
 				// Does not across the byte boundary and inside a single byte.
 				// Such as 000|111|00
-				if (inBitIndex) {
-					uint8_t mask = ~((0xff >> (8 - inBitIndex)) << inBitIndex);
-
-					_buffer[index] &= mask;
-					_buffer[index] |= b << inBitIndex;
-				} else {
-					uint8_t mask = 0xff >> (8 - inBitIndex);
-
-					_buffer[index] &= mask;
-					_buffer[index] |= b << inBitIndex;
-				}
+				uint8_t mask = ~(((1 << nBits) - 1) << inBitIndex);
+				_buffer[index] &= mask;
+				_buffer[index] |= b << inBitIndex;
 			} else {
 				// Acrosses the byte boundary.
 				// Such as 000|10010 110|00000
 				uint8_t mask = 0xff >> (8 - inBitIndex);
-
 				_buffer[index] &= mask;
 				_buffer[index] |= b << inBitIndex;
 
 				uint8_t bitsRemaining = nBits - (8 - inBitIndex);
-
 				mask = 0xff << bitsRemaining;
 				_buffer[index + 1] &= mask;
-				_buffer[index + 1] |= b >> (nBits - bitsRemaining);
+				_buffer[index + 1] |= b >> (8 - inBitIndex);
 			}
 
+			// Used for verifying if the set byte works correctly
 			uint8_t test = _getByte(bitIndex, nBits);
 			if (nBits < 8) {
 				test &= (0xff >> (8 - nBits));
@@ -110,7 +101,7 @@ namespace peff {
 					uint8_t l = _buffer[byteIndex] >> (bitOffset), h = _buffer[byteIndex + 1] << (8 - bitOffset);
 					return (l | h) & (0xff >> (8 - nBits));
 				} else {
-					return _buffer[byteIndex] >> (bitOffset);
+					return (_buffer[byteIndex] >> (bitOffset)) & (0xff >> (8 - nBits));
 				}
 			}
 			return _buffer[bitIndex >> 3] & (0xff >> (8 - nBits));

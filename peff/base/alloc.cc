@@ -98,6 +98,8 @@ PEFF_BASE_API UUID VoidAlloc::getTypeId() const noexcept {
 	return PEFF_UUID(e3a0c8b2, 1d4e, 4a8f, 8c2d, 6e0f1b9a4c6);
 }
 
+PEFF_BASE_API NullAlloc peff::g_nullAlloc;
+
 PEFF_BASE_API size_t NullAlloc::incRef(size_t globalRc) noexcept {
 	return ++_refCount;
 }

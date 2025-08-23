@@ -84,6 +84,8 @@ namespace peff {
 		PEFF_BASE_API virtual UUID getTypeId() const noexcept override;
 	};
 
+	PEFF_BASE_API extern NullAlloc g_nullAlloc;
+
 	PEFF_FORCEINLINE void verifyAlloc(const Alloc *x, const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.

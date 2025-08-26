@@ -1,10 +1,11 @@
-#ifndef _PEFF_CONTAINERS_tree_H_
-#define _PEFF_CONTAINERS_tree_H_
+#ifndef _PEFF_CONTAINERS_SET_H_
+#define _PEFF_CONTAINERS_SET_H_
 
 #include "tree.h"
 
 namespace peff {
 	template <typename T, typename Comparator = std::less<T>>
+	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class Set final {
 	private:
 		using Tree = RBTree<T, Comparator>;
@@ -21,7 +22,7 @@ namespace peff {
 		PEFF_FORCEINLINE ~Set() {
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType& dest) const {
+		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType &dest) const {
 			constructAt<ThisType>(&dest, _tree.allocator());
 			return _tree.copy(dest._tree);
 		}
@@ -68,7 +69,7 @@ namespace peff {
 			_tree.replaceAllocator(rhs);
 		}
 
-		PEFF_FORCEINLINE Comparator& comparator() {
+		PEFF_FORCEINLINE Comparator &comparator() {
 			return _tree.comparator();
 		}
 
@@ -80,7 +81,7 @@ namespace peff {
 			_tree.clear();
 		}
 
-		PEFF_FORCEINLINE T &at(const T& key) {
+		PEFF_FORCEINLINE T &at(const T &key) {
 			auto node = _tree.get(key);
 
 			assert(node);
@@ -88,7 +89,7 @@ namespace peff {
 			return node->value;
 		}
 
-		PEFF_FORCEINLINE const T &at(const T& key) const {
+		PEFF_FORCEINLINE const T &at(const T &key) const {
 			auto node = _tree.get(key);
 
 			assert(node);
@@ -223,12 +224,12 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
 		}
 
-		PEFF_FORCEINLINE bool contains(const T& key) const {
+		PEFF_FORCEINLINE bool contains(const T &key) const {
 			return _tree.get(key);
 		}
 
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
-			return const_cast<ThisType*>(this)->findMaxLteq(key);
+			return const_cast<ThisType *>(this)->findMaxLteq(key);
 		}
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {
@@ -246,7 +247,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstIterator findMaxLteq(const T &key) const {
-			return const_cast<ThisType*>(this)->findMaxLteq(key);
+			return const_cast<ThisType *>(this)->findMaxLteq(key);
 		}
 
 		PEFF_FORCEINLINE void remove(const Iterator &iterator) {

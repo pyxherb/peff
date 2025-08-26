@@ -8,11 +8,16 @@
 #include <peff/base/scope_guard.h>
 #include <memory>
 
+#if __cplusplus >= 202002L
+	#include <concepts>
+#endif
+
 namespace peff {
 	template <
 		typename T,
 		typename EqCmp = std::equal_to<T>,
 		typename Hasher = Hasher<T>>
+	PEFF_REQUIRES_CONCEPT(std::invocable<EqCmp, const T &, const T &>)
 	class HashSet {
 	public:
 		using HashCode = decltype(std::declval<Hasher>()(std::declval<T>()));

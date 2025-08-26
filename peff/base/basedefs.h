@@ -64,6 +64,12 @@
 	#error Your compiler/configuration/environment does not meet the requirement of PEFF
 #endif
 
+#if __cplusplus >= 202002L
+	#define PEFF_REQUIRES_CONCEPT(...) requires __VA_ARGS__
+#else
+	#define PEFF_REQUIRES_CONCEPT(...)
+#endif
+
 namespace peff {
 }
 

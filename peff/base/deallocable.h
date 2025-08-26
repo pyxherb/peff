@@ -15,14 +15,13 @@ namespace peff {
 
 #if __cplusplus >= 202002L
 	template <typename T>
-	concept DeallocableConcept = IsDeallocable<T>::value;
+	concept DeallocableConcept = requires(T * rcObject) {
+		rcObject->dealloc(0);
+	};
 #endif
 
-	#if __cplusplus >= 202002L
-	template <typename T> requires DeallocableConcept<T>
-	#else
-	template<typename T>
-	#endif
+	template <typename T>
+	PEFF_REQUIRES_CONCEPT(DeallocableConcept<T>)
 	struct DeallocableDeleter {
 		PEFF_FORCEINLINE void operator()(T *ptr) const noexcept {
 			if (ptr)

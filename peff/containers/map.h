@@ -12,6 +12,7 @@ namespace peff {
 			V value;
 			bool isForQuery;
 
+			PEFF_FORCEINLINE Pair(K &&k, V &&v, bool isForQuery = false) : key(std::move(k)), value(std::move(v)), isForQuery(isForQuery) {}
 			Pair(Pair &&rhs) = default;
 		};
 

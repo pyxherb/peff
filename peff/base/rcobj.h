@@ -21,14 +21,13 @@ namespace peff {
 
 #if __cplusplus >= 202002L
 	template <typename T>
-	concept RcObjectConcept = IsRcObject<T>::value;
+	concept RcObjectConcept = requires(T * rcObject) {
+		rcObject->incRef(0);
+		rcObject->decRef(0);
+	};
 #endif
 
-#if __cplusplus >= 202002L
-	template <typename T> requires RcObjectConcept<T>
-#else
 	template <typename T>
-#endif
 	class RcObjectPtr {
 	public:
 		size_t _counter = SIZE_MAX;
@@ -38,14 +37,16 @@ namespace peff {
 
 		T *_ptr = nullptr;
 
-		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr) {
+		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr)
+			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
 			_counter = g_rcObjectPtrCounter++;
 			_ptr->incRef(_counter);
 			this->_ptr = _ptr;
 		}
 
 	public:
-		PEFF_FORCEINLINE void reset() noexcept {
+		PEFF_FORCEINLINE void reset() noexcept
+			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
 			if (_ptr) {
 				_ptr->decRef(_counter);
 			}

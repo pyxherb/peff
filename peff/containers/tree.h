@@ -7,6 +7,10 @@
 #include <memory_resource>
 #include <type_traits>
 
+#if __cplusplus >= 202002L
+	#include <concepts>
+#endif
+
 #include "basedefs.h"
 #include "misc.h"
 #include <peff/base/alloc.h>
@@ -58,6 +62,7 @@ namespace peff {
 
 	template <typename T,
 		typename Comparator = std::less<T>>
+	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class RBTree : private RBTreeBase {
 	public:
 		struct Node : public RBTreeBase::AbstractNode {

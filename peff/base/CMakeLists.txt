@@ -15,7 +15,7 @@ set_target_properties(peff_base PROPERTIES
 )
 
 if(MSVC)
-    target_compile_options(peff_base PUBLIC "/Zc:__cplusplus")
+    target_compile_options(peff_base PUBLIC "/Zc:__cplusplus" INTERFACE $<TARGET_PROPERTY:peff_base,COMPILE_OPTIONS>)
 endif()
 
 add_library(peff_base_static STATIC)
@@ -29,7 +29,7 @@ set_target_properties(peff_base_static PROPERTIES
 )
 
 if(MSVC)
-    target_compile_options(peff_base_static PUBLIC "/Zc:__cplusplus")
+    target_compile_options(peff_base_static PUBLIC "/Zc:__cplusplus" INTERFACE $<TARGET_PROPERTY:peff_base_static,COMPILE_OPTIONS>)
 endif()
 
 install(TARGETS peff_base peff_base_static

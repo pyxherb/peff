@@ -103,18 +103,23 @@ namespace peff {
 	template <typename T, typename... Args>
 	PEFF_FORCEINLINE void constructAt(T *ptr, Args &&...args) {
 #ifdef new
-	#ifdef _MSC_VER
+	#if defined(_MSC_VER) || (defined(__GNUC__)) || (defined(__clang__))
 		#pragma push_macro("new")
 		#undef new
 		new (ptr) T(std::forward<Args>(args)...);
 		#pragma pop_macro("new")
 	#else
-		std::allocator<T> allocator;
+		std::allocator_traits<std::allocator<T>> allocator;
 		allocator.construct(ptr, std::forward<Args>(args)...);
 	#endif
 #else
 		new (ptr) T(std::forward<Args>(args)...);
 #endif
+	}
+
+	template <typename T>
+	PEFF_FORCEINLINE void destroyAt(T *const ptr) {
+		std::destroy_at<T>(ptr);
 	}
 
 	template <typename T, typename... Args>

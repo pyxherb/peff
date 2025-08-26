@@ -13,7 +13,16 @@ namespace peff {
 	struct IsDeallocable<T, std::void_t<decltype(std::declval<const T>().dealloc())>> : std::true_type {
 	};
 
+#if __cplusplus >= 202002L
+	template <typename T>
+	concept DeallocableConcept = IsDeallocable<T>::value;
+#endif
+
+	#if __cplusplus >= 202002L
+	template <typename T> requires DeallocableConcept<T>
+	#else
 	template<typename T>
+	#endif
 	struct DeallocableDeleter {
 		PEFF_FORCEINLINE void operator()(T *ptr) const noexcept {
 			if (ptr)

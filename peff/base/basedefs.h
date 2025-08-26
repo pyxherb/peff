@@ -60,6 +60,10 @@
 
 #endif
 
+#if __cplusplus < 201703L
+	#error Your compiler/configuration/environment does not meet the requirement of PEFF
+#endif
+
 namespace peff {
 }
 

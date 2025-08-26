@@ -19,7 +19,16 @@ namespace peff {
 
 	PEFF_BASE_API extern std::atomic_size_t g_rcObjectPtrCounter;
 
+#if __cplusplus >= 202002L
 	template <typename T>
+	concept RcObjectConcept = IsRcObject<T>::value;
+#endif
+
+#if __cplusplus >= 202002L
+	template <typename T> requires RcObjectConcept<T>
+#else
+	template <typename T>
+#endif
 	class RcObjectPtr {
 	public:
 		size_t _counter = SIZE_MAX;

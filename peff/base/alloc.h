@@ -100,17 +100,26 @@ namespace peff {
 		}
 	}
 
+#if __cplusplus >= 202002L
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE void constructAt(T *ptr, Args &&...args) {
+	requires std::constructible_from<T, Args...>
+#else
+	template <typename T, typename... Args>
+#endif
+		PEFF_FORCEINLINE void constructAt(T *ptr, Args &&...args) {
 #ifdef new
-	#if defined(_MSC_VER) || (defined(__GNUC__)) || (defined(__clang__))
-		#pragma push_macro("new")
-		#undef new
-		new (ptr) T(std::forward<Args>(args)...);
-		#pragma pop_macro("new")
+	#if __cplusplus >= 202002L
+		std::construct_at<T>(ptr, std::forward<Args>(args)...);
 	#else
+		#if defined(_MSC_VER) || (defined(__GNUC__)) || (defined(__clang__))
+			#pragma push_macro("new")
+			#undef new
+		new (ptr) T(std::forward<Args>(args)...);
+			#pragma pop_macro("new")
+		#else
 		std::allocator_traits<std::allocator<T>> allocator;
 		allocator.construct(ptr, std::forward<Args>(args)...);
+		#endif
 	#endif
 #else
 		new (ptr) T(std::forward<Args>(args)...);
@@ -122,8 +131,13 @@ namespace peff {
 		std::destroy_at<T>(ptr);
 	}
 
+#if __cplusplus >= 202002L
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args &&...args) {
+	requires std::constructible_from<T, Args...>
+#else
+	template <typename T, typename... Args>
+#endif
+		PEFF_FORCEINLINE T *allocAndConstruct(Alloc *allocator, size_t alignment, Args &&...args) {
 		RcObjectPtr<Alloc> allocatorHolder(allocator);
 
 		void *ptr = allocatorHolder->alloc(sizeof(T), alignment);

@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 project(peff VERSION 0.1.0)
 
+set(DESIRED_CXX_STANDARD 17 CACHE NUMBER "Desired C++ standard for the compilation of PEFF, note that the C++ 17 is the lowest requirement")
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 include_directories(BEFORE SYSTEM ${PROJECT_SOURCE_DIR})
 
 add_subdirectory("peff")

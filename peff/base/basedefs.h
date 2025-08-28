@@ -46,20 +46,6 @@
 	#define PEFF_BASE_API
 #endif
 
-#ifdef _MSC_VER
-
-	#define _CRTDBG_MAP_ALLOC
-	#include <crtdbg.h>
-	#include <cstdlib>
-
-	// Memory leak detection
-	#define malloc(n) _malloc_dbg(n, _NORMAL_BLOCK, __FILE__, __LINE__)
-	#define free(n) _free_dbg(n, _NORMAL_BLOCK)
-	#define __DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
-	#define new __DBG_NEW
-
-#endif
-
 #if __cplusplus < 201703L
 	#error Your compiler/configuration/environment does not meet the requirement of PEFF
 #endif

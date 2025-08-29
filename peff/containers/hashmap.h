@@ -5,7 +5,7 @@
 
 namespace peff {
 	template <typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
-	PEFF_REQUIRES_CONCEPT(std::invocable<EqCmp, const K &, const K &>)
+	PEFF_REQUIRES_CONCEPT(std::invocable<Eq, const K &, const K &>)
 	class HashMap final {
 	private:
 		struct Pair {

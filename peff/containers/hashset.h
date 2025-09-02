@@ -15,12 +15,26 @@
 namespace peff {
 	template <
 		typename T,
-		typename EqCmp = std::equal_to<T>,
-		typename Hasher = Hasher<T>>
+		typename EqCmp,
+		typename Hasher,
+		bool Fallible>
 	PEFF_REQUIRES_CONCEPT(std::invocable<EqCmp, const T &, const T &>)
-	class HashSet {
+	class HashSetImpl {
+	private:
+		using HasherResult = decltype(std::declval<Hasher>()(std::declval<T>()));
+
+		template <typename T2, typename V = void>
+		struct HashCodePassUtil {
+			using type = T2;
+		};
+
+		template <typename T2>
+		struct HashCodePassUtil<T2, std::void_t<decltype(std::declval<T2>().value())>> {
+			using type = typename T2::value_type;
+		};
+
 	public:
-		using HashCode = decltype(std::declval<Hasher>()(std::declval<T>()));
+		using HashCode = std::conditional_t<Fallible, typename HashCodePassUtil<HasherResult>::type, HasherResult>;
 
 		struct Element {
 			T data;
@@ -46,7 +60,7 @@ namespace peff {
 		using Bucket = List<Element>;
 
 	private:
-		using ThisType = HashSet<T, EqCmp, Hasher>;
+		using ThisType = HashSetImpl<T, EqCmp, Hasher, Fallible>;
 
 		using BucketsType = DynArray<Bucket>;
 		BucketsType _buckets;
@@ -113,8 +127,16 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE typename Bucket::NodeHandle _getBucketSlot(const Bucket &bucket, const T &data) const {
 			for (auto i = bucket.firstNode(); i; i = i->next) {
-				if (_equalityComparator(i->data.data, data)) {
-					return i;
+				if constexpr (Fallible) {
+					if (auto result = _equalityComparator(i->data.data, data); result.has_value()) {
+						return i;
+					} else {
+						return Bucket::nullNodeHandle();
+					}
+				} else {
+					if (_equalityComparator(i->data.data, data)) {
+						return i;
+					}
 				}
 			}
 
@@ -167,7 +189,15 @@ namespace peff {
 
 			T tmpData = std::move(data);
 
-			HashCode hashCode = _hasher(tmpData);
+			HashCode hashCode;
+			if constexpr (Fallible) {
+				if (auto result = _hasher(tmpData); result.has_value()) {
+					hashCode = result.value();
+				} else
+					return false;
+			} else {
+				hashCode = _hasher(tmpData);
+			}
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 
@@ -193,7 +223,15 @@ namespace peff {
 				return false;
 			}
 
-			HashCode hashCode = _hasher(data);
+			HashCode hashCode;
+			if constexpr (Fallible) {
+				if (auto result = _hasher(data); result.has_value()) {
+					hashCode = result.value();
+				} else
+					return false;
+			} else {
+				hashCode = _hasher(data);
+			}
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 			peff::RcObjectPtr<Alloc> alloc = bucket.allocator();
@@ -230,7 +268,15 @@ namespace peff {
 				return Bucket::nullNodeHandle();
 			}
 
-			HashCode hashCode = _hasher(data);
+			HashCode hashCode;
+			if constexpr (Fallible) {
+				if (auto result = _hasher(data); result.has_value()) {
+					hashCode = result.value();
+				} else
+					return Bucket::nullNodeHandle();
+			} else {
+				hashCode = _hasher(data);
+			}
 			size_t i = ((size_t)hashCode) % _buckets.size();
 			const Bucket &bucket = _buckets.at(i);
 
@@ -238,10 +284,10 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE HashSet(Alloc *allocator) : _buckets(allocator) {
+		PEFF_FORCEINLINE HashSetImpl(Alloc *allocator) : _buckets(allocator) {
 		}
 
-		PEFF_FORCEINLINE HashSet(ThisType &&other)
+		PEFF_FORCEINLINE HashSetImpl(ThisType &&other)
 			: _buckets(std::move(other._buckets)),
 			  _size(other._size),
 			  _equalityComparator(std::move(other._equalityComparator)),
@@ -633,6 +679,11 @@ namespace peff {
 			return true;
 		}
 	};
+
+	template <typename T, typename EqCmp = std::equal_to<T>, typename Hasher = peff::Hasher<T>>
+	using HashSet = HashSetImpl<T, EqCmp, Hasher, false>;
+	template <typename T, typename EqCmp = peff::FallibleEq<T>, typename Hasher = peff::FallibleHasher<T>>
+	using FallibleHashSet = HashSetImpl<T, EqCmp, Hasher, true>;
 }
 
 #endif

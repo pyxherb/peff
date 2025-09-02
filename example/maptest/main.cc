@@ -95,6 +95,13 @@ struct FallibleComparator {
 	}
 };
 
+template <typename T>
+struct FallibleHasher {
+	std::optional<size_t> operator()(const T &lhs) const {
+		return {};
+	}
+};
+
 int main() {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -110,7 +117,7 @@ int main() {
 	peff::SharedPtr<RcObj> outerSharedPtr;
 
 	{
-		peff::FallibleSet<int, FallibleComparator<int>> test(&peff::g_stdAlloc);
+		peff::FallibleHashSet<int, FallibleComparator<int>, FallibleHasher<int>> test(&peff::g_stdAlloc);
 
 		for (size_t i = 0; i < 1024; ++i) {
 			if (test.insert(+i)) {

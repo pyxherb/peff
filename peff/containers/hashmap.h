@@ -4,9 +4,9 @@
 #include "hashset.h"
 
 namespace peff {
-	template <typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
+	template <typename K, typename V, typename Eq, typename Hasher, bool Fallible>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Eq, const K &, const K &>)
-	class HashMap final {
+	class HashMapImpl final {
 	private:
 		struct Pair {
 			K key;
@@ -70,11 +70,11 @@ namespace peff {
 
 		PairComparator comparator;
 
-		using SetType = HashSet<Pair, PairComparator, PairHasher>;
+		using SetType = std::conditional_t<Fallible, FallibleHashSet<Pair, PairComparator, PairHasher>, HashSet<Pair, PairComparator, PairHasher>>;
 
 		SetType _set;
 
-		using ThisType = HashMap<K, V, Eq, Hasher>;
+		using ThisType = HashMapImpl<K, V, Eq, Hasher, Fallible>;
 
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
 			((QueryPair *)dest)->isForQuery = true;
@@ -82,8 +82,8 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE HashMap(Alloc *allocator) : _set(allocator) {}
-		PEFF_FORCEINLINE HashMap(ThisType &&rhs) : comparator(std::move(rhs.comparator)), _set(std::move(rhs._set)) {
+		PEFF_FORCEINLINE HashMapImpl(Alloc *allocator) : _set(allocator) {}
+		PEFF_FORCEINLINE HashMapImpl(ThisType &&rhs) : comparator(std::move(rhs.comparator)), _set(std::move(rhs._set)) {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
@@ -303,6 +303,11 @@ namespace peff {
 			return _set.size();
 		}
 	};
+
+	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
+	using HashMap = HashMapImpl<K, V, Eq, Hasher, false>;
+	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
+	using FallibleHashMap = HashMapImpl<K, V, Eq, Hasher, true>;
 }
 
 #endif

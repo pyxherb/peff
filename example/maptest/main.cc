@@ -325,25 +325,26 @@ int main() {
 	}
 	peff::g_stdAlloc.release(b, szBuffer, alignment);
 
-	/*{
+	{
 		char buffer[32768];
 		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
+		peff::UpstreamedBufferAlloc alloc(&bufferAlloc, &peff::g_stdAlloc);
 
-		for (size_t i = 1; i < 1024; ++i) {
-			void *p1 = bufferAlloc.alloc(i, i);
+		for (size_t i = 8; i < 32768; ++i) {
+			void *const p1 = alloc.alloc(i, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p1);
-			void *p2 = bufferAlloc.alloc(i * 2, i * 2);
+			void *const p2 = alloc.alloc(i * 2, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p2);
 			memset(p1, 0, i);
 			memset(p2, 0, i * 2);
-			bufferAlloc.release(p1, i, i);
-			bufferAlloc.release(p2, i * 2, i * 2);
-			void *p3 = bufferAlloc.alloc(i * 3, i * 3);
+			alloc.release(p1, i, sizeof(std::max_align_t));
+			alloc.release(p2, i * 2, sizeof(std::max_align_t));
+			void *const p3 = alloc.alloc(i * 3, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p3);
 			memset(p3, 0, i * 3);
-			bufferAlloc.release(p3, i * 3, i * 3);
+			alloc.release(p3, i * 3, sizeof(std::max_align_t));
 		}
-	}*/
+	}
 
 	return 0;
 }

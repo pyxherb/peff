@@ -5,12 +5,12 @@ using namespace peff;
 PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(char *buffer, size_t bufferSize) : buffer(buffer), bufferSize(bufferSize), allocDescs(&g_voidAlloc, AllocDescComparator()) {
 }
 
-PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(BufferAlloc&& rhs) noexcept: buffer(rhs.buffer), bufferSize(rhs.bufferSize), allocDescs(std::move(rhs.allocDescs)) {
+PEFF_ADVUTILS_API BufferAlloc::BufferAlloc(BufferAlloc &&rhs) noexcept : buffer(rhs.buffer), bufferSize(rhs.bufferSize), allocDescs(std::move(rhs.allocDescs)) {
 	rhs.buffer = nullptr;
 	rhs.bufferSize = 0;
 }
 
-PEFF_ADVUTILS_API BufferAlloc& BufferAlloc::operator=(BufferAlloc&& rhs) noexcept {
+PEFF_ADVUTILS_API BufferAlloc &BufferAlloc::operator=(BufferAlloc &&rhs) noexcept {
 	buffer = rhs.buffer;
 	bufferSize = rhs.bufferSize;
 	allocDescs = std::move(rhs.allocDescs);
@@ -41,7 +41,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexce
 
 	size_t actualSize = calcAllocSize(size, alignment, &descOff);
 
-	while (off <= (bufferSize - actualSize)) {
+	while (off + actualSize <= bufferSize) {
 		if (size_t alignedDiff = ((uintptr_t)(buffer + off)) % alignment; alignedDiff) {
 			off += alignment - alignedDiff;
 			continue;
@@ -51,7 +51,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexce
 			AllocDesc *bottomDesc = (AllocDesc *)allocDescs.getMaxLteqNode(buffer + off);
 
 			if (bottomDesc) {
-				size_t bottomDescOff = (((char*)bottomDesc->descBase) - buffer);
+				size_t bottomDescOff = (((char *)bottomDesc->descBase) - buffer);
 				if (bottomDescOff + sizeof(AllocDesc) > off) {
 					off = bottomDescOff + sizeof(AllocDesc);
 					continue;
@@ -62,7 +62,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexce
 			AllocDesc *topDesc = (AllocDesc *)allocDescs.getMaxLteqNode(buffer + off + actualSize);
 
 			if (topDesc) {
-				size_t topDescOff = (((char*)topDesc->descBase) - buffer);
+				size_t topDescOff = (((char *)topDesc->descBase) - buffer);
 				if (topDescOff + sizeof(AllocDesc) > off) {
 					off = topDescOff + sizeof(AllocDesc);
 					continue;
@@ -76,15 +76,17 @@ PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexce
 
 succeeded:
 	char *ptr = buffer + off, *allocDescRawPtr = ptr + descOff;
-	constructAt<AllocDesc>((AllocDesc*)allocDescRawPtr, (AllocDesc*)ptr);
+	constructAt<AllocDesc>((AllocDesc *)allocDescRawPtr, (AllocDesc *)ptr);
 
-	AllocDesc *allocDescPtr = (AllocDesc*)allocDescRawPtr;
+	AllocDesc *allocDescPtr = (AllocDesc *)allocDescRawPtr;
 
 	allocDescPtr->size = size;
 	allocDescPtr->alignment = alignment;
 	allocDescPtr->descBase = allocDescPtr;
 
-	bool result = allocDescs.insert((RBTree<void*, AllocDescComparator>::Node*)allocDescRawPtr);
+	assert(((uintptr_t)ptr + size) <= ((uintptr_t)allocDescPtr));
+
+	bool result = allocDescs.insert(allocDescPtr);
 	assert(result);
 
 	return ptr;
@@ -105,7 +107,7 @@ PEFF_ADVUTILS_API void BufferAlloc::release(void *ptr, size_t size, size_t align
 	allocDescs.remove(desc, false);
 }
 
-PEFF_ADVUTILS_API bool BufferAlloc::isReplaceable(const Alloc* rhs) const noexcept {
+PEFF_ADVUTILS_API bool BufferAlloc::isReplaceable(const Alloc *rhs) const noexcept {
 	if (rhs->getTypeId() != getTypeId()) {
 		return false;
 	}
@@ -123,4 +125,80 @@ PEFF_ADVUTILS_API bool BufferAlloc::isReplaceable(const Alloc* rhs) const noexce
 
 PEFF_ADVUTILS_API UUID BufferAlloc::getTypeId() const noexcept {
 	return PEFF_UUID(8c2a0e1b, 4d3a, 4e6f, 8a2c, 6b0e1d9f4c8);
+}
+
+PEFF_ADVUTILS_API UpstreamedBufferAlloc::UpstreamedBufferAlloc(peff::BufferAlloc *bufferAlloc, peff::Alloc *upstream) : bufferAlloc(bufferAlloc), upstream(upstream) {
+}
+
+PEFF_ADVUTILS_API UpstreamedBufferAlloc::UpstreamedBufferAlloc(UpstreamedBufferAlloc &&rhs) noexcept : bufferAlloc(std::move(rhs.bufferAlloc)), upstream(std::move(rhs.upstream)) {
+}
+
+PEFF_ADVUTILS_API UpstreamedBufferAlloc &UpstreamedBufferAlloc::operator=(UpstreamedBufferAlloc &&rhs) noexcept {
+	bufferAlloc = std::move(rhs.bufferAlloc);
+	upstream = std::move(rhs.upstream);
+
+	return *this;
+}
+
+PEFF_ADVUTILS_API size_t UpstreamedBufferAlloc::decRef(size_t globalRc) noexcept {
+	if (!--_refCount) {
+		onRefZero();
+		return 0;
+	}
+	return _refCount;
+}
+
+PEFF_ADVUTILS_API size_t UpstreamedBufferAlloc::incRef(size_t globalRc) noexcept {
+	return ++_refCount;
+}
+
+PEFF_ADVUTILS_API void UpstreamedBufferAlloc::onRefZero() noexcept {
+}
+
+PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::alloc(size_t size, size_t alignment) noexcept {
+	void *ptr;
+
+	if ((ptr = bufferAlloc->alloc(size + 2, alignment))) {
+		((uint8_t *)ptr)[size] = 0xbf;
+		return ptr;
+	}
+
+	if ((ptr = upstream->alloc(size + 2, alignment))) {
+		((uint8_t *)ptr)[size] = 0x00;
+		return ptr;
+	}
+
+	return nullptr;
+}
+
+PEFF_ADVUTILS_API void UpstreamedBufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
+	uint8_t marker = ((uint8_t *)ptr)[size];
+
+	if (marker == 0xbf) {
+		bufferAlloc->release(ptr, size + 2, alignment);
+	} else if (marker == 0x00) {
+		upstream->release(ptr, size + 2, alignment);
+	} else {
+		assert(false);
+	}
+}
+
+PEFF_ADVUTILS_API bool UpstreamedBufferAlloc::isReplaceable(const Alloc *rhs) const noexcept {
+	if (rhs->getTypeId() != getTypeId()) {
+		return false;
+	}
+
+	const UpstreamedBufferAlloc *r = (const UpstreamedBufferAlloc *)rhs;
+
+	if (bufferAlloc != r->bufferAlloc)
+		return false;
+
+	if (upstream != r->upstream)
+		return false;
+
+	return true;
+}
+
+PEFF_ADVUTILS_API UUID UpstreamedBufferAlloc::getTypeId() const noexcept {
+	return PEFF_UUID(c3b9e6f0, 1a2f, 4c39, 1e6c, 3d4e1f2b3c82);
 }

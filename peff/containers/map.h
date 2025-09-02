@@ -4,8 +4,8 @@
 #include "set.h"
 
 namespace peff {
-	template <typename K, typename V, typename Lt = std::less<K>>
-	class Map final {
+	template <typename K, typename V, typename Lt, bool Fallible>
+	class MapImpl final {
 	private:
 		struct Pair {
 			K key;
@@ -16,7 +16,7 @@ namespace peff {
 			Pair(Pair &&rhs) = default;
 		};
 
-		struct QueryPair : Pair {
+		struct QueryPair : public Pair {
 			const K *queryKey;
 		};
 
@@ -32,11 +32,11 @@ namespace peff {
 			}
 		};
 
-		using SetType = Set<Pair, PairComparator>;
+		using SetType = std::conditional_t<Fallible, FallibleSet<Pair, PairComparator>, Set<Pair, PairComparator>>;
 
 		SetType _set;
 
-		using ThisType = Map<K, V, Lt>;
+		using ThisType = MapImpl<K, V, Lt, Fallible>;
 
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
 			((QueryPair *)dest)->isForQuery = true;
@@ -46,8 +46,8 @@ namespace peff {
 	public:
 		using NodeType = typename SetType::NodeType;
 
-		PEFF_FORCEINLINE Map(Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
-		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)) {
+		PEFF_FORCEINLINE MapImpl(Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
+		PEFF_FORCEINLINE MapImpl(ThisType &&rhs) : _set(std::move(rhs._set)) {
 		}
 
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
@@ -95,11 +95,11 @@ namespace peff {
 			_set.replaceAllocator(rhs);
 		}
 
-		PEFF_FORCEINLINE Lt& comparator() {
+		PEFF_FORCEINLINE Lt &comparator() {
 			return _set.comparator().ltComparator;
 		}
 
-		PEFF_FORCEINLINE const Lt& comparator() const {
+		PEFF_FORCEINLINE const Lt &comparator() const {
 			return _set.comparator().ltComparator;
 		}
 
@@ -223,7 +223,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE std::pair<const K &, const V &> operator*() const {
-				return { _iterator->key, _iterator->value };
+				return { _iterator.key(), _iterator.value() };
 			}
 		};
 
@@ -241,7 +241,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
-			return const_cast<ThisType*>(this)->find(key);
+			return const_cast<ThisType *>(this)->find(key);
 		}
 
 		PEFF_FORCEINLINE Iterator find(const K &key) {
@@ -253,7 +253,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstIterator findMaxLteq(const K &key) const {
-			return const_cast<ThisType*>(this)->findMaxLteq(key);
+			return const_cast<ThisType *>(this)->findMaxLteq(key);
 		}
 
 		PEFF_FORCEINLINE Iterator findMaxLteq(const K &key) {
@@ -322,6 +322,11 @@ namespace peff {
 			return true;
 		}
 	};
+
+	template <typename K, typename V, typename Lt = std::less<K>>
+	using Map = MapImpl<K, V, Lt, false>;
+	template <typename K, typename V, typename Lt = std::less<K>>
+	using FallibleMap = MapImpl<K, V, Lt, true>;
 }
 
 #endif

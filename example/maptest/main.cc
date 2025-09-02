@@ -39,8 +39,10 @@ struct Test2 : public peff::SharedFromThis<Test2> {
 	}
 
 	size_t decRef(size_t globalRc) {
-		if (!--ref)
+		if (!--ref) {
 			onRefZero();
+			return 0;
+		}
 		return ref;
 	}
 
@@ -86,6 +88,13 @@ struct B {
 	}
 };
 
+template <typename T>
+struct FallibleComparator {
+	std::optional<bool> operator()(const T &lhs, const T &rhs) const {
+		return {};
+	}
+};
+
 int main() {
 #ifdef _MSC_VER
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -100,6 +109,17 @@ int main() {
 
 	peff::SharedPtr<RcObj> outerSharedPtr;
 
+	{
+		peff::FallibleSet<int, FallibleComparator<int>> test(&peff::g_stdAlloc);
+
+		for (size_t i = 0; i < 1024; ++i) {
+			if (test.insert(+i)) {
+				if (test.size() != 1) {
+					std::terminate();
+				}
+			}
+		}
+	}
 	{
 		peff::SharedPtr<RcObj> sharedPtr = peff::makeShared<RcObj>(peff::getDefaultAlloc(), "SharedPtr");
 		peff::SharedPtr<Test2> test2Ptr = sharedPtr.castTo<Test2>();
@@ -141,14 +161,6 @@ int main() {
 			// map.dump(std::cout);
 
 			map.verify();
-		}
-		peff::Set<int> map2(&peff::g_stdAlloc);
-		if (!peff::copyAssign(map2, map))
-			throw std::bad_alloc();
-
-		auto k = map2.begin();
-		while (k != map2.end()) {
-			printf("%d\n", *(k++));
 		}
 	}
 	test.reset();
@@ -282,8 +294,8 @@ int main() {
 	}
 
 	size_t szBuffer = peff::BufferAlloc::calcAllocSize(sizeof(peff::Map<size_t, size_t>::NodeType), alignof(std::max_align_t)) *
-							32,
-				 alignment = alignof(std::max_align_t);
+					  32,
+		   alignment = alignof(std::max_align_t);
 
 	char *b = (char *)peff::g_stdAlloc.alloc(szBuffer, alignment);
 	{

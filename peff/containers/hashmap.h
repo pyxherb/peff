@@ -302,41 +302,6 @@ namespace peff {
 		PEFF_FORCEINLINE size_t size() const {
 			return _set.size();
 		}
-
-		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			constructAt<ThisType>(&dest, allocator());
-
-			ScopeGuard clearDestGuard([&dest]() noexcept {
-				dest.clear();
-			});
-
-			for (ConstIterator i = beginConst(); i != endConst(); ++i) {
-				Uninitialized<K> copiedKey;
-				Uninitialized<V> copiedValue;
-
-				if (!copiedKey.copyFrom(i.key())) {
-					return false;
-				}
-
-				if (!copiedValue.copyFrom(i.value())) {
-					return false;
-				}
-
-				if (!dest.insert(copiedKey.release(), copiedValue.release())) {
-					return false;
-				}
-			}
-
-			clearDestGuard.release();
-
-			return true;
-		}
-
-		PEFF_FORCEINLINE bool copyAssign(ThisType &dest) const {
-			verifyAlloc(allocator(), dest.allocator());
-
-			return true;
-		}
 	};
 }
 

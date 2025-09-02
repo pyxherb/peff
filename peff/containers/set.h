@@ -4,27 +4,22 @@
 #include "tree.h"
 
 namespace peff {
-	template <typename T, typename Comparator = std::less<T>>
+	template <typename T, typename Comparator, bool Fallible>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
-	class Set final {
+	class SetImpl final {
 	private:
-		using Tree = RBTree<T, Comparator>;
+		using Tree = std::conditional_t<Fallible, FallibleRBTree<T, Comparator>, RBTree<T, Comparator>>;
 		Tree _tree;
-		using ThisType = Set<T, Comparator>;
+		using ThisType = SetImpl<T, Comparator, Fallible>;
 
 	public:
 		using NodeType = typename Tree::NodeType;
 
-		PEFF_FORCEINLINE Set(Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
+		PEFF_FORCEINLINE SetImpl(Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
 		}
-		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
+		PEFF_FORCEINLINE SetImpl(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
 		}
-		PEFF_FORCEINLINE ~Set() {
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			constructAt<ThisType>(&dest, _tree.allocator());
-			return _tree.copy(dest._tree);
+		PEFF_FORCEINLINE ~SetImpl() {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&dest) noexcept {
@@ -201,7 +196,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE const T &operator->() const {
-				return &*_iterator;
+				return *_iterator;
 			}
 		};
 
@@ -254,6 +249,11 @@ namespace peff {
 			_tree.remove(iterator._iterator);
 		}
 	};
+
+	template<typename T, typename Comparator = std::less<T>>
+	using Set = SetImpl<T, Comparator, false>;
+	template<typename T, typename Comparator = FallibleLt<T>>
+	using FallibleSet = SetImpl<T, Comparator, true>;
 }
 
 #endif

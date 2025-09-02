@@ -16,6 +16,7 @@
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
 #include <peff/base/scope_guard.h>
+#include <peff/utils/comparator.h>
 #include "list.h"
 
 namespace peff {
@@ -63,7 +64,7 @@ namespace peff {
 	template <typename T,
 		typename Comparator = std::less<T>>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
-	class RBTree : private RBTreeBase {
+	class RBTree : protected RBTreeBase {
 	public:
 		struct Node : public RBTreeBase::AbstractNode {
 			T value;
@@ -73,32 +74,13 @@ namespace peff {
 		};
 
 		using NodeType = Node;
+		using ComparatorType = Comparator;
 
-	private:
+	protected:
 		using ThisType = RBTree<T, Comparator>;
 
 		Comparator _comparator;
 		RcObjectPtr<Alloc> _allocator;
-
-		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(const T &value) {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
-			if (!node)
-				return nullptr;
-
-			ScopeGuard scopeGuard(
-				[this, node]() noexcept {
-					_allocator->release(node, sizeof(Node), alignof(Node));
-				});
-			Uninitialized<T> copiedData;
-			if (copiedData.copyFrom(value)) {
-				return nullptr;
-			}
-			constructAt<Node>(node, copiedData.release());
-
-			scopeGuard.release();
-
-			return node;
-		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(T &&value) {
 			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
@@ -145,75 +127,7 @@ namespace peff {
 			}
 		}
 
-		struct CopyInfo {
-			const Node *node;
-			Node *newNode;
-			bool isLeftWalked;
-			bool isRightWalked;
-
-			PEFF_FORCEINLINE bool copy(CopyInfo &dest) const {
-				dest.node = node;
-				dest.newNode = newNode;
-				dest.isLeftWalked = isLeftWalked;
-				dest.isRightWalked = isRightWalked;
-				return true;
-			}
-		};
-
-		PEFF_FORCEINLINE Node *_copyTree(const Node *node) {
-			List<CopyInfo> copyInfoStack(_allocator.get());
-
-			Node *newNode = _allocSingleNode(node->value);
-			if (!newNode)
-				return nullptr;
-
-			if (!copyInfoStack.pushBack(
-					CopyInfo{ node,
-						newNode,
-						false }))
-				return nullptr;
-
-			ScopeGuard deleteNewTreeGuard([this, newNode]() noexcept {
-				_deleteNodeTree(newNode);
-			});
-
-			while (copyInfoStack.size()) {
-				CopyInfo &copyInfo = copyInfoStack.back();
-
-				if ((!copyInfo.isLeftWalked)) {
-					copyInfo.isLeftWalked = true;
-					if (copyInfo.node->l) {
-						Node *newNode = _allocSingleNode(((Node *)copyInfo.node->l)->value);
-						newNode->p = copyInfo.newNode;
-						copyInfo.newNode->l = newNode;
-						if (!copyInfoStack.pushBack(
-								CopyInfo{ ((Node *)copyInfo.node->l),
-									newNode,
-									false }))
-							return nullptr;
-					}
-				} else if (!(copyInfo.isRightWalked)) {
-					copyInfo.isRightWalked = true;
-					if (copyInfo.node->r) {
-						Node *newNode = _allocSingleNode(((Node *)copyInfo.node->r)->value);
-						newNode->p = copyInfo.newNode;
-						copyInfo.newNode->r = newNode;
-						if (!copyInfoStack.pushBack(
-								CopyInfo{ ((Node *)copyInfo.node->r),
-									newNode,
-									false }))
-							return nullptr;
-					}
-				} else
-					copyInfoStack.remove(copyInfoStack.lastNode());
-			}
-
-			deleteNewTreeGuard.release();
-
-			return newNode;
-		}
-
-		PEFF_FORCEINLINE Node *_get(const T &key) {
+		virtual inline Node *_get(const T &key) {
 			Node *i = (Node *)_root;
 			while (i) {
 				if (_comparator(i->value, key)) {
@@ -227,8 +141,9 @@ namespace peff {
 			return nullptr;
 		}
 
-		PEFF_FORCEINLINE Node **_getSlot(const T &key, Node *&parentOut) {
+		virtual inline Node **_getSlot(const T &key, Node *&parentOut) {
 			Node **i = (Node **)&_root;
+			parentOut = nullptr;
 			while (*i) {
 				parentOut = *i;
 
@@ -243,7 +158,7 @@ namespace peff {
 			return i;
 		}
 
-		PEFF_FORCEINLINE void _insert(Node **slot, Node *parent, Node *node) {
+		virtual inline bool _insert(Node **slot, Node *parent, Node *node) {
 			assert(!node->l);
 			assert(!node->r);
 
@@ -269,6 +184,8 @@ namespace peff {
 			_cachedMaxNode = _getMaxNode(_root);
 
 			++_nNodes;
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE Node *_remove(Node *node) {
@@ -284,26 +201,6 @@ namespace peff {
 
 	public:
 		PEFF_FORCEINLINE RBTree(Alloc *allocator, Comparator &&comparator) : _allocator(allocator), _comparator(std::move(comparator)) {}
-
-		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			peff::Uninitialized<Comparator> copiedComparator;
-			if (!copiedComparator.copyFrom(_comparator))
-				return false;
-
-			peff::constructAt<ThisType>(&dest, _allocator.get(), copiedComparator.release());
-
-			if (_root) {
-				if (!(dest._root = const_cast<ThisType *>(this)->_copyTree((Node *)_root)))
-					return false;
-			} else {
-				dest._root = nullptr;
-			}
-			dest._cachedMinNode = _getMinNode(dest._root);
-			dest._cachedMaxNode = _getMaxNode(dest._root);
-			dest._nNodes = _nNodes;
-
-			return true;
-		}
 
 		PEFF_FORCEINLINE RBTree(ThisType &&other)
 			: _comparator(std::move(other._comparator)),
@@ -345,7 +242,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE Node *getMaxLteqNode(const T &data) {
+		virtual inline Node *getMaxLteqNode(const T &data) {
 			Node *curNode = (Node *)_root, *maxNode = NULL;
 
 			while (curNode) {
@@ -379,9 +276,7 @@ namespace peff {
 			if (!slot)
 				return false;
 
-			_insert(slot, parent, node);
-
-			return true;
+			return _insert(slot, parent, node);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *insert(T &&key) {
@@ -698,6 +593,167 @@ namespace peff {
 		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
 			assert(("Cannot remove the end iterator", iterator.node));
 			remove(iterator.node);
+		}
+	};
+
+	template <typename T,
+		typename Comparator = peff::FallibleLt<T>>
+	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
+	class FallibleRBTree : public RBTree<T, Comparator> {
+	private:
+		using ThisType = FallibleRBTree<T, Comparator>;
+
+		virtual inline Node *_get(const T &key) override {
+			Node *i = (Node *)_root;
+
+			std::optional<bool> result;
+
+			while (i) {
+				if ((result = _comparator(i->value, key)).has_value()) {
+					if (result.value()) {
+#ifndef _NDEBUG
+						if ((result = _comparator(key, i->value)).has_value()) {
+							assert(!result.value());
+							i = (Node *)i->r;
+						} else {
+							return nullptr;
+						}
+#else
+						i = (Node *)i->r;
+#endif
+					} else if ((result = _comparator(key, i->value)).has_value()) {
+						if (result.value()) {
+							i = (Node *)i->l;
+						} else
+							return i;
+					} else {
+						return nullptr;
+					}
+				} else {
+					return nullptr;
+				}
+			}
+
+			return nullptr;
+		}
+
+		virtual inline Node **_getSlot(const T &key, Node *&parentOut) override {
+			Node **i = (Node **)&_root;
+			std::optional<bool> result;
+
+			parentOut = nullptr;
+
+			while (*i) {
+				parentOut = *i;
+
+				if ((result = _comparator((*i)->value, key)).has_value()) {
+					if (result.value()) {
+#ifndef _NDEBUG
+						if ((result = _comparator(key, (*i)->value)).has_value()) {
+							assert(!result.value());
+							i = (Node **)&(*i)->r;
+						} else {
+							return nullptr;
+						}
+#else
+						i = (Node **)&(*i)->r;
+#endif
+					} else if ((result = _comparator(key, (*i)->value)).has_value()) {
+						if (result.value()) {
+							i = (Node **)&(*i)->l;
+						} else
+							return i;
+					} else {
+						return nullptr;
+					}
+				} else {
+					return nullptr;
+				}
+			}
+
+			return i;
+		}
+
+		virtual inline bool _insert(Node **slot, Node *parent, Node *node) override {
+			assert(!node->l);
+			assert(!node->r);
+
+			if (!_root) {
+				_root = node;
+				node->color = RBColor::Black;
+				goto updateNodeCaches;
+			}
+
+			{
+				std::optional<bool> result;
+				if ((result = _comparator(node->value, parent->value)).has_value()) {
+					if (result.value())
+						parent->l = node;
+					else
+						parent->r = node;
+				} else {
+					return false;
+				}
+				node->p = parent;
+				node->color = RBColor::Red;
+
+				_insertFixUp(node);
+			}
+
+		updateNodeCaches:
+			_cachedMinNode = _getMinNode(_root);
+			_cachedMaxNode = _getMaxNode(_root);
+
+			++_nNodes;
+
+			return true;
+		}
+
+	public:
+		PEFF_FORCEINLINE FallibleRBTree(Alloc *allocator, Comparator &&comparator) : RBTree(allocator, std::move(comparator)) {}
+
+		PEFF_FORCEINLINE FallibleRBTree(ThisType &&other) : RBTree(std::move(other)) {
+		}
+
+		virtual inline ~FallibleRBTree() {
+		}
+
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
+			verifyAlloc(other._allocator.get(), _allocator.get());
+
+			clear();
+
+			_root = other._root;
+			_cachedMinNode = other._cachedMinNode;
+			_cachedMaxNode = other._cachedMaxNode;
+			_nNodes = other._nNodes;
+			_comparator = std::move(other._comparator);
+			_allocator = other._allocator;
+
+			other._root = nullptr;
+			other._cachedMinNode = nullptr;
+			other._cachedMaxNode = nullptr;
+			other._nNodes = 0;
+			other._allocator = nullptr;
+
+			return *this;
+		}
+
+		virtual inline Node *getMaxLteqNode(const T &data) {
+			Node *curNode = (Node *)_root, *maxNode = NULL;
+
+			while (curNode) {
+				if (_comparator(curNode->value, data)) {
+					assert(!_comparator(data, curNode->value));
+					maxNode = curNode;
+					curNode = (Node *)curNode->r;
+				} else if (_comparator(data, curNode->value)) {
+					curNode = (Node *)curNode->l;
+				} else
+					return curNode;
+			}
+
+			return maxNode;
 		}
 	};
 }

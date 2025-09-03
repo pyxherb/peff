@@ -155,16 +155,28 @@ PEFF_ADVUTILS_API size_t UpstreamedBufferAlloc::incRef(size_t globalRc) noexcept
 PEFF_ADVUTILS_API void UpstreamedBufferAlloc::onRefZero() noexcept {
 }
 
+PEFF_FORCEINLINE static size_t _calcMarkerPos(size_t size, size_t alignment) {
+	if (size_t diff = size % alignment; diff) {
+		return size + (alignment - diff);
+	}
+	return size;
+}
+
 PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 	void *ptr;
 
-	if ((ptr = bufferAlloc->alloc(size + 2, alignment))) {
-		((uint8_t *)ptr)[size] = 0xbf;
+	size_t offMarker = _calcMarkerPos(size, alignof(size_t));
+	if ((ptr = bufferAlloc->alloc(size + offMarker + sizeof(uintptr_t), alignment))) {
+		Alloc **markerPtr = (Alloc **)(((char *)ptr) + offMarker);
+
+		*markerPtr = bufferAlloc.get();
 		return ptr;
 	}
 
-	if ((ptr = upstream->alloc(size + 2, alignment))) {
-		((uint8_t *)ptr)[size] = 0x00;
+	if ((ptr = upstream->alloc(size + offMarker + sizeof(uintptr_t), alignment))) {
+		Alloc **markerPtr = (Alloc **)(((char *)ptr) + offMarker);
+
+		*markerPtr = upstream.get();
 		return ptr;
 	}
 
@@ -172,15 +184,11 @@ PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::alloc(size_t size, size_t alignme
 }
 
 PEFF_ADVUTILS_API void UpstreamedBufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
-	uint8_t marker = ((uint8_t *)ptr)[size];
+	size_t offMarker = _calcMarkerPos(size, alignof(size_t));
+	Alloc **markerPtr = ((Alloc **)((char *)ptr + offMarker));
+	Alloc *marker = *markerPtr;
 
-	if (marker == 0xbf) {
-		bufferAlloc->release(ptr, size + 2, alignment);
-	} else if (marker == 0x00) {
-		upstream->release(ptr, size + 2, alignment);
-	} else {
-		assert(false);
-	}
+	marker->release(ptr, size + offMarker + sizeof(uintptr_t), alignment);
 }
 
 PEFF_ADVUTILS_API bool UpstreamedBufferAlloc::isReplaceable(const Alloc *rhs) const noexcept {

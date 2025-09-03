@@ -62,9 +62,10 @@ namespace peff {
 	};
 
 	template <typename T,
-		typename Comparator = std::less<T>>
+		typename Comparator,
+		bool Fallible>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
-	class RBTree : protected RBTreeBase {
+	class RBTreeImpl : protected RBTreeBase {
 	public:
 		struct Node : public RBTreeBase::AbstractNode {
 			T value;
@@ -77,7 +78,7 @@ namespace peff {
 		using ComparatorType = Comparator;
 
 	protected:
-		using ThisType = RBTree<T, Comparator>;
+		using ThisType = RBTreeImpl<T, Comparator, Fallible>;
 
 		Comparator _comparator;
 		RcObjectPtr<Alloc> _allocator;
@@ -127,38 +128,102 @@ namespace peff {
 			}
 		}
 
-		virtual inline Node *_get(const T &key) {
+		PEFF_FORCEINLINE Node *_get(const T &key) {
 			Node *i = (Node *)_root;
-			while (i) {
-				if (_comparator(i->value, key)) {
-					assert(!_comparator(key, i->value));
-					i = (Node *)i->r;
-				} else if (_comparator(key, i->value)) {
-					i = (Node *)i->l;
-				} else
-					return i;
+
+			if constexpr (Fallible) {
+				std::optional<bool> result;
+
+				while (i) {
+					if ((result = _comparator(i->value, key)).has_value()) {
+						if (result.value()) {
+#ifndef _NDEBUG
+							if ((result = _comparator(key, i->value)).has_value()) {
+								assert(!result.value());
+								i = (Node *)i->r;
+							} else {
+								return nullptr;
+							}
+#else
+							i = (Node *)i->r;
+#endif
+						} else if ((result = _comparator(key, i->value)).has_value()) {
+							if (result.value()) {
+								i = (Node *)i->l;
+							} else
+								return i;
+						} else {
+							return nullptr;
+						}
+					} else {
+						return nullptr;
+					}
+				}
+			} else {
+				while (i) {
+					if (_comparator(i->value, key)) {
+						assert(!_comparator(key, i->value));
+						i = (Node *)i->r;
+					} else if (_comparator(key, i->value)) {
+						i = (Node *)i->l;
+					} else
+						return i;
+				}
 			}
 			return nullptr;
 		}
 
-		virtual inline Node **_getSlot(const T &key, Node *&parentOut) {
+		PEFF_FORCEINLINE Node **_getSlot(const T &key, Node *&parentOut) {
 			Node **i = (Node **)&_root;
 			parentOut = nullptr;
-			while (*i) {
-				parentOut = *i;
 
-				if (_comparator((*i)->value, key)) {
-					assert(!_comparator(key, (*i)->value));
-					i = (Node **)&((*i)->r);
-				} else if (_comparator(key, (*i)->value)) {
-					i = (Node **)&((*i)->l);
-				} else
-					return nullptr;
+			if constexpr (Fallible) {
+				std::optional<bool> result;
+
+				while (*i) {
+					parentOut = *i;
+
+					if ((result = _comparator((*i)->value, key)).has_value()) {
+						if (result.value()) {
+#ifndef _NDEBUG
+							if ((result = _comparator(key, (*i)->value)).has_value()) {
+								assert(!result.value());
+								i = (Node **)&(*i)->r;
+							} else {
+								return nullptr;
+							}
+#else
+							i = (Node **)&(*i)->r;
+#endif
+						} else if ((result = _comparator(key, (*i)->value)).has_value()) {
+							if (result.value()) {
+								i = (Node **)&(*i)->l;
+							} else
+								return i;
+						} else {
+							return nullptr;
+						}
+					} else {
+						return nullptr;
+					}
+				}
+			} else {
+				while (*i) {
+					parentOut = *i;
+
+					if (_comparator((*i)->value, key)) {
+						assert(!_comparator(key, (*i)->value));
+						i = (Node **)&((*i)->r);
+					} else if (_comparator(key, (*i)->value)) {
+						i = (Node **)&((*i)->l);
+					} else
+						return nullptr;
+				}
 			}
 			return i;
 		}
 
-		virtual inline bool _insert(Node **slot, Node *parent, Node *node) {
+		PEFF_FORCEINLINE bool _insert(Node **slot, Node *parent, Node *node) {
 			assert(!node->l);
 			assert(!node->r);
 
@@ -168,15 +233,33 @@ namespace peff {
 				goto updateNodeCaches;
 			}
 
-			{
-				if (_comparator(node->value, parent->value))
-					parent->l = node;
-				else
-					parent->r = node;
-				node->p = parent;
-				node->color = RBColor::Red;
+			if constexpr (Fallible) {
+				{
+					std::optional<bool> result;
+					if ((result = _comparator(node->value, parent->value)).has_value()) {
+						if (result.value())
+							parent->l = node;
+						else
+							parent->r = node;
+					} else {
+						return false;
+					}
+					node->p = parent;
+					node->color = RBColor::Red;
 
-				_insertFixUp(node);
+					_insertFixUp(node);
+				}
+			} else {
+				{
+					if (_comparator(node->value, parent->value))
+						parent->l = node;
+					else
+						parent->r = node;
+					node->p = parent;
+					node->color = RBColor::Red;
+
+					_insertFixUp(node);
+				}
 			}
 
 		updateNodeCaches:
@@ -200,9 +283,9 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE RBTree(Alloc *allocator, Comparator &&comparator) : _allocator(allocator), _comparator(std::move(comparator)) {}
+		PEFF_FORCEINLINE RBTreeImpl(Alloc *allocator, Comparator &&comparator) : _allocator(allocator), _comparator(std::move(comparator)) {}
 
-		PEFF_FORCEINLINE RBTree(ThisType &&other)
+		PEFF_FORCEINLINE RBTreeImpl(ThisType &&other)
 			: _comparator(std::move(other._comparator)),
 			  _allocator(std::move(other._allocator)) {
 			_root = other._root;
@@ -216,7 +299,7 @@ namespace peff {
 			other._nNodes = 0;
 		}
 
-		virtual inline ~RBTree() {
+		virtual inline ~RBTreeImpl() {
 			if (_root)
 				_deleteNodeTree((Node *)_root);
 		}
@@ -242,18 +325,46 @@ namespace peff {
 			return *this;
 		}
 
-		virtual inline Node *getMaxLteqNode(const T &data) {
+		PEFF_FORCEINLINE Node *getMaxLteqNode(const T &data) {
 			Node *curNode = (Node *)_root, *maxNode = NULL;
 
-			while (curNode) {
-				if (_comparator(curNode->value, data)) {
-					assert(!_comparator(data, curNode->value));
-					maxNode = curNode;
-					curNode = (Node *)curNode->r;
-				} else if (_comparator(data, curNode->value)) {
-					curNode = (Node *)curNode->l;
-				} else
-					return curNode;
+			if constexpr (Fallible) {
+				std::optional<bool> result;
+
+				while (curNode) {
+					if ((result = _comparator(curNode->value, data)).has_value()) {
+						if (result.value()) {
+							if ((result = _comparator(data, curNode->value)).has_value()) {
+								assert(!result.value());
+								maxNode = curNode;
+								curNode = (Node *)curNode->r;
+							} else {
+								return nullptr;
+							}
+						} else if ((result = _comparator(data, curNode->value)).has_value()) {
+							if (result.value()) {
+								curNode = (Node *)curNode->l;
+							} else {
+								return curNode;
+							}
+						} else {
+							return nullptr;
+						}
+					} else {
+						return nullptr;
+					}
+				}
+			} else {
+				while (curNode) {
+					if (_comparator(curNode->value, data)) {
+						assert(!_comparator(data, curNode->value));
+						maxNode = curNode;
+						curNode = (Node *)curNode->r;
+					} else if (_comparator(data, curNode->value)) {
+						curNode = (Node *)curNode->l;
+					} else
+						return curNode;
+				}
 			}
 
 			return maxNode;
@@ -596,166 +707,10 @@ namespace peff {
 		}
 	};
 
-	template <typename T,
-		typename Comparator = peff::FallibleLt<T>>
-	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
-	class FallibleRBTree : public RBTree<T, Comparator> {
-	private:
-		using ThisType = FallibleRBTree<T, Comparator>;
-
-		virtual inline Node *_get(const T &key) override {
-			Node *i = (Node *)_root;
-
-			std::optional<bool> result;
-
-			while (i) {
-				if ((result = _comparator(i->value, key)).has_value()) {
-					if (result.value()) {
-#ifndef _NDEBUG
-						if ((result = _comparator(key, i->value)).has_value()) {
-							assert(!result.value());
-							i = (Node *)i->r;
-						} else {
-							return nullptr;
-						}
-#else
-						i = (Node *)i->r;
-#endif
-					} else if ((result = _comparator(key, i->value)).has_value()) {
-						if (result.value()) {
-							i = (Node *)i->l;
-						} else
-							return i;
-					} else {
-						return nullptr;
-					}
-				} else {
-					return nullptr;
-				}
-			}
-
-			return nullptr;
-		}
-
-		virtual inline Node **_getSlot(const T &key, Node *&parentOut) override {
-			Node **i = (Node **)&_root;
-			std::optional<bool> result;
-
-			parentOut = nullptr;
-
-			while (*i) {
-				parentOut = *i;
-
-				if ((result = _comparator((*i)->value, key)).has_value()) {
-					if (result.value()) {
-#ifndef _NDEBUG
-						if ((result = _comparator(key, (*i)->value)).has_value()) {
-							assert(!result.value());
-							i = (Node **)&(*i)->r;
-						} else {
-							return nullptr;
-						}
-#else
-						i = (Node **)&(*i)->r;
-#endif
-					} else if ((result = _comparator(key, (*i)->value)).has_value()) {
-						if (result.value()) {
-							i = (Node **)&(*i)->l;
-						} else
-							return i;
-					} else {
-						return nullptr;
-					}
-				} else {
-					return nullptr;
-				}
-			}
-
-			return i;
-		}
-
-		virtual inline bool _insert(Node **slot, Node *parent, Node *node) override {
-			assert(!node->l);
-			assert(!node->r);
-
-			if (!_root) {
-				_root = node;
-				node->color = RBColor::Black;
-				goto updateNodeCaches;
-			}
-
-			{
-				std::optional<bool> result;
-				if ((result = _comparator(node->value, parent->value)).has_value()) {
-					if (result.value())
-						parent->l = node;
-					else
-						parent->r = node;
-				} else {
-					return false;
-				}
-				node->p = parent;
-				node->color = RBColor::Red;
-
-				_insertFixUp(node);
-			}
-
-		updateNodeCaches:
-			_cachedMinNode = _getMinNode(_root);
-			_cachedMaxNode = _getMaxNode(_root);
-
-			++_nNodes;
-
-			return true;
-		}
-
-	public:
-		PEFF_FORCEINLINE FallibleRBTree(Alloc *allocator, Comparator &&comparator) : RBTree(allocator, std::move(comparator)) {}
-
-		PEFF_FORCEINLINE FallibleRBTree(ThisType &&other) : RBTree(std::move(other)) {
-		}
-
-		virtual inline ~FallibleRBTree() {
-		}
-
-		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
-			verifyAlloc(other._allocator.get(), _allocator.get());
-
-			clear();
-
-			_root = other._root;
-			_cachedMinNode = other._cachedMinNode;
-			_cachedMaxNode = other._cachedMaxNode;
-			_nNodes = other._nNodes;
-			_comparator = std::move(other._comparator);
-			_allocator = other._allocator;
-
-			other._root = nullptr;
-			other._cachedMinNode = nullptr;
-			other._cachedMaxNode = nullptr;
-			other._nNodes = 0;
-			other._allocator = nullptr;
-
-			return *this;
-		}
-
-		virtual inline Node *getMaxLteqNode(const T &data) {
-			Node *curNode = (Node *)_root, *maxNode = NULL;
-
-			while (curNode) {
-				if (_comparator(curNode->value, data)) {
-					assert(!_comparator(data, curNode->value));
-					maxNode = curNode;
-					curNode = (Node *)curNode->r;
-				} else if (_comparator(data, curNode->value)) {
-					curNode = (Node *)curNode->l;
-				} else
-					return curNode;
-			}
-
-			return maxNode;
-		}
-	};
+	template<typename T, typename Comparator = std::less<T>>
+	using RBTree = RBTreeImpl<T, Comparator, false>;
+	template<typename T, typename Comparator = peff::FallibleLt<T>>
+	using FallibleRBTree = RBTreeImpl<T, Comparator, true>;
 }
 
 #endif

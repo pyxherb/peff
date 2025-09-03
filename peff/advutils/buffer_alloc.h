@@ -47,7 +47,7 @@ namespace peff {
 
 		PEFF_ADVUTILS_API virtual UUID getTypeId() const noexcept override;
 
-		PEFF_FORCEINLINE static size_t calcAllocSize(size_t size, size_t alignment, size_t *descOffOut = nullptr) noexcept {
+		PEFF_FORCEINLINE constexpr static size_t calcAllocSize(size_t size, size_t alignment, size_t *descOffOut = nullptr) noexcept {
 			size_t userDataSize = size;
 
 			if (size_t alignedDiff = userDataSize % alignment; alignedDiff) {

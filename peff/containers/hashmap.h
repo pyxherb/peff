@@ -76,12 +76,38 @@ namespace peff {
 
 		using ThisType = HashMapImpl<K, V, Eq, Hasher, Fallible>;
 
+		template <bool Fallible>
+		struct ElementQueryResultTypeUtil {
+			using type = V &;
+		};
+
+		template <>
+		struct ElementQueryResultTypeUtil<true> {
+			using type = std::optional<V &>;
+		};
+
+		template <bool Fallible>
+		struct ConstElementQueryResultTypeUtil {
+			using type = const V &;
+		};
+
+		template <>
+		struct ConstElementQueryResultTypeUtil<true> {
+			using type = std::optional<const V &>;
+		};
+
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
 			((QueryPair *)dest)->isForQuery = true;
 			((QueryPair *)dest)->queryKey = &key;
 		}
 
 	public:
+		using RemoveResultType = typename SetType::RemoveResultType;
+		using RemoveAndResizeResultType = typename SetType::RemoveAndResizeResultType;
+		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
+		using ConstElementQueryResultType = typename ConstElementQueryResultTypeUtil<Fallible>::type;
+		using ContainsResultType = typename SetType::ContainsResultType;
+
 		PEFF_FORCEINLINE HashMapImpl(Alloc *allocator) : _set(allocator) {}
 		PEFF_FORCEINLINE HashMapImpl(ThisType &&rhs) : comparator(std::move(rhs.comparator)), _set(std::move(rhs._set)) {
 		}
@@ -105,15 +131,19 @@ namespace peff {
 			return _set.insertAndResizeBuckets(std::move(pair));
 		}
 
-		PEFF_FORCEINLINE void remove(const K &key) {
+		PEFF_FORCEINLINE RemoveResultType remove(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			_set.remove(*(QueryPair *)pair);
+			if constexpr (Fallible) {
+				return _set.remove(*(QueryPair *)pair);
+			} else {
+				_set.remove(*(QueryPair *)pair);
+			}
 		}
 
-		PEFF_FORCEINLINE bool removeAndResizeBuckets(const K &key) {
+		PEFF_FORCEINLINE RemoveAndResizeResultType removeAndResizeBuckets(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
@@ -121,7 +151,7 @@ namespace peff {
 			return _set.removeAndResizeBuckets(*(QueryPair *)pair);
 		}
 
-		PEFF_FORCEINLINE bool contains(const K &key) const {
+		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
@@ -129,20 +159,38 @@ namespace peff {
 			return _set.contains(*(QueryPair *)pair);
 		}
 
-		PEFF_FORCEINLINE V &at(const K &key) {
+		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			return _set.at(*(QueryPair *)pair).value;
+			if constexpr (Fallible) {
+				auto maybePair = _set.at(*(QueryPair *)pair);
+
+				if (!maybePair.has_value())
+					return std::nullopt;
+
+				return maybePair.value().value;
+			} else {
+				return _set.at(*(QueryPair *)pair).value;
+			}
 		}
 
-		PEFF_FORCEINLINE const V &at(const K &key) const {
+		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			return _set.at(*(QueryPair *)pair).value;
+			if constexpr (Fallible) {
+				auto maybePair = _set.at(*(QueryPair *)pair);
+
+				if (!maybePair.has_value())
+					return std::nullopt;
+
+				return maybePair.value().value;
+			} else {
+				return _set.at(*(QueryPair *)pair).value;
+			}
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {

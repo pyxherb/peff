@@ -77,7 +77,20 @@ namespace peff {
 		using NodeType = Node;
 		using ComparatorType = Comparator;
 
+	private:
+		template <bool Fallible>
+		struct NodeQueryResultTypeUtil {
+			using type = Node *;
+		};
+
+		template <>
+		struct NodeQueryResultTypeUtil<true> {
+			using type = std::optional<Node *>;
+		};
+
 	protected:
+		using NodeQueryResultType = typename NodeQueryResultTypeUtil<Fallible>::type;
+
 		using ThisType = RBTreeImpl<T, Comparator, Fallible>;
 
 		Comparator _comparator;
@@ -128,7 +141,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE Node *_get(const T &key) {
+		PEFF_FORCEINLINE typename NodeQueryResultType _get(const T &key) const {
 			Node *i = (Node *)_root;
 
 			if constexpr (Fallible) {
@@ -142,7 +155,7 @@ namespace peff {
 								assert(!result.value());
 								i = (Node *)i->r;
 							} else {
-								return nullptr;
+								return std::nullopt;
 							}
 #else
 							i = (Node *)i->r;
@@ -153,10 +166,10 @@ namespace peff {
 							} else
 								return i;
 						} else {
-							return nullptr;
+							return std::nullopt;
 						}
 					} else {
-						return nullptr;
+						return std::nullopt;
 					}
 				}
 			} else {
@@ -370,12 +383,8 @@ namespace peff {
 			return maxNode;
 		}
 
-		PEFF_FORCEINLINE Node *get(const T &key) {
+		PEFF_FORCEINLINE typename NodeQueryResultType get(const T &key) const {
 			return _get(key);
-		}
-
-		PEFF_FORCEINLINE const Node *get(const T &key) const {
-			return const_cast<ThisType *>(this)->_get(key);
 		}
 
 		/// @brief Insert a node into the tree.
@@ -409,10 +418,6 @@ namespace peff {
 			Node *y = _remove(node);
 			if (deleteNode)
 				_deleteSingleNode((Node *)y);
-		}
-
-		PEFF_FORCEINLINE void remove(const T &key) {
-			remove(get(key));
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -707,9 +712,9 @@ namespace peff {
 		}
 	};
 
-	template<typename T, typename Comparator = std::less<T>>
+	template <typename T, typename Comparator = std::less<T>>
 	using RBTree = RBTreeImpl<T, Comparator, false>;
-	template<typename T, typename Comparator = peff::FallibleLt<T>>
+	template <typename T, typename Comparator = peff::FallibleLt<T>>
 	using FallibleRBTree = RBTreeImpl<T, Comparator, true>;
 }
 

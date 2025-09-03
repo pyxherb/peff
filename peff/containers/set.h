@@ -12,7 +12,53 @@ namespace peff {
 		Tree _tree;
 		using ThisType = SetImpl<T, Comparator, Fallible>;
 
+		template <bool Fallible>
+		struct RemoveResultTypeUtil {
+			using type = void;
+		};
+
+		template <>
+		struct RemoveResultTypeUtil<true> {
+			using type = bool;
+		};
+
+		template <bool Fallible>
+		struct ElementQueryResultTypeUtil {
+			using type = T &;
+		};
+
+		template <>
+		struct ElementQueryResultTypeUtil<true> {
+			using type = std::optional<T &>;
+		};
+
+		template <bool Fallible>
+		struct ConstElementQueryResultTypeUtil {
+			using type = T &;
+		};
+
+		template <>
+		struct ConstElementQueryResultTypeUtil<true> {
+			using type = std::optional<T &>;
+		};
+
+		template <bool Fallible>
+		struct ContainsResultTypeUtil {
+			using type = bool;
+		};
+
+		template <>
+		struct ContainsResultTypeUtil<true> {
+			using type = std::optional<bool>;
+		};
+
+
 	public:
+		using RemoveResultType = typename RemoveResultTypeUtil<Fallible>::type;
+		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
+		using ConstElementQueryResultType = typename ConstElementQueryResultTypeUtil<Fallible>::type;
+		using ContainsResultType = typename ContainsResultTypeUtil<Fallible>::type;
+
 		using NodeType = typename Tree::NodeType;
 
 		PEFF_FORCEINLINE SetImpl(Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
@@ -40,12 +86,25 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE void remove(const T &key) {
-			auto node = _tree.get(key);
+		PEFF_FORCEINLINE RemoveResultType remove(const T &key) {
+			if constexpr (Fallible) {
+				auto node = _tree.get(key);
 
-			assert(node);
+				if (!node.has_value())
+					return false;
 
-			_tree.remove(node);
+				assert(node);
+
+				_tree.remove(node.value());
+
+				return true;
+			} else {
+				auto node = _tree.get(key);
+
+				assert(node);
+
+				_tree.remove(node);
+			}
 		}
 
 		PEFF_FORCEINLINE void verify() {
@@ -76,20 +135,42 @@ namespace peff {
 			_tree.clear();
 		}
 
-		PEFF_FORCEINLINE T &at(const T &key) {
-			auto node = _tree.get(key);
+		PEFF_FORCEINLINE typename ElementQueryResultType at(const T &key) {
+			if constexpr (Fallible) {
+				auto node = _tree.get(key);
 
-			assert(node);
+				if (!node.has_value())
+					return std::nullopt;
 
-			return node->value;
+				assert(node.value());
+
+				return node.value()->value;
+			} else {
+				auto node = _tree.get(key);
+
+				assert(node);
+
+				return node->value;
+			}
 		}
 
-		PEFF_FORCEINLINE const T &at(const T &key) const {
-			auto node = _tree.get(key);
+		PEFF_FORCEINLINE typename ConstElementQueryResultType at(const T &key) const {
+			if constexpr (Fallible) {
+				auto node = _tree.get(key);
 
-			assert(node);
+				if (!node.has_value())
+					return std::nullopt;
 
-			return node->value;
+				assert(node.value());
+
+				return node.value()->value;
+			} else {
+				auto node = _tree.get(key);
+
+				assert(node);
+
+				return node->value;
+			}
 		}
 
 		struct Iterator {
@@ -219,19 +300,36 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
 		}
 
-		PEFF_FORCEINLINE bool contains(const T &key) const {
-			return _tree.get(key);
-		}
+		PEFF_FORCEINLINE ContainsResultType contains(const T &key) const {
+			if constexpr (Fallible) {
+				auto node = _tree.get(key);
 
+				if (!node.has_value())
+					return std::nullopt;
+
+				return node;
+			} else {
+				return _tree.get(key);
+			}
+		}
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
 			return const_cast<ThisType *>(this)->findMaxLteq(key);
 		}
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {
-			if (auto node = _tree.get(key); node) {
-				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
+			if constexpr (Fallible) {
+				if (auto node = _tree.get(key); node) {
+					if (node.has_value())
+						return _tree.end();
+					return Iterator(typename Tree::Iterator(node.value(), &_tree, IteratorDirection::Forward));
+				}
+				return _tree.end();
+			} else {
+				if (auto node = _tree.get(key); node) {
+					return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
+				}
+				return _tree.end();
 			}
-			return _tree.end();
 		}
 
 		PEFF_FORCEINLINE Iterator findMaxLteq(const T &key) {

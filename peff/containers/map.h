@@ -38,6 +38,26 @@ namespace peff {
 
 		using ThisType = MapImpl<K, V, Lt, Fallible>;
 
+		template <bool Fallible>
+		struct ElementQueryResultTypeUtil {
+			using type = V &;
+		};
+
+		template <>
+		struct ElementQueryResultTypeUtil<true> {
+			using type = std::optional<V &>;
+		};
+
+		template <bool Fallible>
+		struct ConstElementQueryResultTypeUtil {
+			using type = const V &;
+		};
+
+		template <>
+		struct ConstElementQueryResultTypeUtil<true> {
+			using type = std::optional<const V &>;
+		};
+
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
 			((QueryPair *)dest)->isForQuery = true;
 			((QueryPair *)dest)->queryKey = &key;
@@ -45,6 +65,11 @@ namespace peff {
 
 	public:
 		using NodeType = typename SetType::NodeType;
+
+		using RemoveResultType = typename SetType::RemoveResultType;
+		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
+		using ConstElementQueryResultType = typename ConstElementQueryResultTypeUtil<Fallible>::type;
+		using ContainsResultType = typename SetType::ContainsResultType;
 
 		PEFF_FORCEINLINE MapImpl(Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
 		PEFF_FORCEINLINE MapImpl(ThisType &&rhs) : _set(std::move(rhs._set)) {
@@ -55,15 +80,15 @@ namespace peff {
 			return _set.insert(std::move(pair));
 		}
 
-		PEFF_FORCEINLINE void remove(const K &key) {
+		PEFF_FORCEINLINE RemoveResultType remove(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			_set.remove(*(QueryPair *)pair);
+			return _set.remove(*(QueryPair *)pair);
 		}
 
-		PEFF_FORCEINLINE bool contains(const K &key) const {
+		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
@@ -71,20 +96,38 @@ namespace peff {
 			return _set.contains(*(QueryPair *)pair);
 		}
 
-		PEFF_FORCEINLINE V &at(const K &key) {
+		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			return _set.at(*(QueryPair *)pair).value;
+			if constexpr (Fallible) {
+				auto v = _set.at(*(QueryPair *)pair);
+
+				if (!v.has_value())
+					return std::nullopt;
+
+				return v.value().value;
+			} else {
+				return _set.at(*(QueryPair *)pair).value;
+			}
 		}
 
-		PEFF_FORCEINLINE const V &at(const K &key) const {
+		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			return _set.at(*(QueryPair *)pair).value;
+			if constexpr (Fallible) {
+				auto v = _set.at(*(QueryPair *)pair);
+
+				if (!v.has_value())
+					return std::nullopt;
+
+				return v.value().value;
+			} else {
+				return _set.at(*(QueryPair *)pair).value;
+			}
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {

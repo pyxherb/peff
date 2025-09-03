@@ -14,7 +14,7 @@ namespace peff {
 		struct AllocDesc;
 
 		struct AllocDescComparator {
-			PEFF_FORCEINLINE bool operator()(const void *lhs, const void *rhs) {
+			PEFF_FORCEINLINE bool operator()(const void *lhs, const void *rhs) const {
 				return lhs < rhs;
 			}
 		};

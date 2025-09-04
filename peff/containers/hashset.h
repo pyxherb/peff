@@ -3,6 +3,9 @@
 
 #include "list.h"
 #include "dynarray.h"
+#include "option.h"
+#include "fallible_cmp.h"
+#include "fallible_hash.h"
 #include "misc.h"
 #include <peff/utils/hash.h>
 #include <peff/base/scope_guard.h>
@@ -66,7 +69,7 @@ namespace peff {
 
 		template <>
 		struct InternalRemoveResultTypeUtil<true> {
-			using type = std::optional<bool>;
+			using type = Option<bool>;
 		};
 
 		template <bool Fallible>
@@ -86,7 +89,7 @@ namespace peff {
 
 		template <>
 		struct RemoveAndResizeResultTypeUtil<true> {
-			using type = std::optional<bool>;
+			using type = Option<bool>;
 		};
 
 		template <bool Fallible>
@@ -96,7 +99,7 @@ namespace peff {
 
 		template <>
 		struct BucketNodeHandleQueryResultTypeUtil<true> {
-			using type = std::optional<typename Bucket::NodeHandle>;
+			using type = Option<typename Bucket::NodeHandle>;
 		};
 
 		template <bool Fallible>
@@ -106,7 +109,7 @@ namespace peff {
 
 		template <>
 		struct ElementQueryResultTypeUtil<true> {
-			using type = std::optional<T &>;
+			using type = Option<T &>;
 		};
 
 		template <bool Fallible>
@@ -116,7 +119,7 @@ namespace peff {
 
 		template <>
 		struct ConstElementQueryResultTypeUtil<true> {
-			using type = std::optional<T &>;
+			using type = Option<T &>;
 		};
 
 		template <bool Fallible>
@@ -126,7 +129,7 @@ namespace peff {
 
 		template <>
 		struct ContainsResultTypeUtil<true> {
-			using type = std::optional<bool>;
+			using type = Option<bool>;
 		};
 
 	public:
@@ -207,10 +210,10 @@ namespace peff {
 		[[nodiscard]] PEFF_FORCEINLINE typename BucketNodeHandleQueryResultType _getBucketSlot(const Bucket &bucket, const T &data) const {
 			for (auto i = bucket.firstNode(); i; i = i->next) {
 				if constexpr (Fallible) {
-					if (auto result = _equalityComparator(i->data.data, data); result.has_value()) {
+					if (auto result = _equalityComparator(i->data.data, data); result.hasValue()) {
 						return i;
 					} else {
-						return std::nullopt;
+						return NULL_OPTION;
 					}
 				} else {
 					if (_equalityComparator(i->data.data, data)) {
@@ -270,7 +273,7 @@ namespace peff {
 
 			HashCode hashCode;
 			if constexpr (Fallible) {
-				if (auto result = _hasher(tmpData); result.has_value()) {
+				if (auto result = _hasher(tmpData); result.hasValue()) {
 					hashCode = result.value();
 				} else
 					return false;
@@ -279,9 +282,6 @@ namespace peff {
 			}
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
-
-			if (_getBucketSlot(bucket, tmpData))
-				return true;
 
 			if (!bucket.pushFront(Element(std::move(tmpData), hashCode)))
 				return false;
@@ -304,10 +304,10 @@ namespace peff {
 
 			HashCode hashCode;
 			if constexpr (Fallible) {
-				if (auto result = _hasher(data); result.has_value()) {
+				if (auto result = _hasher(data); result.hasValue()) {
 					hashCode = result.value();
 				} else
-					return std::nullopt;
+					return NULL_OPTION;
 			} else {
 				hashCode = _hasher(data);
 			}
@@ -319,8 +319,8 @@ namespace peff {
 
 			if constexpr (Fallible) {
 				typename BucketNodeHandleQueryResultType maybeNode = _getBucketSlot(bucket, data);
-				if (!maybeNode.has_value()) {
-					return std::nullopt;
+				if (!maybeNode.hasValue()) {
+					return NULL_OPTION;
 				}
 
 				node = maybeNode.value();
@@ -361,10 +361,10 @@ namespace peff {
 
 			HashCode hashCode;
 			if constexpr (Fallible) {
-				if (auto result = _hasher(data); result.has_value()) {
+				if (auto result = _hasher(data); result.hasValue()) {
 					hashCode = result.value();
 				} else
-					return std::nullopt;
+					return NULL_OPTION;
 			} else {
 				hashCode = _hasher(data);
 			}
@@ -409,7 +409,7 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const T &data) {
 			if constexpr (Fallible) {
-				return _remove(data, false).has_value();
+				return _remove(data, false).hasValue();
 			} else {
 				bool unused = _remove(data, false);
 			}
@@ -419,8 +419,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto result = _remove(data, true);
 
-				if (!result.has_value())
-					return std::nullopt;
+				if (!result.hasValue())
+					return NULL_OPTION;
 			} else {
 				return _remove(data, true);
 			}
@@ -433,7 +433,16 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE ContainsResultType contains(const T &data) const {
 			size_t index;
-			return _get(data, index);
+			if constexpr (Fallible) {
+				auto maybeHandle = _get(data, index);
+
+				if (!maybeHandle.hasValue())
+					return NULL_OPTION;
+
+				return maybeHandle.value();
+			} else {
+				return _get(data, index);
+			}
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -733,7 +742,7 @@ namespace peff {
 			size_t index;
 			if constexpr (Fallible) {
 				BucketNodeHandleQueryResultType node = _get(value, index);
-				if (!node.has_value())
+				if (!node.hasValue())
 					return end();
 				if (typename Bucket::NodeHandle handle = node.value(); handle)
 					return Iterator(this, index, handle, IteratorDirection::Forward);
@@ -756,8 +765,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto maybeNode = _get(value, index);
 
-				if (!maybeNode.has_value())
-					return std::nullopt;
+				if (!maybeNode.hasValue())
+					return NULL_OPTION;
 
 				node = maybeNode.value();
 			} else {
@@ -774,8 +783,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto maybeNode = _get(value, index);
 
-				if (!maybeNode.has_value())
-					return std::nullopt;
+				if (!maybeNode.hasValue())
+					return NULL_OPTION;
 
 				node = maybeNode.value();
 			} else {

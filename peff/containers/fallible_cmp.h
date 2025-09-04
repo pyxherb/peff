@@ -1,28 +1,28 @@
-#ifndef _PEFF_UTILS_COMPARATOR_H_
-#define _PEFF_UTILS_COMPARATOR_H_
+#ifndef _PEFF_CONTAINERS_FALLIBLE_CMP_H_
+#define _PEFF_CONTAINERS_FALLIBLE_CMP_H_
 
 #include "basedefs.h"
 #include <peff/base/alloc.h>
-#include <optional>
+#include "option.h"
 
 namespace peff {
 	template <typename T>
 	struct FallibleLt {
-		std::optional<bool> operator()(const T &lhs, const T &rhs) const {
+		Option<bool> operator()(const T &lhs, const T &rhs) const {
 			return lhs < rhs;
 		}
 	};
 
 	template <typename T>
 	struct FallibleGt {
-		std::optional<bool> operator()(const T &lhs, const T &rhs) const {
+		Option<bool> operator()(const T &lhs, const T &rhs) const {
 			return lhs > rhs;
 		}
 	};
 
 	template <typename T>
 	struct FallibleEq {
-		std::optional<bool> operator()(const T &lhs, const T &rhs) const {
+		Option<bool> operator()(const T &lhs, const T &rhs) const {
 			return lhs == rhs;
 		}
 	};

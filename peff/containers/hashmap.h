@@ -83,7 +83,7 @@ namespace peff {
 
 		template <>
 		struct ElementQueryResultTypeUtil<true> {
-			using type = std::optional<V &>;
+			using type = Option<V &>;
 		};
 
 		template <bool Fallible>
@@ -93,7 +93,7 @@ namespace peff {
 
 		template <>
 		struct ConstElementQueryResultTypeUtil<true> {
-			using type = std::optional<const V &>;
+			using type = Option<const V &>;
 		};
 
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
@@ -167,8 +167,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto maybePair = _set.at(*(QueryPair *)pair);
 
-				if (!maybePair.has_value())
-					return std::nullopt;
+				if (!maybePair.hasValue())
+					return NULL_OPTION;
 
 				return maybePair.value().value;
 			} else {
@@ -184,8 +184,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto maybePair = _set.at(*(QueryPair *)pair);
 
-				if (!maybePair.has_value())
-					return std::nullopt;
+				if (!maybePair.hasValue())
+					return NULL_OPTION;
 
 				return maybePair.value().value;
 			} else {

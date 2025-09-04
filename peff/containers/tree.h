@@ -16,8 +16,9 @@
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
 #include <peff/base/scope_guard.h>
-#include <peff/utils/comparator.h>
+#include "fallible_cmp.h"
 #include "list.h"
+#include "option.h"
 
 namespace peff {
 	enum class RBColor {
@@ -85,7 +86,7 @@ namespace peff {
 
 		template <>
 		struct NodeQueryResultTypeUtil<true> {
-			using type = std::optional<Node *>;
+			using type = Option<Node *>;
 		};
 
 	protected:
@@ -145,31 +146,31 @@ namespace peff {
 			Node *i = (Node *)_root;
 
 			if constexpr (Fallible) {
-				std::optional<bool> result;
+				Option<bool> result;
 
 				while (i) {
-					if ((result = _comparator(i->value, key)).has_value()) {
+					if ((result = _comparator(i->value, key)).hasValue()) {
 						if (result.value()) {
 #ifndef _NDEBUG
-							if ((result = _comparator(key, i->value)).has_value()) {
+							if ((result = _comparator(key, i->value)).hasValue()) {
 								assert(!result.value());
 								i = (Node *)i->r;
 							} else {
-								return std::nullopt;
+								return NULL_OPTION;
 							}
 #else
 							i = (Node *)i->r;
 #endif
-						} else if ((result = _comparator(key, i->value)).has_value()) {
+						} else if ((result = _comparator(key, i->value)).hasValue()) {
 							if (result.value()) {
 								i = (Node *)i->l;
 							} else
 								return i;
 						} else {
-							return std::nullopt;
+							return NULL_OPTION;
 						}
 					} else {
-						return std::nullopt;
+						return NULL_OPTION;
 					}
 				}
 			} else {
@@ -191,15 +192,15 @@ namespace peff {
 			parentOut = nullptr;
 
 			if constexpr (Fallible) {
-				std::optional<bool> result;
+				Option<bool> result;
 
 				while (*i) {
 					parentOut = *i;
 
-					if ((result = _comparator((*i)->value, key)).has_value()) {
+					if ((result = _comparator((*i)->value, key)).hasValue()) {
 						if (result.value()) {
 #ifndef _NDEBUG
-							if ((result = _comparator(key, (*i)->value)).has_value()) {
+							if ((result = _comparator(key, (*i)->value)).hasValue()) {
 								assert(!result.value());
 								i = (Node **)&(*i)->r;
 							} else {
@@ -208,7 +209,7 @@ namespace peff {
 #else
 							i = (Node **)&(*i)->r;
 #endif
-						} else if ((result = _comparator(key, (*i)->value)).has_value()) {
+						} else if ((result = _comparator(key, (*i)->value)).hasValue()) {
 							if (result.value()) {
 								i = (Node **)&(*i)->l;
 							} else
@@ -248,8 +249,8 @@ namespace peff {
 
 			if constexpr (Fallible) {
 				{
-					std::optional<bool> result;
-					if ((result = _comparator(node->value, parent->value)).has_value()) {
+					Option<bool> result;
+					if ((result = _comparator(node->value, parent->value)).hasValue()) {
 						if (result.value())
 							parent->l = node;
 						else
@@ -342,19 +343,19 @@ namespace peff {
 			Node *curNode = (Node *)_root, *maxNode = NULL;
 
 			if constexpr (Fallible) {
-				std::optional<bool> result;
+				Option<bool> result;
 
 				while (curNode) {
-					if ((result = _comparator(curNode->value, data)).has_value()) {
+					if ((result = _comparator(curNode->value, data)).hasValue()) {
 						if (result.value()) {
-							if ((result = _comparator(data, curNode->value)).has_value()) {
+							if ((result = _comparator(data, curNode->value)).hasValue()) {
 								assert(!result.value());
 								maxNode = curNode;
 								curNode = (Node *)curNode->r;
 							} else {
 								return nullptr;
 							}
-						} else if ((result = _comparator(data, curNode->value)).has_value()) {
+						} else if ((result = _comparator(data, curNode->value)).hasValue()) {
 							if (result.value()) {
 								curNode = (Node *)curNode->l;
 							} else {

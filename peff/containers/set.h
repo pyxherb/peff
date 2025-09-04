@@ -29,7 +29,7 @@ namespace peff {
 
 		template <>
 		struct ElementQueryResultTypeUtil<true> {
-			using type = std::optional<T &>;
+			using type = Option<T &>;
 		};
 
 		template <bool Fallible>
@@ -39,7 +39,7 @@ namespace peff {
 
 		template <>
 		struct ConstElementQueryResultTypeUtil<true> {
-			using type = std::optional<T &>;
+			using type = Option<T &>;
 		};
 
 		template <bool Fallible>
@@ -49,7 +49,7 @@ namespace peff {
 
 		template <>
 		struct ContainsResultTypeUtil<true> {
-			using type = std::optional<bool>;
+			using type = Option<bool>;
 		};
 
 
@@ -90,7 +90,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.has_value())
+				if (!node.hasValue())
 					return false;
 
 				assert(node);
@@ -139,8 +139,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.has_value())
-					return std::nullopt;
+				if (!node.hasValue())
+					return NULL_OPTION;
 
 				assert(node.value());
 
@@ -158,8 +158,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.has_value())
-					return std::nullopt;
+				if (!node.hasValue())
+					return NULL_OPTION;
 
 				assert(node.value());
 
@@ -304,8 +304,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.has_value())
-					return std::nullopt;
+				if (!node.hasValue())
+					return NULL_OPTION;
 
 				return node;
 			} else {
@@ -319,7 +319,7 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator find(const T &key) {
 			if constexpr (Fallible) {
 				if (auto node = _tree.get(key); node) {
-					if (node.has_value())
+					if (node.hasValue())
 						return _tree.end();
 					return Iterator(typename Tree::Iterator(node.value(), &_tree, IteratorDirection::Forward));
 				}

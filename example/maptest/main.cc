@@ -90,14 +90,14 @@ struct B {
 
 template <typename T>
 struct FallibleComparator {
-	std::optional<bool> operator()(const T &lhs, const T &rhs) const {
+	peff::Option<bool> operator()(const T &lhs, const T &rhs) const {
 		return {};
 	}
 };
 
 template <typename T>
 struct FallibleHasher {
-	std::optional<size_t> operator()(const T &lhs) const {
+	peff::Option<size_t> operator()(const T &lhs) const {
 		return {};
 	}
 };

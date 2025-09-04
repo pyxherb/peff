@@ -93,7 +93,7 @@ namespace peff {
 				if (!node.hasValue())
 					return false;
 
-				assert(node);
+				assert(node.value());
 
 				_tree.remove(node.value());
 
@@ -307,7 +307,7 @@ namespace peff {
 				if (!node.hasValue())
 					return NULL_OPTION;
 
-				return node;
+				return node.value();
 			} else {
 				return _tree.get(key);
 			}
@@ -318,9 +318,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {
 			if constexpr (Fallible) {
-				if (auto node = _tree.get(key); node) {
-					if (node.hasValue())
-						return _tree.end();
+				if (auto node = _tree.get(key); node.hasValue()) {
 					return Iterator(typename Tree::Iterator(node.value(), &_tree, IteratorDirection::Forward));
 				}
 				return _tree.end();

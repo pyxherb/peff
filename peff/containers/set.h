@@ -313,7 +313,7 @@ namespace peff {
 			}
 		}
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
-			return const_cast<ThisType *>(this)->findMaxLteq(key);
+			return const_cast<ThisType *>(this)->find(key);
 		}
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {

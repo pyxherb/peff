@@ -33,16 +33,6 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE bool copy(String &dest) const {
-			constructAt<String>(&dest, _dynArray.allocator());
-
-			if (!peff::copyAssign(dest._dynArray, _dynArray)) {
-				return false;
-			}
-
-			return true;
-		}
-
 		PEFF_FORCEINLINE size_t size() const {
 			if (!_dynArray.size())
 				return 0;

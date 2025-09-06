@@ -559,33 +559,6 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			constructAt<ThisType>(&dest, _allocator.get());
-
-			if (!dest._resize<false>(_length, true)) {
-				return false;
-			}
-
-			if constexpr (std::is_trivially_copy_constructible_v<T>) {
-				memmove(dest._data, _data, sizeof(T) * _length);
-			} else {
-				size_t i = 0;
-				ScopeGuard destructionGuard([&dest, &i]() noexcept {
-					dest._destructData(dest._data, i);
-					dest._length = 0;
-				});
-				while (i < _length) {
-					if (!::peff::copy(*(dest._data + i), *(_data + i))) {
-						return false;
-					}
-					++i;
-				}
-				destructionGuard.release();
-			}
-
-			return true;
-		}
-
 		PEFF_FORCEINLINE size_t size() {
 			return _length;
 		}

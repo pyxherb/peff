@@ -110,7 +110,7 @@ namespace peff {
 		bool _hasValue = false;
 
 	public:
-		using value_type = T;
+		using value_type = T &;
 
 		PEFF_FORCEINLINE void reset() noexcept {
 			_hasValue = false;
@@ -118,7 +118,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void setValueRef(T &data) noexcept {
 			reset();
-			*((std::remove_reference_t<T> **)_data) = &data;
+			_data = &data;
 			_hasValue = true;
 		}
 
@@ -132,20 +132,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE T &value() noexcept {
 			assert(hasValue());
-			if constexpr (std::is_reference_v<T>) {
-				return *((std::remove_reference_t<T> *)_data);
-			} else {
-				return *((T *)_data);
-			}
+			return *_data;
 		}
 
 		PEFF_FORCEINLINE const T &value() const noexcept {
 			assert(hasValue());
-			if constexpr (std::is_reference_v<T>) {
-				return *((std::remove_reference_t<const T> *)_data);
-			} else {
-				return *((const T *)_data);
-			}
+			return *((const T *)_data);
 		}
 
 		PEFF_FORCEINLINE T &operator*() noexcept {

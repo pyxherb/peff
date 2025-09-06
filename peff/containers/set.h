@@ -52,7 +52,6 @@ namespace peff {
 			using type = Option<bool>;
 		};
 
-
 	public:
 		using RemoveResultType = typename RemoveResultTypeUtil<Fallible>::type;
 		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
@@ -93,17 +92,15 @@ namespace peff {
 				if (!node.hasValue())
 					return false;
 
-				assert(node.value());
-
-				_tree.remove(node.value());
+				if (auto v = node.value(); v)
+					_tree.remove(node.value());
 
 				return true;
 			} else {
 				auto node = _tree.get(key);
 
-				assert(node);
-
-				_tree.remove(node);
+				if (node)
+					_tree.remove(node);
 			}
 		}
 
@@ -346,9 +343,9 @@ namespace peff {
 		}
 	};
 
-	template<typename T, typename Comparator = std::less<T>>
+	template <typename T, typename Comparator = std::less<T>>
 	using Set = SetImpl<T, Comparator, false>;
-	template<typename T, typename Comparator = FallibleLt<T>>
+	template <typename T, typename Comparator = FallibleLt<T>>
 	using FallibleSet = SetImpl<T, Comparator, true>;
 }
 

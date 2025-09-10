@@ -43,9 +43,9 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 #ifdef _MSC_VER
 	if (alignment > 1) {
-		return ::realloc(ptr, newSize);
-	} else {
 		return _aligned_realloc(ptr, newSize, newAlignment);
+	} else {
+		return ::realloc(ptr, newSize);
 	}
 #else
 	std::terminate();

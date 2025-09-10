@@ -90,7 +90,7 @@ namespace peff {
 			}
 		}
 
-		template<bool construct>
+		template <bool construct>
 		[[nodiscard]] PEFF_FORCEINLINE bool _expandTo(
 			T *newData,
 			size_t length) {
@@ -103,15 +103,15 @@ namespace peff {
 				ScopeGuard scopeGuard(
 					[this, &idxLastConstructedObject, newData]() noexcept {
 						for (size_t i = _length;
-							 i < idxLastConstructedObject;
-							 ++i) {
+							i < idxLastConstructedObject;
+							++i) {
 							std::destroy_at<T>(&newData[i]);
 						}
 					});
 
 				for (size_t i = _length;
-					 i < length;
-					 ++i) {
+					i < length;
+					++i) {
 					idxLastConstructedObject = i;
 					constructAt<T>(&newData[i]);
 				}
@@ -140,15 +140,15 @@ namespace peff {
 				ScopeGuard scopeGuard(
 					[this, &idxLastConstructedObject, newData]() noexcept {
 						for (size_t i = _length;
-							 i < idxLastConstructedObject;
-							 ++i) {
+							i < idxLastConstructedObject;
+							++i) {
 							std::destroy_at<T>(&newData[i]);
 						}
 					});
 
 				for (size_t i = _length;
-					 i < length;
-					 ++i) {
+					i < length;
+					++i) {
 					idxLastConstructedObject = i;
 					if (!::peff::copy(newData[i], data)) {
 						return false;
@@ -181,7 +181,7 @@ namespace peff {
 			}
 		}
 
-		template<bool construct>
+		template <bool construct>
 		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length, bool forceResizeCapacity) {
 			if (length == _length)
 				return true;
@@ -199,14 +199,22 @@ namespace peff {
 					newCapacity <<= 1;
 
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
-
-				if (!newData)
-					return false;
+				T *newData;
+				bool clearOldData = true;
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(newData, _data, sizeof(T) * _length);
+					if (_data) {
+						if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
+							return false;
+						clearOldData = false;
+					} else {
+						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+							return false;
+					}
 				} else {
+					if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+						return false;
+
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
 							_allocator->release(newData, newCapacityTotalSize, alignof(T));
@@ -218,7 +226,8 @@ namespace peff {
 					scopeGuard.release();
 				}
 
-				_clear();
+				if (clearOldData)
+					_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
@@ -228,7 +237,22 @@ namespace peff {
 					newCapacity >>= 1;
 
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+				T *newData;
+				bool clearOldData = true;
+
+				if constexpr (std::is_trivially_move_assignable_v<T>) {
+					if (_data) {
+						if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
+							return false;
+						clearOldData = false;
+					} else {
+						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+							return false;
+					}
+				} else {
+					if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+						return false;
+				}
 
 				if (!newData) {
 					if (forceResizeCapacity) {
@@ -239,7 +263,6 @@ namespace peff {
 				}
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
@@ -251,7 +274,8 @@ namespace peff {
 					scopeGuard.release();
 				}
 
-				_clear();
+				if (clearOldData)
+					_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else {
@@ -287,7 +311,19 @@ namespace peff {
 				while (newCapacity < length)
 					newCapacity <<= 1;
 
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+				T *newData;
+				bool clearOldData = true;
+
+				if constexpr (std::is_trivially_move_assignable_v<T>) {
+					if (_data) {
+						newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
+						clearOldData = false;
+					} else {
+						newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+					}
+				} else {
+					newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+				}
 
 				if (!newData)
 					return false;
@@ -303,13 +339,26 @@ namespace peff {
 
 				scopeGuard.release();
 
-				_clear();
+				if (clearOldData)
+					_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+				T *newData;
+				bool clearOldData = true;
+
+				if constexpr (std::is_trivially_move_assignable_v<T>) {
+					if(_data) {
+						newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
+						clearOldData = false;
+					} else {
+						newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+					}
+				} else {
+					newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+				}
 
 				if (!newData) {
 					if (forceResizeCapacity) {
@@ -320,7 +369,6 @@ namespace peff {
 				}
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(newData, _data, sizeof(T) * length);
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
@@ -332,7 +380,8 @@ namespace peff {
 					scopeGuard.release();
 				}
 
-				_clear();
+				if (clearOldData)
+					_clear();
 				_capacity = newCapacity;
 				_data = newData;
 			} else {
@@ -351,27 +400,6 @@ namespace peff {
 
 			_length = length;
 			return true;
-		}
-
-		PEFF_FORCEINLINE void _immediateResize(size_t length) {
-			if (length == _length)
-				return;
-
-			size_t newTotalSize = length * sizeof(T);
-			T *newData = (T *)_allocator->alloc(newTotalSize, alignof(T));
-
-			if constexpr (std::is_trivially_move_assignable_v<T>) {
-				memmove(newData, _data, length * sizeof(T));
-			} else {
-				if (length > _length) {
-					_expandTo(newData, length, true);
-				} else {
-					_shrink(newData, length);
-				}
-			}
-
-			_data = newData;
-			_capacity = length;
 		}
 
 		PEFF_FORCEINLINE void _clear() {
@@ -496,7 +524,7 @@ namespace peff {
 		/// @param length Length of space to reserve.
 		/// @param construct Determines if to construct objects.
 		/// @return Pointer to the reserved area.
-		template<bool construct>
+		template <bool construct>
 		[[nodiscard]] PEFF_FORCEINLINE T *_reserveSlots(
 			size_t index,
 			size_t length) {
@@ -596,7 +624,7 @@ namespace peff {
 
 			size_t i = 0;
 
-			while(i < _length) {
+			while (i < _length) {
 				if (!peff::copy(_data[i], rhs._data[i])) {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
 						for (size_t j = 0; j < i; ++j) {
@@ -692,7 +720,7 @@ namespace peff {
 			return _allocator.get();
 		}
 
-		PEFF_FORCEINLINE void replaceAllocator(Alloc* rhs) {
+		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) {
 			verifyReplaceable(_allocator.get(), rhs);
 
 			_allocator = rhs;

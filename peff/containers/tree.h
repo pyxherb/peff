@@ -419,6 +419,11 @@ namespace peff {
 			Node *y = _remove(node);
 			if (deleteNode)
 				_deleteSingleNode((Node *)y);
+			else {
+				y->l = nullptr;
+				y->r = nullptr;
+				y->p = nullptr;
+			}
 		}
 
 		PEFF_FORCEINLINE void clear() {

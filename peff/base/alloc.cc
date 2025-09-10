@@ -40,6 +40,18 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #endif
 }
 
+PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+#ifdef _MSC_VER
+	if (alignment > 1) {
+		return ::realloc(ptr, newSize);
+	} else {
+		return _aligned_realloc(ptr, newSize, newAlignment);
+	}
+#else
+	std::terminate();
+#endif
+}
+
 PEFF_BASE_API void StdAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
 #ifdef _MSC_VER
 	if (alignment > 1) {
@@ -82,12 +94,15 @@ PEFF_BASE_API void VoidAlloc::onRefZero() noexcept {
 }
 
 PEFF_BASE_API void *VoidAlloc::alloc(size_t size, size_t alignment) noexcept {
-	assert(("Cannot allocate memory by VoidAlloc", false));
-	return nullptr;
+	std::terminate();
+}
+
+PEFF_BASE_API void* VoidAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	std::terminate();
 }
 
 PEFF_BASE_API void VoidAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
-	assert(("Cannot free memory by VoidAlloc", false));
+	std::terminate();
 }
 
 PEFF_BASE_API bool VoidAlloc::isReplaceable(const Alloc *rhs) const noexcept {
@@ -116,6 +131,10 @@ PEFF_BASE_API void NullAlloc::onRefZero() noexcept {
 }
 
 PEFF_BASE_API void *NullAlloc::alloc(size_t size, size_t alignment) noexcept {
+	return nullptr;
+}
+
+PEFF_BASE_API void* NullAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 	return nullptr;
 }
 

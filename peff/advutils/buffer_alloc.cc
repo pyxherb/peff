@@ -76,7 +76,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexce
 
 succeeded:
 	char *ptr = buffer + off, *allocDescRawPtr = ptr + descOff;
-	constructAt<AllocDesc>((AllocDesc *)allocDescRawPtr, (AllocDesc *)ptr);
+	constructAt<AllocDesc>((AllocDesc *)allocDescRawPtr, ptr);
 
 	AllocDesc *allocDescPtr = (AllocDesc *)allocDescRawPtr;
 
@@ -90,6 +90,74 @@ succeeded:
 	assert(result);
 
 	return ptr;
+}
+
+PEFF_ADVUTILS_API void *BufferAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	AllocDesc *oldDesc = (AllocDesc *)allocDescs.get(ptr);
+	assert(oldDesc);
+
+	assert(size == oldDesc->size);
+	assert(alignment == oldDesc->alignment);
+
+	size_t off = 0, descOff;
+
+	size_t actualSize = calcAllocSize(newSize, newAlignment, &descOff);
+
+	allocDescs.remove(oldDesc, false);
+
+	while (off + actualSize <= bufferSize) {
+		if (size_t alignedDiff = ((uintptr_t)(buffer + off)) % newAlignment; alignedDiff) {
+			off += newAlignment - alignedDiff;
+			continue;
+		}
+
+		{
+			AllocDesc *bottomDesc = (AllocDesc *)allocDescs.getMaxLteqNode(buffer + off);
+
+			if (bottomDesc) {
+				size_t bottomDescOff = (((char *)bottomDesc->descBase) - buffer);
+				if (bottomDescOff + sizeof(AllocDesc) > off) {
+					off = bottomDescOff + sizeof(AllocDesc);
+					continue;
+				}
+			}
+		}
+		{
+			AllocDesc *topDesc = (AllocDesc *)allocDescs.getMaxLteqNode(buffer + off + actualSize);
+
+			if (topDesc) {
+				size_t topDescOff = (((char *)topDesc->descBase) - buffer);
+				if (topDescOff + sizeof(AllocDesc) > off) {
+					off = topDescOff + sizeof(AllocDesc);
+					continue;
+				}
+			}
+		}
+		goto succeeded;
+	}
+
+	bool restoreResult = allocDescs.insert(oldDesc);
+	assert(restoreResult);
+
+	return nullptr;
+
+succeeded:
+	char *p = buffer + off, *allocDescRawPtr = p + descOff;
+
+	memmove(p, ptr, size);
+
+	constructAt<AllocDesc>((AllocDesc *)allocDescRawPtr, p);
+
+	AllocDesc *allocDescPtr = (AllocDesc *)allocDescRawPtr;
+
+	allocDescPtr->size = newSize;
+	allocDescPtr->alignment = newAlignment;
+	allocDescPtr->descBase = allocDescPtr;
+
+	bool result = allocDescs.insert(allocDescPtr);
+	assert(result);
+
+	return p;
 }
 
 PEFF_ADVUTILS_API void BufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
@@ -165,7 +233,7 @@ PEFF_FORCEINLINE static size_t _calcMarkerPos(size_t size, size_t alignment) {
 PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::alloc(size_t size, size_t alignment) noexcept {
 	void *ptr;
 
-	size_t offMarker = _calcMarkerPos(size, alignof(size_t));
+	size_t offMarker = _calcMarkerPos(size, alignof(uintptr_t));
 	if ((ptr = bufferAlloc->alloc(size + offMarker + sizeof(uintptr_t), alignment))) {
 		Alloc **markerPtr = (Alloc **)(((char *)ptr) + offMarker);
 
@@ -183,8 +251,46 @@ PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::alloc(size_t size, size_t alignme
 	return nullptr;
 }
 
+PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	size_t offMarker = _calcMarkerPos(size, alignof(uintptr_t));
+	Alloc **markerPtr = ((Alloc **)((char *)ptr + offMarker));
+	Alloc *marker = *markerPtr;
+
+	void *p;
+
+	if (marker == bufferAlloc.get()) {
+		size_t newOffMarker = _calcMarkerPos(newSize, alignof(size_t));
+
+		if ((p = bufferAlloc->realloc(ptr, size + offMarker + sizeof(uintptr_t), alignment, newSize + newOffMarker + sizeof(uintptr_t), newAlignment))) {
+			memmove(p, ptr, size);;
+
+			Alloc **newMarkerPtr = (Alloc **)(((char *)p) + newOffMarker);
+
+			*newMarkerPtr = bufferAlloc.get();
+			return p;
+		}
+	}
+
+	if (!(p = upstream->alloc(newSize + offMarker + sizeof(uintptr_t), newAlignment))) {
+		return nullptr;
+	}
+
+	memmove(p, ptr, size);
+
+	size_t newOffMarker = _calcMarkerPos(newSize, alignof(size_t));
+	{
+		Alloc **newMarkerPtr = (Alloc **)(((char *)p) + newOffMarker);
+
+		*newMarkerPtr = upstream.get();
+	}
+
+	marker->release(ptr, size + offMarker + sizeof(uintptr_t), alignment);
+
+	return p;
+}
+
 PEFF_ADVUTILS_API void UpstreamedBufferAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
-	size_t offMarker = _calcMarkerPos(size, alignof(size_t));
+	size_t offMarker = _calcMarkerPos(size, alignof(uintptr_t));
 	Alloc **markerPtr = ((Alloc **)((char *)ptr + offMarker));
 	Alloc *marker = *markerPtr;
 

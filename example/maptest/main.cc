@@ -326,11 +326,11 @@ int main() {
 	peff::g_stdAlloc.release(b, szBuffer, alignment);
 
 	{
-		char buffer[32768];
+		char buffer[1024];
 		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
 		peff::UpstreamedBufferAlloc alloc(&bufferAlloc, &peff::g_stdAlloc);
 
-		for (size_t i = 8; i < 32768; ++i) {
+		for (size_t i = 8; i < 1024; ++i) {
 			void *const p1 = alloc.alloc(i, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p1);
 			void *const p2 = alloc.alloc(i * 2, sizeof(std::max_align_t));
@@ -344,6 +344,33 @@ int main() {
 			memset(p3, 0, i * 3);
 			alloc.release(p3, i * 3, sizeof(std::max_align_t));
 		}
+	}
+
+	{
+		char buffer[1024];
+		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
+		peff::UpstreamedBufferAlloc alloc(&bufferAlloc, &peff::g_stdAlloc);
+
+		void *oldP1 = nullptr, *oldP2 = nullptr, *oldP3 = nullptr;
+
+		for (size_t i = 8; i < 1024; ++i) {
+			void *const p1 = oldP1 ? alloc.realloc(oldP1, i - 1, sizeof(std::max_align_t), i, sizeof(std::max_align_t)) : alloc.alloc(i, sizeof(std::max_align_t));
+			printf("Allocated: %p\n", p1);
+			void *const p2 = oldP2 ? alloc.realloc(oldP2, (i - 1) * 2, sizeof(std::max_align_t), i * 2, sizeof(std::max_align_t)) : alloc.alloc(i * 2, sizeof(std::max_align_t));
+			printf("Allocated: %p\n", p2);
+			memset(p1, 0, i);
+			memset(p2, 0, i * 2);
+			oldP1 = p1;
+			oldP2 = p2;
+			void *const p3 = oldP3 ? alloc.realloc(oldP3, (i - 1) * 3, sizeof(std::max_align_t), i * 3, sizeof(std::max_align_t)) : alloc.alloc(i * 3, sizeof(std::max_align_t));
+			printf("Allocated: %p\n", p3);
+			memset(p3, 0, i * 3);
+			oldP3 = p3;
+		}
+
+		alloc.release(oldP1, 1023, sizeof(std::max_align_t));
+		alloc.release(oldP2, 1023 * 2, sizeof(std::max_align_t));
+		alloc.release(oldP3, 1023 * 3, sizeof(std::max_align_t));
 	}
 
 	return 0;

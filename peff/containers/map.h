@@ -74,6 +74,11 @@ namespace peff {
 		PEFF_FORCEINLINE MapImpl(Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
 		PEFF_FORCEINLINE MapImpl(ThisType &&rhs) : _set(std::move(rhs._set)) {
 		}
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
+			clear();
+			_set = std::move(rhs._set);
+			return *this;
+		}
 
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
 			Pair pair = Pair{ std::move(key), std::move(value), false };
@@ -270,6 +275,12 @@ namespace peff {
 			}
 		};
 
+		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->begin());
+		}
+		PEFF_FORCEINLINE ConstIterator end() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->end());
+		}
 		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}

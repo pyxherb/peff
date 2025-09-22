@@ -76,26 +76,6 @@ namespace peff {
 
 		using ThisType = HashMapImpl<K, V, Eq, Hasher, Fallible>;
 
-		template <bool Fallible2>
-		struct ElementQueryResultTypeUtil {
-			using type = V &;
-		};
-
-		template <>
-		struct ElementQueryResultTypeUtil<true> {
-			using type = Option<V &>;
-		};
-
-		template <bool Fallible2>
-		struct ConstElementQueryResultTypeUtil {
-			using type = const V &;
-		};
-
-		template <>
-		struct ConstElementQueryResultTypeUtil<true> {
-			using type = Option<const V &>;
-		};
-
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
 			((QueryPair *)dest)->isForQuery = true;
 			((QueryPair *)dest)->queryKey = &key;
@@ -104,8 +84,8 @@ namespace peff {
 	public:
 		using RemoveResultType = typename SetType::RemoveResultType;
 		using RemoveAndResizeResultType = typename SetType::RemoveAndResizeResultType;
-		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
-		using ConstElementQueryResultType = typename ConstElementQueryResultTypeUtil<Fallible>::type;
+		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<V &>, V &>::type;
+		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const V &>, const V &>::type;
 		using ContainsResultType = typename SetType::ContainsResultType;
 
 		PEFF_FORCEINLINE HashMapImpl(Alloc *allocator) : _set(allocator) {}

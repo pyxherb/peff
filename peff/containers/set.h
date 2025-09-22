@@ -11,52 +11,11 @@ namespace peff {
 		using Tree = std::conditional_t<Fallible, FallibleRBTree<T, Comparator>, RBTree<T, Comparator>>;
 		Tree _tree;
 		using ThisType = SetImpl<T, Comparator, Fallible>;
-
-		template <bool Fallible2>
-		struct RemoveResultTypeUtil {
-			using type = void;
-		};
-
-		template <>
-		struct RemoveResultTypeUtil<true> {
-			using type = bool;
-		};
-
-		template <bool Fallible2>
-		struct ElementQueryResultTypeUtil {
-			using type = T &;
-		};
-
-		template <>
-		struct ElementQueryResultTypeUtil<true> {
-			using type = Option<T &>;
-		};
-
-		template <bool Fallible2>
-		struct ConstElementQueryResultTypeUtil {
-			using type = T &;
-		};
-
-		template <>
-		struct ConstElementQueryResultTypeUtil<true> {
-			using type = Option<T &>;
-		};
-
-		template <bool Fallible2>
-		struct ContainsResultTypeUtil {
-			using type = bool;
-		};
-
-		template <>
-		struct ContainsResultTypeUtil<true> {
-			using type = Option<bool>;
-		};
-
 	public:
-		using RemoveResultType = typename RemoveResultTypeUtil<Fallible>::type;
-		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
-		using ConstElementQueryResultType = typename ConstElementQueryResultTypeUtil<Fallible>::type;
-		using ContainsResultType = typename ContainsResultTypeUtil<Fallible>::type;
+		using RemoveResultType = typename std::conditional_t<Fallible, bool, void>;
+		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<T &>, T &>;
+		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const T &>, const T &>;
+		using ContainsResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
 
 		using NodeType = typename Tree::NodeType;
 

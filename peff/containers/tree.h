@@ -78,19 +78,8 @@ namespace peff {
 		using NodeType = Node;
 		using ComparatorType = Comparator;
 
-	private:
-		template <bool Fallible2>
-		struct NodeQueryResultTypeUtil {
-			using type = Node *;
-		};
-
-		template <>
-		struct NodeQueryResultTypeUtil<true> {
-			using type = Option<Node *>;
-		};
-
 	protected:
-		using NodeQueryResultType = typename NodeQueryResultTypeUtil<Fallible>::type;
+		using NodeQueryResultType = typename std::conditional<Fallible, Option<Node*>, Node *>::type;
 
 		using ThisType = RBTreeImpl<T, Comparator, Fallible>;
 

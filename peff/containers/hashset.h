@@ -16,6 +16,17 @@
 #endif
 
 namespace peff {
+	namespace details {
+		template <typename T, typename V = void>
+		struct HashCodeResultTypeExtractor {
+			using type = T;
+		};
+
+		template <typename T>
+		struct HashCodeResultTypeExtractor<T, std::void_t<decltype(std::declval<T>().value())>> {
+			using type = typename T::value_type;
+		};
+	}
 	template <
 		typename T,
 		typename EqCmp,
@@ -23,20 +34,9 @@ namespace peff {
 		bool Fallible>
 	PEFF_REQUIRES_CONCEPT(std::invocable<EqCmp, const T &, const T &>)
 	class HashSetImpl {
-	private:
-		template <typename T2, typename V = void>
-		struct HashCodePassUtil {
-			using type = T2;
-		};
-
-		template <typename T2>
-		struct HashCodePassUtil<T2, std::void_t<decltype(std::declval<T2>().value())>> {
-			using type = typename T2::value_type;
-		};
-
 	public:
 		using HasherResult = decltype(std::declval<Hasher>()(std::declval<T>()));
-		using HashCode = std::conditional_t<Fallible, typename HashCodePassUtil<HasherResult>::type, HasherResult>;
+		using HashCode = typename details::HashCodeResultTypeExtractor<HasherResult>::type;
 
 		struct Element {
 			T data;
@@ -60,86 +60,14 @@ namespace peff {
 			}
 		};
 		using Bucket = List<Element>;
-
-	private:
-		template <bool Fallible2>
-		struct InternalRemoveResultTypeUtil {
-			using type = bool;
-		};
-
-		template <>
-		struct InternalRemoveResultTypeUtil<true> {
-			using type = Option<bool>;
-		};
-
-		template <bool Fallible2>
-		struct RemoveResultTypeUtil {
-			using type = void;
-		};
-
-		template <>
-		struct RemoveResultTypeUtil<true> {
-			using type = bool;
-		};
-
-		template <bool Fallible2>
-		struct RemoveAndResizeResultTypeUtil {
-			using type = bool;
-		};
-
-		template <>
-		struct RemoveAndResizeResultTypeUtil<true> {
-			using type = Option<bool>;
-		};
-
-		template <bool Fallible2>
-		struct BucketNodeHandleQueryResultTypeUtil {
-			using type = typename Bucket::NodeHandle;
-		};
-
-		template <>
-		struct BucketNodeHandleQueryResultTypeUtil<true> {
-			using type = Option<typename Bucket::NodeHandle>;
-		};
-
-		template <bool Fallible2>
-		struct ElementQueryResultTypeUtil {
-			using type = T &;
-		};
-
-		template <>
-		struct ElementQueryResultTypeUtil<true> {
-			using type = Option<T &>;
-		};
-
-		template <bool Fallible2>
-		struct ConstElementQueryResultTypeUtil {
-			using type = T &;
-		};
-
-		template <>
-		struct ConstElementQueryResultTypeUtil<true> {
-			using type = Option<T &>;
-		};
-
-		template <bool Fallible2>
-		struct ContainsResultTypeUtil {
-			using type = bool;
-		};
-
-		template <>
-		struct ContainsResultTypeUtil<true> {
-			using type = Option<bool>;
-		};
-
 	public:
-		using InternalRemoveResultType = typename InternalRemoveResultTypeUtil<Fallible>::type;
-		using RemoveResultType = typename RemoveResultTypeUtil<Fallible>::type;
-		using RemoveAndResizeResultType = typename RemoveAndResizeResultTypeUtil<Fallible>::type;
-		using ElementQueryResultType = typename ElementQueryResultTypeUtil<Fallible>::type;
-		using BucketNodeHandleQueryResultType = typename BucketNodeHandleQueryResultTypeUtil<Fallible>::type;
-		using ConstElementQueryResultType = typename ConstElementQueryResultTypeUtil<Fallible>::type;
-		using ContainsResultType = typename ContainsResultTypeUtil<Fallible>::type;
+		using InternalRemoveResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
+		using RemoveResultType = typename std::conditional_t<Fallible, bool, void>;
+		using RemoveAndResizeResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
+		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<T &>, T &>;
+		using BucketNodeHandleQueryResultType = typename std::conditional_t<Fallible, Option<typename Bucket::NodeHandle>, typename Bucket::NodeHandle>;
+		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const T &>, const T &>;
+		using ContainsResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
 
 	private:
 		using ThisType = HashSetImpl<T, EqCmp, Hasher, Fallible>;

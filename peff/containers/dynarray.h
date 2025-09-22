@@ -1,11 +1,8 @@
 #ifndef _PEFF_UTILS_DYNARRAY_H_
 #define _PEFF_UTILS_DYNARRAY_H_
 
-#include "basedefs.h"
-#include <memory_resource>
 #include <cassert>
 #include <cstring>
-#include <functional>
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
 

@@ -12,7 +12,7 @@
 #if defined(_MSC_VER)
 	#define PEFF_FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
-	#ifndef NDEBUG
+	#ifdef NDEBUG
 		#define PEFF_FORCEINLINE __attribute__((__always_inline__)) inline
 	#else
 		#define PEFF_FORCEINLINE inline

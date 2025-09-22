@@ -234,12 +234,27 @@ int main() {
 	}
 
 	{
+		peff::BitArray bitArr(&peff::g_stdAlloc);
+
+		bitArr.resizeUninitialized(64);
+
+		bitArr.fillSet(0, 64);
+		bitArr.fillClear(0, 48);
+
+		for (size_t i = 0; i < bitArr.bitSize(); ++i) {
+			printf("%s", bitArr.getBit(i) ? "1" : "0");
+		}
+
+		puts("");
+	}
+
+	{
 		peff::DynArray<int> arr(&peff::g_stdAlloc);
 		peff::String str(&peff::g_stdAlloc);
 
 		for (int i = 0; i < 32; i++) {
 			int tmp = i;
-			if (!arr.pushFront(std::move(tmp)))
+			if (!arr.insert(0, std::move(tmp)))
 				throw std::bad_alloc();
 			if (!str.insert(0, 'a' + i))
 				throw std::bad_alloc();
@@ -257,6 +272,12 @@ int main() {
 			puts("");
 		}
 
+	{
+		B bi;
+		bi.p = bi.p + 1;
+		bi.p = bi.p - 1;
+	}
+
 		arr.extractRange(10, 20);
 		if (!arr.eraseRange(0, 7))
 			throw std::bad_alloc();
@@ -273,21 +294,6 @@ int main() {
 
 		for (size_t i = 0; i < str.size(); ++i) {
 			printf("%c ", str.at(i));
-		}
-
-		puts("");
-	}
-
-	{
-		peff::BitArray bitArr(&peff::g_stdAlloc);
-
-		bitArr.resizeUninitialized(64);
-
-		bitArr.fillSet(0, 64);
-		bitArr.fillClear(0, 48);
-
-		for (size_t i = 0; i < bitArr.bitSize(); ++i) {
-			printf("%s", bitArr.getBit(i) ? "1" : "0");
 		}
 
 		puts("");

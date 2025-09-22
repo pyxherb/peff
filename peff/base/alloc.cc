@@ -49,7 +49,7 @@ PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, 
 	}
 #else
 	if(alignment > 1) {
-		void *p = aligned_alloc(alignment, size);
+		void *p = aligned_alloc(newAlignment, newSize);
 
 		if(!p)
 			return nullptr;

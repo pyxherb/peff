@@ -48,7 +48,19 @@ PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, 
 		return ::realloc(ptr, newSize);
 	}
 #else
-	std::terminate();
+	if(alignment > 1) {
+		void *p = aligned_alloc(alignment, size);
+
+		if(!p)
+			return nullptr;
+
+		memcpy(p, ptr, size);
+
+		free(ptr);
+
+		return p;
+	}
+	return ::realloc(ptr, newSize);
 #endif
 }
 

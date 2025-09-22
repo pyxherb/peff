@@ -79,7 +79,7 @@ namespace peff {
 		using ComparatorType = Comparator;
 
 	private:
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct NodeQueryResultTypeUtil {
 			using type = Node *;
 		};
@@ -142,7 +142,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE typename NodeQueryResultType _get(const T &key) const {
+		PEFF_FORCEINLINE NodeQueryResultType _get(const T &key) const {
 			Node *i = (Node *)_root;
 
 			if constexpr (Fallible) {
@@ -384,7 +384,7 @@ namespace peff {
 			return maxNode;
 		}
 
-		PEFF_FORCEINLINE typename NodeQueryResultType get(const T &key) const {
+		PEFF_FORCEINLINE NodeQueryResultType get(const T &key) const {
 			return _get(key);
 		}
 

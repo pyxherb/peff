@@ -136,8 +136,10 @@ PEFF_ADVUTILS_API void *BufferAlloc::realloc(void *ptr, size_t size, size_t alig
 		goto succeeded;
 	}
 
-	bool restoreResult = allocDescs.insert(oldDesc);
-	assert(restoreResult);
+	{
+		bool restoreResult = allocDescs.insert(oldDesc);
+		assert(restoreResult);
+	}
 
 	return nullptr;
 
@@ -262,7 +264,8 @@ PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc(void *ptr, size_t size, s
 		size_t newOffMarker = _calcMarkerPos(newSize, alignof(size_t));
 
 		if ((p = bufferAlloc->realloc(ptr, size + offMarker + sizeof(uintptr_t), alignment, newSize + newOffMarker + sizeof(uintptr_t), newAlignment))) {
-			memmove(p, ptr, size);;
+			memmove(p, ptr, size);
+			;
 
 			Alloc **newMarkerPtr = (Alloc **)(((char *)p) + newOffMarker);
 

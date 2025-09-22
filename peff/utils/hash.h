@@ -8,7 +8,7 @@
 namespace peff {
 	template <typename T>
 	struct Hasher {
-		static_assert(!std::is_same_v<T, T>, "Hasher was not found");
+		static_assert(!std::false_type::value, "Hasher not found");
 	};
 
 	template <>

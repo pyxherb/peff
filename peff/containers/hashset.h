@@ -62,7 +62,7 @@ namespace peff {
 		using Bucket = List<Element>;
 
 	private:
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct InternalRemoveResultTypeUtil {
 			using type = bool;
 		};
@@ -72,7 +72,7 @@ namespace peff {
 			using type = Option<bool>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct RemoveResultTypeUtil {
 			using type = void;
 		};
@@ -82,7 +82,7 @@ namespace peff {
 			using type = bool;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct RemoveAndResizeResultTypeUtil {
 			using type = bool;
 		};
@@ -92,7 +92,7 @@ namespace peff {
 			using type = Option<bool>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct BucketNodeHandleQueryResultTypeUtil {
 			using type = typename Bucket::NodeHandle;
 		};
@@ -102,7 +102,7 @@ namespace peff {
 			using type = Option<typename Bucket::NodeHandle>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ElementQueryResultTypeUtil {
 			using type = T &;
 		};
@@ -112,7 +112,7 @@ namespace peff {
 			using type = Option<T &>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ConstElementQueryResultTypeUtil {
 			using type = T &;
 		};
@@ -122,7 +122,7 @@ namespace peff {
 			using type = Option<T &>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ContainsResultTypeUtil {
 			using type = bool;
 		};
@@ -207,7 +207,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename BucketNodeHandleQueryResultType _getBucketSlot(const Bucket &bucket, const T &data) const {
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _getBucketSlot(const Bucket &bucket, const T &data) const {
 			for (auto i = bucket.firstNode(); i; i = i->next) {
 				if constexpr (Fallible) {
 					if (auto result = _equalityComparator(i->data.data, data); result.hasValue()) {
@@ -318,7 +318,7 @@ namespace peff {
 			typename Bucket::NodeHandle node;
 
 			if constexpr (Fallible) {
-				typename BucketNodeHandleQueryResultType maybeNode = _getBucketSlot(bucket, data);
+				BucketNodeHandleQueryResultType maybeNode = _getBucketSlot(bucket, data);
 				if (!maybeNode.hasValue()) {
 					return NULL_OPTION;
 				}
@@ -354,7 +354,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename BucketNodeHandleQueryResultType _get(const T &data, size_t &index) const {
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get(const T &data, size_t &index) const {
 			if (!_buckets.size()) {
 				return Bucket::nullNodeHandle();
 			}
@@ -415,7 +415,7 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename RemoveAndResizeResultType removeAndResizeBuckets(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType removeAndResizeBuckets(const T &data) {
 			if constexpr (Fallible) {
 				auto result = _remove(data, true);
 
@@ -426,7 +426,7 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE typename BucketNodeHandleQueryResultType get(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType get(const T &data) {
 			size_t index;
 			return _get(data, index);
 		}
@@ -759,7 +759,7 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->find(value));
 		}
 
-		PEFF_FORCEINLINE typename ElementQueryResultType at(const T &value) {
+		PEFF_FORCEINLINE ElementQueryResultType at(const T &value) {
 			size_t index;
 			typename Bucket::NodeHandle node;
 			if constexpr (Fallible) {
@@ -777,7 +777,7 @@ namespace peff {
 			return node->data.data;
 		}
 
-		PEFF_FORCEINLINE typename ConstElementQueryResultType at(const T &value) const {
+		PEFF_FORCEINLINE ConstElementQueryResultType at(const T &value) const {
 			size_t index;
 			typename Bucket::NodeHandle node;
 			if constexpr (Fallible) {

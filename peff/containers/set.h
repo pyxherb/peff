@@ -12,7 +12,7 @@ namespace peff {
 		Tree _tree;
 		using ThisType = SetImpl<T, Comparator, Fallible>;
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct RemoveResultTypeUtil {
 			using type = void;
 		};
@@ -22,7 +22,7 @@ namespace peff {
 			using type = bool;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ElementQueryResultTypeUtil {
 			using type = T &;
 		};
@@ -32,7 +32,7 @@ namespace peff {
 			using type = Option<T &>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ConstElementQueryResultTypeUtil {
 			using type = T &;
 		};
@@ -42,7 +42,7 @@ namespace peff {
 			using type = Option<T &>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ContainsResultTypeUtil {
 			using type = bool;
 		};
@@ -132,7 +132,7 @@ namespace peff {
 			_tree.clear();
 		}
 
-		PEFF_FORCEINLINE typename ElementQueryResultType at(const T &key) {
+		PEFF_FORCEINLINE ElementQueryResultType at(const T &key) {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
@@ -151,7 +151,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE typename ConstElementQueryResultType at(const T &key) const {
+		PEFF_FORCEINLINE ConstElementQueryResultType at(const T &key) const {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 

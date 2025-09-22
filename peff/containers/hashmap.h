@@ -76,7 +76,7 @@ namespace peff {
 
 		using ThisType = HashMapImpl<K, V, Eq, Hasher, Fallible>;
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ElementQueryResultTypeUtil {
 			using type = V &;
 		};
@@ -86,7 +86,7 @@ namespace peff {
 			using type = Option<V &>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ConstElementQueryResultTypeUtil {
 			using type = const V &;
 		};

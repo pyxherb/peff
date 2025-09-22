@@ -38,7 +38,7 @@ namespace peff {
 
 		using ThisType = MapImpl<K, V, Lt, Fallible>;
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ElementQueryResultTypeUtil {
 			using type = V &;
 		};
@@ -48,7 +48,7 @@ namespace peff {
 			using type = Option<V &>;
 		};
 
-		template <bool Fallible>
+		template <bool Fallible2>
 		struct ConstElementQueryResultTypeUtil {
 			using type = const V &;
 		};

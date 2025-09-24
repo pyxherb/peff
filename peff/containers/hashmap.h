@@ -84,8 +84,8 @@ namespace peff {
 	public:
 		using RemoveResultType = typename SetType::RemoveResultType;
 		using RemoveAndResizeResultType = typename SetType::RemoveAndResizeResultType;
-		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<V &>, V &>::type;
-		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const V &>, const V &>::type;
+		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<V &>, V &>;
+		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const V &>, const V &>;
 		using ContainsResultType = typename SetType::ContainsResultType;
 
 		PEFF_FORCEINLINE HashMapImpl(Alloc *allocator) : _set(allocator) {}

@@ -49,10 +49,15 @@ PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, 
 	}
 #else
 	if(alignment > 1) {
-		void *p = aligned_alloc(newAlignment, newSize);
+		void *p;
 
-		if(!p)
+#if __ANDROID__
+		if(!(p = memalign(newAlignment, newSize)))
 			return nullptr;
+#else
+		if(!(p = aligned_alloc(newAlignment, newSize)))
+			return nullptr;
+#endif
 
 		memcpy(p, ptr, size);
 

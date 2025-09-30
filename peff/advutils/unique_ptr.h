@@ -28,6 +28,12 @@ namespace peff {
 				_deleter(_ptr);
 		}
 
+		PEFF_FORCEINLINE T* release() noexcept {
+			T *p = _ptr;
+			_ptr = nullptr;
+			return p;
+		}
+
 		PEFF_FORCEINLINE UniquePtr() : _ptr(nullptr) {
 		}
 		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _ptr(ptr) {

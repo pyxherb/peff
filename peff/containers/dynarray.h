@@ -5,6 +5,7 @@
 #include <cstring>
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
+#include <peff/utils/pair.h>
 
 namespace peff {
 	template <typename T, bool IsString, typename U = void>
@@ -24,12 +25,12 @@ namespace peff {
 	public:
 		using Iterator = T *;
 		using ConstIterator = const T *;
+		using PlaceholderElement = DynArrayPlaceholderElement<T, IsString>;
 
-		T *_data = nullptr;
 		size_t _length = 0;
 		size_t _capacity = 0;
 		peff::RcObjectPtr<Alloc> _allocator;
-		DynArrayPlaceholderElement<T, IsString> _placeholderElement;
+		CompressedPair<T *, PlaceholderElement> _data;
 
 		PEFF_FORCEINLINE static int _checkCapacity(size_t length, size_t capacity) {
 			if (length > capacity)
@@ -116,9 +117,9 @@ namespace peff {
 				scopeGuard.release();
 			}
 
-			if (newData != _data) {
-				if (_data)
-					_moveDataUninitialized(newData, _data, _length);
+			if (newData != _data.first()) {
+				if (_data.first())
+					_moveDataUninitialized(newData, _data.first(), _length);
 			}
 
 			return true;
@@ -155,9 +156,9 @@ namespace peff {
 				scopeGuard.release();
 			}
 
-			if (newData != _data) {
-				if (_data)
-					_moveDataUninitialized(newData, _data, _length);
+			if (newData != _data.first()) {
+				if (_data.first())
+					_moveDataUninitialized(newData, _data.first(), _length);
 			}
 
 			return true;
@@ -169,12 +170,12 @@ namespace peff {
 			assert(length < _length);
 
 			for (size_t i = length; i < _length; ++i) {
-				std::destroy_at<T>(&_data[i]);
+				std::destroy_at<T>(&_data.first()[i]);
 			}
 
-			if (newData != _data) {
-				if (_data)
-					_moveDataUninitialized(newData, _data, length);
+			if (newData != _data.first()) {
+				if (_data.first())
+					_moveDataUninitialized(newData, _data.first(), length);
 			}
 		}
 
@@ -200,8 +201,8 @@ namespace peff {
 				bool clearOldData = true;
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if (_data) {
-						if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
+					if (_data.first()) {
+						if (!(newData = (T *)_allocator->realloc(_data.first(), sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
 							return false;
 						clearOldData = false;
 					} else {
@@ -226,7 +227,7 @@ namespace peff {
 				if (clearOldData)
 					_clear();
 				_capacity = newCapacity;
-				_data = newData;
+				_data.first() = newData;
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1;
 
@@ -238,8 +239,8 @@ namespace peff {
 				bool clearOldData = true;
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if (_data) {
-						if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
+					if (_data.first()) {
+						if (!(newData = (T *)_allocator->realloc(_data.first(), sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
 							return false;
 						clearOldData = false;
 					} else {
@@ -274,16 +275,16 @@ namespace peff {
 				if (clearOldData)
 					_clear();
 				_capacity = newCapacity;
-				_data = newData;
+				_data.first() = newData;
 			} else {
 				if (length > _length) {
 					if constexpr (!std::is_trivially_constructible_v<T>) {
-						if (!_expandTo<construct>(_data, length))
+						if (!_expandTo<construct>(_data.first(), length))
 							return false;
 					}
 				} else {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
-						_shrink(_data, length);
+						_shrink(_data.first(), length);
 					}
 				}
 			}
@@ -312,8 +313,8 @@ namespace peff {
 				bool clearOldData = true;
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if (_data) {
-						newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
+					if (_data.first()) {
+						newData = (T *)_allocator->realloc(_data.first(), sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
 						clearOldData = false;
 					} else {
 						newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
@@ -339,7 +340,7 @@ namespace peff {
 				if (clearOldData)
 					_clear();
 				_capacity = newCapacity;
-				_data = newData;
+				_data.first() = newData;
 			} else if (capacityStatus < 0) {
 				size_t newCapacity = _capacity >> 1,
 					   newCapacityTotalSize = newCapacity * sizeof(T);
@@ -347,8 +348,8 @@ namespace peff {
 				bool clearOldData = true;
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if(_data) {
-						newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
+					if (_data.first()) {
+						newData = (T *)_allocator->realloc(_data.first(), sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
 						clearOldData = false;
 					} else {
 						newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
@@ -380,17 +381,17 @@ namespace peff {
 				if (clearOldData)
 					_clear();
 				_capacity = newCapacity;
-				_data = newData;
+				_data.first() = newData;
 			} else {
 				if (length > _length) {
 					if constexpr (!std::is_trivially_constructible_v<T>) {
-						if (!_expandToWith(_data, length, filler)) {
+						if (!_expandToWith(_data.first(), length, filler)) {
 							return false;
 						}
 					}
 				} else {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
-						_shrink(_data, length);
+						_shrink(_data.first(), length);
 					}
 				}
 			}
@@ -402,13 +403,13 @@ namespace peff {
 		PEFF_FORCEINLINE void _clear() {
 			if constexpr (!std::is_trivial_v<T>) {
 				for (size_t i = 0; i < _length; ++i)
-					std::destroy_at<T>(&_data[i]);
+					std::destroy_at<T>(&_data.first()[i]);
 			}
 			if (_capacity) {
-				_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
+				_allocator->release(_data.first(), sizeof(T) * _capacity, alignof(T));
 			}
 
-			_data = nullptr;
+			_data.first() = nullptr;
 			_length = 0;
 			_capacity = 0;
 		}
@@ -432,32 +433,32 @@ namespace peff {
 					return false;
 
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(newData, _data, sizeof(T) * idxStart);
-					memmove(newData + idxStart, _data + idxEnd, sizeof(T) * postGapLength);
+					memmove(newData, _data.first(), sizeof(T) * idxStart);
+					memmove(newData + idxStart, _data.first() + idxEnd, sizeof(T) * postGapLength);
 				} else {
 					ScopeGuard scopeGuard(
 						[this, newCapacityTotalSize, newData]() noexcept {
 							_allocator->release(newData, newCapacityTotalSize, alignof(T));
 						});
 
-					_moveData(newData, _data, idxStart);
-					_moveData(newData + idxStart, _data + idxEnd, postGapLength);
+					_moveData(newData, _data.first(), idxStart);
+					_moveData(newData + idxStart, _data.first() + idxEnd, postGapLength);
 
 					scopeGuard.release();
 				}
 
-				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
+				if (_data.first())
+					_allocator->release(_data.first(), sizeof(T) * _capacity, alignof(T));
 				_capacity = newCapacity;
-				_data = newData;
+				_data.first() = newData;
 			} else {
 				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(&_data[idxStart], &_data[idxEnd], postGapLength * sizeof(T));
+					memmove(&_data.first()[idxStart], &_data.first()[idxEnd], postGapLength * sizeof(T));
 				} else {
 					for (size_t i = idxStart; i < idxEnd; ++i)
-						std::destroy_at<T>(&_data[i]);
+						std::destroy_at<T>(&_data.first()[i]);
 					if (idxEnd < _length)
-						_moveDataUninitialized(&_data[idxStart], &_data[idxEnd], postGapLength);
+						_moveDataUninitialized(&_data.first()[idxStart], &_data.first()[idxEnd], postGapLength);
 				}
 			}
 
@@ -478,7 +479,7 @@ namespace peff {
 			}
 
 			if (idxStart) {
-				_moveData(_data, _data + idxStart, newLength);
+				_moveData(_data.first(), _data.first() + idxStart, newLength);
 				if (!_resize<false>(newLength, false)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
@@ -486,7 +487,7 @@ namespace peff {
 			} else {
 				if (!_resize<false>(newLength, false)) {
 					// Destruct the trailing elements.
-					_destructData(_data + idxStart, idxEnd - idxStart);
+					_destructData(_data.first() + idxStart, idxEnd - idxStart);
 				}
 			}
 		}
@@ -503,7 +504,7 @@ namespace peff {
 			}
 
 			if (idxStart) {
-				_moveData(_data, _data + idxStart, newLength);
+				_moveData(_data.first(), _data.first() + idxStart, newLength);
 				if (!_resize<false>(newLength, true)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
@@ -511,7 +512,7 @@ namespace peff {
 			} else {
 				if (!_resize<false>(newLength, true)) {
 					// Destruct the trailing elements.
-					_destructData(_data + idxStart, idxEnd - idxStart);
+					_destructData(_data.first() + idxStart, idxEnd - idxStart);
 				}
 			}
 		}
@@ -532,16 +533,16 @@ namespace peff {
 			if (!_resize<construct>(newLength, false))
 				return nullptr;
 
-			T *gapStart = &_data[index];
+			T *gapStart = &_data.first()[index];
 
 			if (std::is_trivially_move_assignable_v<T>) {
 				if (index < oldLength) {
-					memmove(&_data[index + length], gapStart, sizeof(T) * (oldLength - index));
+					memmove(&_data.first()[index + length], gapStart, sizeof(T) * (oldLength - index));
 				}
 			} else {
 				if (index < oldLength) {
 					_moveDataUninitialized(
-						&_data[index + length],
+						&_data.first()[index + length],
 						gapStart,
 						oldLength - index);
 				}
@@ -557,10 +558,10 @@ namespace peff {
 		using ThisType = DynArray<T, IsString>;
 
 	public:
-		PEFF_FORCEINLINE DynArray(Alloc *allocator) : _allocator(allocator) {
+		PEFF_FORCEINLINE DynArray(Alloc *allocator) : _allocator(allocator), _data({ nullptr, PlaceholderElement{} }) {
 		}
-		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(std::move(rhs._allocator)), _data(rhs._data), _length(rhs._length), _capacity(rhs._capacity) {
-			rhs._data = nullptr;
+		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(std::move(rhs._allocator)), _data(std::move(rhs._data)), _length(rhs._length), _capacity(rhs._capacity) {
+			rhs._data.first() = nullptr;
 			rhs._length = 0;
 			rhs._capacity = 0;
 		}
@@ -573,11 +574,11 @@ namespace peff {
 			_clear();
 
 			_allocator = rhs._allocator;
-			_data = rhs._data;
+			_data.first() = rhs._data.first();
 			_length = rhs._length;
 			_capacity = rhs._capacity;
 
-			rhs._data = nullptr;
+			rhs._data.first() = nullptr;
 			rhs._length = 0;
 			rhs._capacity = 0;
 
@@ -622,10 +623,10 @@ namespace peff {
 			size_t i = 0;
 
 			while (i < _length) {
-				if (!peff::copy(_data[i], rhs._data[i])) {
+				if (!peff::copy(_data.first()[i], rhs._data.first()[i])) {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
 						for (size_t j = 0; j < i; ++j) {
-							std::destroy_at<T>(&_data[j]);
+							std::destroy_at<T>(&_data.first()[j]);
 						}
 					}
 					return false;
@@ -642,12 +643,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE T &at(size_t index) {
 			assert(index < _length);
-			return _data[index];
+			return _data.first()[index];
 		}
 
 		PEFF_FORCEINLINE const T &at(size_t index) const {
 			assert(index < _length);
-			return _data[index];
+			return _data.first()[index];
 		}
 
 		PEFF_FORCEINLINE size_t size() const {
@@ -704,12 +705,12 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void popFront() {
-			_moveData(_data, _data + 1, _length - 1);
+			_moveData(_data.first(), _data.first() + 1, _length - 1);
 			bool unused = resize(_length - 1);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndResizeCapacity() {
-			_moveData(_data, _data + 1, _length - 1);
+			_moveData(_data.first(), _data.first() + 1, _length - 1);
 			return resize(_length - 1);
 		}
 
@@ -726,55 +727,55 @@ namespace peff {
 		PEFF_FORCEINLINE T *data() {
 			if constexpr (IsString) {
 				if (!_length) {
-					return &_placeholderElement.element;
+					return &_data.second().element;
 				}
 			}
-			return _data;
+			return _data.first();
 		}
 
 		PEFF_FORCEINLINE const T *data() const {
 			if constexpr (IsString) {
 				if (!_length) {
-					return &_placeholderElement.element;
+					return &_data.second().element;
 				}
 			}
-			return _data;
+			return _data.first();
 		}
 
 		PEFF_FORCEINLINE Iterator begin() {
 			if constexpr (IsString) {
 				if (!_length) {
-					return &_placeholderElement.element;
+					return &_data.second().element;
 				}
 			}
-			return _data;
+			return _data.first();
 		}
 
 		PEFF_FORCEINLINE Iterator end() {
 			if constexpr (IsString) {
 				if (!_length) {
-					return &_placeholderElement.element;
+					return &_data.second().element;
 				}
 			}
-			return _data + _length;
+			return _data.first() + _length;
 		}
 
 		PEFF_FORCEINLINE ConstIterator begin() const {
 			if constexpr (IsString) {
 				if (!_length) {
-					return &_placeholderElement.element;
+					return &_data.second().element;
 				}
 			}
-			return _data;
+			return _data.first();
 		}
 
 		PEFF_FORCEINLINE ConstIterator end() const {
 			if constexpr (IsString) {
 				if (!_length) {
-					return &_placeholderElement.element;
+					return &_data.second().element;
 				}
 			}
-			return _data + _length;
+			return _data.first() + _length;
 		}
 	};
 }

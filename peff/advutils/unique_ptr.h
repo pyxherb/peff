@@ -39,8 +39,8 @@ namespace peff {
 		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _ptr(ptr) {
 		}
 		UniquePtr(const ThisType &) = delete;
-		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _ptr(nullptr)._deleter(std::move(other._deleter)) {
-			std::atomic_exchange(_ptr, other._ptr);
+		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _ptr(other._ptr), _deleter(std::move(other._deleter)) {
+			other._ptr = nullptr;
 		}
 		PEFF_FORCEINLINE ~UniquePtr() {
 			reset();

@@ -17,7 +17,25 @@ namespace peff {
 	struct IsRcObject<T, std::void_t<decltype(std::declval<T>().incRef((size_t)0))>, std::void_t<decltype(std::declval<T>().decRef((size_t)0))>> : std::true_type {
 	};
 
+	class RcObjectPtrCounterResetEventListener {
+	private:
+		RcObjectPtrCounterResetEventListener *_prev = nullptr, *_next = nullptr;
+
+		friend PEFF_BASE_API void registerRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
+		friend PEFF_BASE_API void unregisterRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
+	public:
+		PEFF_BASE_API RcObjectPtrCounterResetEventListener();
+		PEFF_BASE_API virtual ~RcObjectPtrCounterResetEventListener();
+
+		virtual void onTrigger() = 0;
+	};
+
+	PEFF_BASE_API extern RcObjectPtrCounterResetEventListener *g_rcObjectPtrCounterResetEventListeners;
 	PEFF_BASE_API extern std::atomic_size_t g_rcObjectPtrCounter;
+
+	PEFF_BASE_API size_t acquireGlobalRcObjectPtrCounter();
+	PEFF_BASE_API void registerRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
+	PEFF_BASE_API void unregisterRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
 
 #if __cplusplus >= 202002L
 	template <typename T>
@@ -39,7 +57,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr)
 			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
-			_counter = g_rcObjectPtrCounter++;
+			_counter = acquireGlobalRcObjectPtrCounter();
 			_ptr->incRef(_counter);
 			this->_ptr = _ptr;
 		}

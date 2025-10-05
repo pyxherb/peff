@@ -53,6 +53,12 @@ namespace peff {
 			return *((const T *)_data);
 		}
 
+		PEFF_FORCEINLINE T move() noexcept {
+			assert(hasValue());
+			_hasValue = false;
+			return std::move(*((T *)_data));
+		}
+
 		PEFF_FORCEINLINE T &operator*() noexcept {
 			assert(hasValue());
 			return value();
@@ -138,6 +144,12 @@ namespace peff {
 		PEFF_FORCEINLINE const T &value() const noexcept {
 			assert(hasValue());
 			return *((const T *)_data);
+		}
+
+		PEFF_FORCEINLINE T move() noexcept {
+			assert(hasValue());
+			_hasValue = false;
+			return std::move(*_data);
 		}
 
 		PEFF_FORCEINLINE T &operator*() noexcept {

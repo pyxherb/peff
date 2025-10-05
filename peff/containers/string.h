@@ -161,6 +161,15 @@ namespace peff {
 			return true;
 		}
 
+		[[nodiscard]] PEFF_FORCEINLINE bool append(const std::string_view &data) {
+			const size_t oldSize = size();
+			if (!resize(oldSize + data.size()))
+				return false;
+			memcpy(_dynArray.data() + oldSize, data.data(), data.size());
+			_dynArray.data()[data.size()] = '\0';
+			return true;
+		}
+
 		PEFF_FORCEINLINE bool build(const std::string_view &src) {
 			if (!resize(src.size()))
 				return false;
@@ -241,6 +250,8 @@ namespace peff {
 	};
 }
 
-PEFF_CONTAINERS_API bool operator==(const std::string_view &lhs, const peff::String &rhs) noexcept;
+PEFF_FORCEINLINE bool operator==(const std::string_view &lhs, const peff::String &rhs) noexcept {
+	return rhs == lhs;
+}
 
 #endif

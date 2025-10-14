@@ -3,9 +3,9 @@
 
 #include "list.h"
 #include "dynarray.h"
-#include "option.h"
-#include "fallible_cmp.h"
-#include "fallible_hash.h"
+#include <peff/utils/option.h>
+#include <peff/utils/fallible_cmp.h>
+#include <peff/utils/fallible_hash.h>
 #include "misc.h"
 #include <peff/utils/hash.h>
 #include <peff/base/scope_guard.h>

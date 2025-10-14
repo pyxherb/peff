@@ -72,9 +72,9 @@ struct Coroutine {
 		}
 	};
 
-	std::coroutine_handle<promise_type> coroutineHandle;
+	Handle coroutineHandle;
 
-	Coroutine(std::coroutine_handle<promise_type> coroutineHandle) : coroutineHandle(coroutineHandle) {}
+	Coroutine(Handle coroutineHandle) : coroutineHandle(coroutineHandle) {}
 	~Coroutine() {
 		if (coroutineHandle)
 			coroutineHandle.destroy();

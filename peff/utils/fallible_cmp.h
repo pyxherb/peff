@@ -2,8 +2,9 @@
 #define _PEFF_CONTAINERS_FALLIBLE_CMP_H_
 
 #include "basedefs.h"
-#include <peff/base/alloc.h>
 #include "option.h"
+#include <peff/base/alloc.h>
+#include <peff/utils/option.h>
 
 namespace peff {
 	template <typename T>

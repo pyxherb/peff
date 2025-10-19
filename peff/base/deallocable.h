@@ -15,8 +15,8 @@ namespace peff {
 
 #if __cplusplus >= 202002L
 	template <typename T>
-	concept DeallocableConcept = requires(T * rcObject) {
-		rcObject->dealloc(0);
+	concept DeallocableConcept = requires(T * ptr) {
+		ptr->dealloc();
 	};
 #endif
 

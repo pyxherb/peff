@@ -26,8 +26,6 @@ namespace peff {
 
 		PEFF_FORCEINLINE String &operator=(String &&rhs) noexcept {
 			verifyAlloc(allocator(), rhs.allocator());
-			_dynArray.clear();
-
 			_dynArray = std::move(rhs._dynArray);
 
 			return *this;
@@ -219,17 +217,17 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool operator>(const String &rhs) const {
-			if (rhs.size() > size())
+			if (size() > rhs.size())
 				return true;
-			if (rhs.size() < size())
+			if (size() < rhs.size())
 				return false;
 			return memcmp(_dynArray.data(), rhs.data(), size()) > 0;
 		}
 
 		PEFF_FORCEINLINE bool operator<(const String &rhs) const {
-			if (rhs.size() < size())
+			if (size() < rhs.size())
 				return true;
-			if (rhs.size() > size())
+			if (size() > rhs.size())
 				return false;
 			return memcmp(_dynArray.data(), rhs.data(), size()) < 0;
 		}

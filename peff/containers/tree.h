@@ -140,9 +140,9 @@ namespace peff {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(i->value, key);
 
-						if (result.value() < 0)
+						if (result.value() > 0)
 							i = (Node *)i->r;
-						else if (result.value() > 0)
+						else if (result.value() < 0)
 							i = (Node *)i->l;
 						else
 							return i;
@@ -178,9 +178,9 @@ namespace peff {
 				while (i) {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(i->value, key);
-						if (result < 0)
+						if (result > 0)
 							i = (Node *)i->r;
-						else if (result > 0)
+						else if (result < 0)
 							i = (Node *)i->l;
 						else
 							return i;
@@ -209,9 +209,9 @@ namespace peff {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator((*i)->value, key);
 
-						if (result.value() < 0)
+						if (result.value() > 0)
 							i = (Node **)&(*i)->r;
-						else if (result.value() > 0)
+						else if (result.value() < 0)
 							i = (Node **)&(*i)->l;
 						else
 							return i;
@@ -250,9 +250,9 @@ namespace peff {
 
 						auto &&result = _comparator((*i)->value, key);
 
-						if (result < 0) {
+						if (result > 0) {
 							i = (Node **)&((*i)->r);
-						} else if (result > 0) {
+						} else if (result < 0) {
 							i = (Node **)&((*i)->l);
 						} else
 							return nullptr;
@@ -287,9 +287,9 @@ namespace peff {
 			if constexpr (Fallible) {
 				if constexpr (IsThreeway) {
 					if (auto &&result = _comparator(node->value, parent->value); result.hasValue()) {
-						if (result.value() < 0)
+						if (result.value() > 0)
 							parent->l = node;
-						else if (result.value() > 0)
+						else if (result.value() < 0)
 							parent->r = node;
 						else
 							assert(false);

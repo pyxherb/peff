@@ -4,13 +4,13 @@
 #include "tree.h"
 
 namespace peff {
-	template <typename T, typename Comparator, bool Fallible>
+	template <typename T, typename Comparator, bool Fallible, bool IsThreeway>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class SetImpl final {
 	private:
-		using Tree = std::conditional_t<Fallible, FallibleRBTree<T, Comparator>, RBTree<T, Comparator>>;
+		using Tree = std::conditional_t<Fallible, FallibleRBTree<T, Comparator, IsThreeway>, RBTree<T, Comparator, IsThreeway>>;
 		Tree _tree;
-		using ThisType = SetImpl<T, Comparator, Fallible>;
+		using ThisType = SetImpl<T, Comparator, Fallible, IsThreeway>;
 	public:
 		using RemoveResultType = typename std::conditional_t<Fallible, bool, void>;
 		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<T &>, T &>;
@@ -37,7 +37,7 @@ namespace peff {
 			if (!node)
 				return false;
 
-#ifndef NDEBUG
+#ifndef _NDEBUG
 			_tree.verify();
 #endif
 
@@ -302,10 +302,10 @@ namespace peff {
 		}
 	};
 
-	template <typename T, typename Comparator = std::less<T>>
-	using Set = SetImpl<T, Comparator, false>;
-	template <typename T, typename Comparator = FallibleLt<T>>
-	using FallibleSet = SetImpl<T, Comparator, true>;
+	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false>
+	using Set = SetImpl<T, Comparator, false, IsThreeway>;
+	template <typename T, typename Comparator = FallibleLt<T>, bool IsThreeway = false>
+	using FallibleSet = SetImpl<T, Comparator, true, IsThreeway>;
 }
 
 #endif

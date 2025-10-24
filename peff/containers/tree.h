@@ -64,7 +64,8 @@ namespace peff {
 
 	template <typename T,
 		typename Comparator,
-		bool Fallible>
+		bool Fallible,
+		bool IsThreeway>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class RBTreeImpl : protected RBTreeBase {
 	public:
@@ -79,9 +80,9 @@ namespace peff {
 		using ComparatorType = Comparator;
 
 	protected:
-		using NodeQueryResultType = typename std::conditional<Fallible, Option<Node*>, Node *>::type;
+		using NodeQueryResultType = typename std::conditional<Fallible, Option<Node *>, Node *>::type;
 
-		using ThisType = RBTreeImpl<T, Comparator, Fallible>;
+		using ThisType = RBTreeImpl<T, Comparator, Fallible, IsThreeway>;
 
 		Comparator _comparator;
 		RcObjectPtr<Alloc> _allocator;
@@ -135,42 +136,63 @@ namespace peff {
 			Node *i = (Node *)_root;
 
 			if constexpr (Fallible) {
-				Option<bool> result;
-
 				while (i) {
-					if ((result = _comparator(i->value, key)).hasValue()) {
-						if (result.value()) {
-#ifndef _NDEBUG
-							if ((result = _comparator(key, i->value)).hasValue()) {
-								assert(!result.value());
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator(i->value, key);
+
+						if (result.value() < 0)
+							i = (Node *)i->r;
+						else if (result.value() > 0)
+							i = (Node *)i->l;
+						else
+							return i;
+					} else {
+						Option<bool> result;
+
+						if ((result = _comparator(i->value, key)).hasValue()) {
+							if (result.value()) {
+#ifndef NDEBUG
+								if ((result = _comparator(key, i->value)).hasValue()) {
+									assert(!result.value());
+									i = (Node *)i->r;
+								} else {
+									return NULL_OPTION;
+								}
+#else
 								i = (Node *)i->r;
+#endif
+							} else if ((result = _comparator(key, i->value)).hasValue()) {
+								if (result.value()) {
+									i = (Node *)i->l;
+								} else
+									return i;
 							} else {
 								return NULL_OPTION;
 							}
-#else
-							i = (Node *)i->r;
-#endif
-						} else if ((result = _comparator(key, i->value)).hasValue()) {
-							if (result.value()) {
-								i = (Node *)i->l;
-							} else
-								return i;
 						} else {
 							return NULL_OPTION;
 						}
-					} else {
-						return NULL_OPTION;
 					}
 				}
 			} else {
 				while (i) {
-					if (_comparator(i->value, key)) {
-						assert(!_comparator(key, i->value));
-						i = (Node *)i->r;
-					} else if (_comparator(key, i->value)) {
-						i = (Node *)i->l;
-					} else
-						return i;
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator(i->value, key);
+						if (result < 0)
+							i = (Node *)i->r;
+						else if (result > 0)
+							i = (Node *)i->l;
+						else
+							return i;
+					} else {
+						if (_comparator(i->value, key)) {
+							assert(!_comparator(key, i->value));
+							i = (Node *)i->r;
+						} else if (_comparator(key, i->value)) {
+							i = (Node *)i->l;
+						} else
+							return i;
+					}
 				}
 			}
 			return nullptr;
@@ -181,46 +203,72 @@ namespace peff {
 			parentOut = nullptr;
 
 			if constexpr (Fallible) {
-				Option<bool> result;
-
 				while (*i) {
 					parentOut = *i;
 
-					if ((result = _comparator((*i)->value, key)).hasValue()) {
-						if (result.value()) {
-#ifndef _NDEBUG
-							if ((result = _comparator(key, (*i)->value)).hasValue()) {
-								assert(!result.value());
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator((*i)->value, key);
+
+						if (result.value() < 0)
+							i = (Node **)&(*i)->r;
+						else if (result.value() > 0)
+							i = (Node **)&(*i)->l;
+						else
+							return i;
+					} else {
+						Option<bool> result;
+
+						if ((result = _comparator((*i)->value, key)).hasValue()) {
+							if (result.value()) {
+#ifndef NDEBUG
+								if ((result = _comparator(key, (*i)->value)).hasValue()) {
+									assert(!result.value());
+									i = (Node **)&(*i)->r;
+								} else {
+									return nullptr;
+								}
+#else
 								i = (Node **)&(*i)->r;
+#endif
+							} else if ((result = _comparator(key, (*i)->value)).hasValue()) {
+								if (result.value()) {
+									i = (Node **)&(*i)->l;
+								} else
+									return i;
 							} else {
 								return nullptr;
 							}
-#else
-							i = (Node **)&(*i)->r;
-#endif
-						} else if ((result = _comparator(key, (*i)->value)).hasValue()) {
-							if (result.value()) {
-								i = (Node **)&(*i)->l;
-							} else
-								return i;
 						} else {
 							return nullptr;
 						}
-					} else {
-						return nullptr;
 					}
 				}
 			} else {
-				while (*i) {
-					parentOut = *i;
+				if constexpr (IsThreeway) {
+					while (*i) {
+						parentOut = *i;
 
-					if (_comparator((*i)->value, key)) {
-						assert(!_comparator(key, (*i)->value));
-						i = (Node **)&((*i)->r);
-					} else if (_comparator(key, (*i)->value)) {
-						i = (Node **)&((*i)->l);
-					} else
-						return nullptr;
+						auto &&result = _comparator((*i)->value, key);
+
+						if (result < 0) {
+							i = (Node **)&((*i)->r);
+						} else if (result > 0) {
+							i = (Node **)&((*i)->l);
+						} else
+							return nullptr;
+					}
+				} else {
+					while (*i) {
+						parentOut = *i;
+
+						if (_comparator((*i)->value, key)) {
+							assert(!_comparator(key, (*i)->value));
+							i = (Node **)&((*i)->r);
+						} else if (_comparator(key, (*i)->value)) {
+							i = (Node **)&((*i)->l);
+						} else
+							return nullptr;
+					}
 				}
 			}
 			return i;
@@ -237,7 +285,18 @@ namespace peff {
 			}
 
 			if constexpr (Fallible) {
-				{
+				if constexpr (IsThreeway) {
+					if (auto &&result = _comparator(node->value, parent->value); result.hasValue()) {
+						if (result.value() < 0)
+							parent->l = node;
+						else if (result.value() > 0)
+							parent->r = node;
+						else
+							assert(false);
+					} else {
+						return false;
+					}
+				} else {
 					Option<bool> result;
 					if ((result = _comparator(node->value, parent->value)).hasValue()) {
 						if (result.value())
@@ -247,23 +306,27 @@ namespace peff {
 					} else {
 						return false;
 					}
-					node->p = parent;
-					node->color = RBColor::Red;
-
-					_insertFixUp(node);
 				}
 			} else {
-				{
+				if (IsThreeway) {
+					auto &&result = _comparator(node->value, parent->value);
+					if (result > 0)
+						parent->l = node;
+					else if (result < 0)
+						parent->r = node;
+					else
+						assert(false);
+				} else {
 					if (_comparator(node->value, parent->value))
 						parent->l = node;
 					else
 						parent->r = node;
-					node->p = parent;
-					node->color = RBColor::Red;
-
-					_insertFixUp(node);
 				}
 			}
+			node->p = parent;
+			node->color = RBColor::Red;
+
+			_insertFixUp(node);
 
 		updateNodeCaches:
 			_cachedMinNode = _getMinNode(_root);
@@ -523,12 +586,12 @@ namespace peff {
 					if (node == tree->_cachedMinNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = ThisType::getNextNode(node, nullptr);
+					node = ThisType::getPrevNode(node, nullptr);
 				} else {
 					if (node == tree->_cachedMaxNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = ThisType::getPrevNode(node, nullptr);
+					node = ThisType::getNextNode(node, nullptr);
 				}
 
 				return *this;
@@ -707,10 +770,10 @@ namespace peff {
 		}
 	};
 
-	template <typename T, typename Comparator = std::less<T>>
-	using RBTree = RBTreeImpl<T, Comparator, false>;
-	template <typename T, typename Comparator = peff::FallibleLt<T>>
-	using FallibleRBTree = RBTreeImpl<T, Comparator, true>;
+	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false>
+	using RBTree = RBTreeImpl<T, Comparator, false, IsThreeway>;
+	template <typename T, typename Comparator = peff::FallibleLt<T>, bool IsThreeway = false>
+	using FallibleRBTree = RBTreeImpl<T, Comparator, true, IsThreeway>;
 }
 
 #endif

@@ -27,6 +27,13 @@ namespace peff {
 			return lhs == rhs;
 		}
 	};
+
+	template <typename T>
+	struct FallibleCmpThreeway {
+		Option<bool> operator()(const T &lhs, const T &rhs) const {
+			return lhs <=> rhs;
+		}
+	};
 }
 
 #endif

@@ -4,7 +4,7 @@
 #include "set.h"
 
 namespace peff {
-	template <typename K, typename V, typename Lt, bool Fallible>
+	template <typename K, typename V, typename Lt, bool Fallible, bool IsThreeway>
 	class MapImpl final {
 	private:
 		struct Pair {
@@ -21,22 +21,22 @@ namespace peff {
 		};
 
 		struct PairComparator {
-			Lt ltComparator;
+			Lt innerComparator;
 
-			PEFF_FORCEINLINE PairComparator(Lt &&ltComparator) : ltComparator(std::move(ltComparator)) {}
+			PEFF_FORCEINLINE PairComparator(Lt &&innerComparator) : innerComparator(std::move(innerComparator)) {}
 
 			PEFF_FORCEINLINE decltype(std::declval<Lt>()(std::declval<K>(), std::declval<K>())) operator()(const Pair &lhs, const Pair &rhs) const {
 				const K &l = lhs.isForQuery ? *((const QueryPair &)lhs).queryKey : lhs.key,
 						&r = rhs.isForQuery ? *((const QueryPair &)rhs).queryKey : rhs.key;
-				return ltComparator(l, r);
+				return innerComparator(l, r);
 			}
 		};
 
-		using SetType = std::conditional_t<Fallible, FallibleSet<Pair, PairComparator>, Set<Pair, PairComparator>>;
+		using SetType = std::conditional_t<Fallible, FallibleSet<Pair, PairComparator, IsThreeway>, Set<Pair, PairComparator, IsThreeway>>;
 
 		SetType _set;
 
-		using ThisType = MapImpl<K, V, Lt, Fallible>;
+		using ThisType = MapImpl<K, V, Lt, Fallible, IsThreeway>;
 
 		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
 			((QueryPair *)dest)->isForQuery = true;
@@ -124,11 +124,11 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Lt &comparator() {
-			return _set.comparator().ltComparator;
+			return _set.comparator().innerComparator;
 		}
 
 		PEFF_FORCEINLINE const Lt &comparator() const {
-			return _set.comparator().ltComparator;
+			return _set.comparator().innerComparator;
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -357,10 +357,10 @@ namespace peff {
 		}
 	};
 
-	template <typename K, typename V, typename Lt = std::less<K>>
-	using Map = MapImpl<K, V, Lt, false>;
-	template <typename K, typename V, typename Lt = std::less<K>>
-	using FallibleMap = MapImpl<K, V, Lt, true>;
+	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false>
+	using Map = MapImpl<K, V, Lt, false, IsThreeway>;
+	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false>
+	using FallibleMap = MapImpl<K, V, Lt, true, IsThreeway>;
 }
 
 #endif

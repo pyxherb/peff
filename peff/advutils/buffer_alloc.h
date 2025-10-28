@@ -14,12 +14,16 @@ namespace peff {
 		struct AllocDesc;
 
 		struct AllocDescComparator {
-			PEFF_FORCEINLINE bool operator()(const void *lhs, const void *rhs) const {
-				return lhs < rhs;
+			PEFF_FORCEINLINE int operator()(const void *lhs, const void *rhs) const {
+				if (lhs < rhs)
+					return -1;
+				if (lhs > rhs)
+					return 1;
+				return 0;
 			}
 		};
 
-		struct AllocDesc : public RBTree<void *, AllocDescComparator>::Node {
+		struct AllocDesc : public RBTree<void *, AllocDescComparator, true>::Node {
 			size_t size;
 			size_t alignment;
 			AllocDesc *descBase;
@@ -29,7 +33,7 @@ namespace peff {
 
 		char *buffer;
 		size_t bufferSize;
-		RBTree<void *, AllocDescComparator> allocDescs;
+		RBTree<void *, AllocDescComparator, true> allocDescs;
 
 		PEFF_ADVUTILS_API BufferAlloc(char *buffer, size_t bufferSize);
 		PEFF_ADVUTILS_API BufferAlloc(BufferAlloc &&rhs) noexcept;

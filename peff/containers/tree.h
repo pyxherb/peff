@@ -391,45 +391,73 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE Node *getMaxLteqNode(const T &data) {
+		PEFF_FORCEINLINE NodeQueryResultType getMaxLteqNode(const T &data) {
 			Node *curNode = (Node *)_root, *maxNode = NULL;
 
 			if constexpr (Fallible) {
-				Option<bool> result;
-
 				while (curNode) {
-					if ((result = _comparator(curNode->value, data)).hasValue()) {
-						if (result.value()) {
-							if ((result = _comparator(data, curNode->value)).hasValue()) {
-								assert(!result.value());
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator(curNode->value, data);
+
+						if (result.value() > 0) {
+							maxNode = curNode;
+							curNode = (Node *)curNode->r;
+						}
+						else if (result.value() < 0)
+							curNode = (Node *)curNode->l;
+						else
+							return curNode;
+					} else {
+						Option<bool> result;
+
+						if ((result = _comparator(curNode->value, data)).hasValue()) {
+							if (result.value()) {
+#ifndef NDEBUG
+								if ((result = _comparator(data, i->value)).hasValue()) {
+									assert(!result.value());
+									i = (Node *)i->r;
+								} else {
+									return NULL_OPTION;
+								}
+#else
 								maxNode = curNode;
 								curNode = (Node *)curNode->r;
+#endif
+							} else if ((result = _comparator(data, curNode->value)).hasValue()) {
+								if (result.value()) {
+									curNode = (Node *)curNode->l;
+								} else
+									return curNode;
 							} else {
-								return nullptr;
-							}
-						} else if ((result = _comparator(data, curNode->value)).hasValue()) {
-							if (result.value()) {
-								curNode = (Node *)curNode->l;
-							} else {
-								return curNode;
+								return NULL_OPTION;
 							}
 						} else {
-							return nullptr;
+							return NULL_OPTION;
 						}
-					} else {
-						return nullptr;
 					}
 				}
 			} else {
 				while (curNode) {
-					if (_comparator(curNode->value, data)) {
-						assert(!_comparator(data, curNode->value));
-						maxNode = curNode;
-						curNode = (Node *)curNode->r;
-					} else if (_comparator(data, curNode->value)) {
-						curNode = (Node *)curNode->l;
-					} else
-						return curNode;
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator(curNode->value, data);
+						if (result > 0) {
+							maxNode = curNode;
+							curNode = (Node *)curNode->r;
+						}
+						else if (result < 0)
+							curNode = (Node *)curNode->l;
+						else
+							return curNode;
+					} else {
+						if (_comparator(curNode->value, data)) {
+							assert(!_comparator(data, curNode->value));
+							maxNode = curNode;
+							curNode = (Node *)curNode->r;
+						} else if (_comparator(data, curNode->value)) {
+							curNode = (Node *)curNode->l;
+						} else
+							return curNode;
+					}
 				}
 			}
 
@@ -581,6 +609,12 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE Iterator next() {
+				Iterator iterator = *this;
+
+				return ++iterator;
+			}
+
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
 					if (node == tree->_cachedMinNode)
@@ -601,6 +635,12 @@ namespace peff {
 				Iterator it = *this;
 				--(*this);
 				return it;
+			}
+
+			PEFF_FORCEINLINE Iterator prev() {
+				Iterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Node *node) const noexcept {
@@ -706,6 +746,12 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE ConstIterator next() {
+				ConstIterator iterator = *this;
+
+				return ++iterator;
+			}
+
 			PEFF_FORCEINLINE ConstIterator &operator--() {
 				--_iterator;
 				return *this;
@@ -715,6 +761,12 @@ namespace peff {
 				ConstIterator it = *this;
 				--(*this);
 				return it;
+			}
+
+			PEFF_FORCEINLINE ConstIterator prev() {
+				ConstIterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const {

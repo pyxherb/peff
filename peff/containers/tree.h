@@ -413,9 +413,9 @@ namespace peff {
 						if ((result = _comparator(curNode->value, data)).hasValue()) {
 							if (result.value()) {
 #ifndef NDEBUG
-								if ((result = _comparator(data, i->value)).hasValue()) {
+								if ((result = _comparator(data, curNode->value)).hasValue()) {
 									assert(!result.value());
-									i = (Node *)i->r;
+									curNode = (Node *)curNode->r;
 								} else {
 									return NULL_OPTION;
 								}

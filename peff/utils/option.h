@@ -43,6 +43,10 @@ namespace peff {
 			return _hasValue;
 		}
 
+		PEFF_FORCEINLINE operator bool() const noexcept {
+			return _hasValue;
+		}
+
 		PEFF_FORCEINLINE T &value() noexcept {
 			assert(hasValue());
 			return *((T *)_data);
@@ -133,6 +137,10 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool hasValue() const noexcept {
+			return _hasValue;
+		}
+
+		PEFF_FORCEINLINE operator bool() const noexcept {
 			return _hasValue;
 		}
 

@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <peff/utils/byteord.h>
 #include <peff/containers/set.h>
 #include <peff/containers/dynarray.h>
 #include <peff/containers/string.h>
@@ -378,6 +379,13 @@ int main() {
 		alloc.release(oldP2, 1023 * 2, sizeof(std::max_align_t));
 		alloc.release(oldP3, 1023 * 3, sizeof(std::max_align_t));
 	}
+
+	bool endian = peff::getByteOrder();
+
+	if (endian)
+		puts("Big endian");
+	else
+		puts("Little endian");
 
 	return 0;
 }

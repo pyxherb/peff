@@ -1,5 +1,5 @@
-#ifndef _PEFF_CONTAINERS_FALLIBLE_HASH_H_
-#define _PEFF_CONTAINERS_FALLIBLE_HASH_H_
+#ifndef _PEFF_UTILS_FALLIBLE_HASH_H_
+#define _PEFF_UTILS_FALLIBLE_HASH_H_
 
 #include "basedefs.h"
 #include "option.h"

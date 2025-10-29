@@ -2,6 +2,7 @@
 #define _PEFF_ADVUTILS_UNIQUE_PTR_H_
 
 #include "basedefs.h"
+#include <peff/utils/pair.h>
 #include <memory>
 #include <atomic>
 
@@ -11,36 +12,35 @@ namespace peff {
 	private:
 		using ThisType = UniquePtr<T, D>;
 
-		T *_ptr = nullptr;
-		D _deleter;
+		CompressedPair<T *, D> _pair;
 
 	public:
 		PEFF_FORCEINLINE D &deleter() noexcept {
-			return _deleter;
+			return _pair.second();
 		}
 
 		PEFF_FORCEINLINE const D &deleter() const noexcept {
-			return _deleter;
+			return _pair.second();
 		}
 
 		PEFF_FORCEINLINE void reset() noexcept {
-			if (_ptr)
-				_deleter(_ptr);
+			if (T *ptr = _pair.first(); ptr)
+				_pair.second()(ptr);
 		}
 
-		PEFF_FORCEINLINE T* release() noexcept {
-			T *p = _ptr;
-			_ptr = nullptr;
+		PEFF_FORCEINLINE T *release() noexcept {
+			T *p = _pair.first();
+			_pair.first() = nullptr;
 			return p;
 		}
 
-		PEFF_FORCEINLINE UniquePtr() : _ptr(nullptr) {
+		PEFF_FORCEINLINE UniquePtr() : _pair(nullptr, D{}) {
 		}
-		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _ptr(ptr) {
+		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _pair(ptr, D{}) {
 		}
 		UniquePtr(const ThisType &) = delete;
-		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _ptr(other._ptr), _deleter(std::move(other._deleter)) {
-			other._ptr = nullptr;
+		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _pair(other._pair.first(), std::move(other._pair.second())) {
+			other._pair.first() = nullptr;
 		}
 		PEFF_FORCEINLINE ~UniquePtr() {
 			reset();
@@ -48,155 +48,59 @@ namespace peff {
 
 		PEFF_FORCEINLINE ThisType &operator=(T *_ptr) noexcept {
 			reset();
-			this->_ptr = _ptr;
+			this->_pair.first() = _ptr;
 			return *this;
 		}
-		PEFF_FORCEINLINE ThisType &operator=(RcObjectPtr<T> &&other) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
 			reset();
 
-			std::atomic_exchange(_ptr, other._ptr);
-			_deleter = other._deleter;
-
-			return *this;
-		}
-
-		PEFF_FORCEINLINE T *get() const noexcept {
-			return _ptr;
-		}
-		PEFF_FORCEINLINE T *&getRef() noexcept {
-			reset();
-			return _ptr;
-		}
-		PEFF_FORCEINLINE T *&getRefWithoutRelease() noexcept {
-			return _ptr;
-		}
-		PEFF_FORCEINLINE T *const &getRefWithoutRelease() const noexcept {
-			return _ptr;
-		}
-		PEFF_FORCEINLINE T **getAddressOf() noexcept {
-			reset();
-			return &_ptr;
-		}
-		PEFF_FORCEINLINE T **getAddressOfWithoutRelease() noexcept {
-			return &_ptr;
-		}
-		PEFF_FORCEINLINE T *const *getAddressOfWithoutRelease() const noexcept {
-			return &_ptr;
-		}
-		PEFF_FORCEINLINE T *operator->() const noexcept {
-			return _ptr;
-		}
-
-		PEFF_FORCEINLINE bool operator<(const ThisType &rhs) const noexcept {
-			return _ptr < rhs._ptr;
-		}
-
-		PEFF_FORCEINLINE explicit operator bool() const noexcept {
-			return _ptr;
-		}
-
-		PEFF_FORCEINLINE bool operator==(const ThisType &rhs) const noexcept {
-			return _ptr == rhs._ptr;
-		}
-
-		PEFF_FORCEINLINE bool operator!=(const ThisType &rhs) const noexcept {
-			return _ptr != rhs._ptr;
-		}
-	};
-
-	template <typename T, typename D>
-	class UniquePtr<T[], D> {
-	private:
-		using ThisType = UniquePtr<T[], D>;
-
-		T *_ptr = nullptr;
-		D _deleter;
-
-	public:
-		PEFF_FORCEINLINE D &deleter() noexcept {
-			return _deleter;
-		}
-
-		PEFF_FORCEINLINE const D &deleter() const noexcept {
-			return _deleter;
-		}
-
-		PEFF_FORCEINLINE void reset() noexcept {
-			if (_ptr)
-				_deleter(_ptr);
-		}
-
-		PEFF_FORCEINLINE UniquePtr() : _ptr(nullptr) {
-		}
-		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _ptr(ptr) {
-		}
-		PEFF_FORCEINLINE UniquePtr(const ThisType &other) = delete;
-		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _ptr(nullptr)._deleter(std::move(other._deleter)) {
-			std::atomic_exchange(_ptr, other._ptr);
-		}
-		PEFF_FORCEINLINE ~UniquePtr() {
-			reset();
-		}
-
-		PEFF_FORCEINLINE ThisType &operator=(T *_ptr) noexcept {
-			reset();
-			this->_ptr = _ptr;
-			return *this;
-		}
-		PEFF_FORCEINLINE ThisType &operator=(RcObjectPtr<T> &&other) noexcept {
-			reset();
-
-			std::atomic_exchange(_ptr, other._ptr);
-			_deleter = other._deleter;
+			std::swap(_pair.first(), other._pair.first());
+			_pair.second() = std::move(other._pair.second());
 
 			return *this;
 		}
 
 		PEFF_FORCEINLINE T *get() const noexcept {
-			return _ptr;
+			return _pair.first();
 		}
 		PEFF_FORCEINLINE T *&getRef() noexcept {
 			reset();
-			return _ptr;
+			return _pair.first();
 		}
 		PEFF_FORCEINLINE T *&getRefWithoutRelease() noexcept {
-			return _ptr;
+			return _pair.first();
 		}
 		PEFF_FORCEINLINE T *const &getRefWithoutRelease() const noexcept {
-			return _ptr;
+			return _pair.first();
 		}
 		PEFF_FORCEINLINE T **getAddressOf() noexcept {
 			reset();
-			return &_ptr;
+			return &_pair.first();
 		}
 		PEFF_FORCEINLINE T **getAddressOfWithoutRelease() noexcept {
-			return &_ptr;
+			return &_pair.first();
 		}
 		PEFF_FORCEINLINE T *const *getAddressOfWithoutRelease() const noexcept {
-			return &_ptr;
+			return &_pair.first();
 		}
 		PEFF_FORCEINLINE T *operator->() const noexcept {
-			return _ptr;
+			return _pair.first();
 		}
 
 		PEFF_FORCEINLINE bool operator<(const ThisType &rhs) const noexcept {
-			return _ptr < rhs._ptr;
+			return _pair.first() < rhs._pair.first();
 		}
 
 		PEFF_FORCEINLINE explicit operator bool() const noexcept {
-			return _ptr;
+			return _pair.first();
 		}
 
 		PEFF_FORCEINLINE bool operator==(const ThisType &rhs) const noexcept {
-			return _ptr == rhs._ptr;
+			return _pair.first() == rhs._pair.first();
 		}
 
 		PEFF_FORCEINLINE bool operator!=(const ThisType &rhs) const noexcept {
-			return _ptr != rhs._ptr;
-		}
-
-		PEFF_FORCEINLINE T& operator[](size_t index) const noexcept {
-			return _ptr[index];
+			return _pair.first() != rhs._pair.first();
 		}
 	};
 }

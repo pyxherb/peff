@@ -467,32 +467,34 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
+		[[nodiscard]] PEFF_FORCEINLINE bool extractRange(size_t idxStart, size_t idxEnd) {
 			const size_t newLength = idxEnd - idxStart;
 
 			if (newLength == _length)
-				return;
+				return true;
 
 			if (!newLength) {
 				clear();
-				return;
+				return true;
 			}
 
 			if (idxStart) {
 				_moveData(_data.first(), _data.first() + idxStart, newLength);
-				if (!_resize<false>(newLength, false)) {
+				if (!_resize<false>(newLength, true)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
 				}
 			} else {
-				if (!_resize<false>(newLength, false)) {
+				if (!_resize<false>(newLength, true)) {
 					// Destruct the trailing elements.
 					_destructData(_data.first() + idxStart, idxEnd - idxStart);
 				}
 			}
+
+			return _resize<false>(newLength, true);
 		}
 
-		PEFF_FORCEINLINE void extractRangeAndResizeCapacity(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE void extractRangeWithoutShrink(size_t idxStart, size_t idxEnd) {
 			const size_t newLength = idxEnd - idxStart;
 
 			if (newLength == _length)
@@ -505,12 +507,12 @@ namespace peff {
 
 			if (idxStart) {
 				_moveData(_data.first(), _data.first() + idxStart, newLength);
-				if (!_resize<false>(newLength, true)) {
+				if (!_resize<false>(newLength, false)) {
 					// Change the length, but keep the capacity unchanged.
 					_length = newLength;
 				}
 			} else {
-				if (!_resize<false>(newLength, true)) {
+				if (!_resize<false>(newLength, false)) {
 					// Destruct the trailing elements.
 					_destructData(_data.first() + idxStart, idxEnd - idxStart);
 				}
@@ -589,34 +591,34 @@ namespace peff {
 			return _length;
 		}
 
-		PEFF_FORCEINLINE bool resize(size_t length) {
-			return _resize<true>(length, false);
-		}
-
-		PEFF_FORCEINLINE bool resizeAndResizeCapacity(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resize(size_t length) {
 			return _resize<true>(length, true);
 		}
 
-		PEFF_FORCEINLINE bool resizeWith(size_t length, const T &filler) {
-			return _resizeWith(length, filler, false);
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrink(size_t length) {
+			return _resize<true>(length, false);
 		}
 
-		PEFF_FORCEINLINE bool resizeWithAndResizeCapacity(size_t length, const T &filler) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeWith(size_t length, const T &filler) {
 			return _resizeWith(length, filler, true);
 		}
 
-		PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
-			return _resize<false>(length, false);
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrinkWith(size_t length, const T &filler) {
+			return _resizeWith(length, filler, false);
 		}
 
-		PEFF_FORCEINLINE bool resizeUninitializedAndResizeCapacity(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
 			return _resize<false>(length, true);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrinkUninitialized(size_t length) {
+			return _resize<false>(length, false);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool build(const ThisType &rhs) {
 			clear();
 
-			if (!resizeUninitializedAndResizeCapacity(rhs.size())) {
+			if (!resizeUninitialized(rhs.size())) {
 				return false;
 			}
 
@@ -696,22 +698,22 @@ namespace peff {
 			return at(_length - 1);
 		}
 
-		PEFF_FORCEINLINE void popBack() {
-			bool unused = resizeUninitialized(_length - 1);
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndResizeCapacity() {
+		[[nodiscard]] PEFF_FORCEINLINE bool popBack() {
 			return resizeUninitialized(_length - 1);
 		}
 
-		PEFF_FORCEINLINE void popFront() {
-			_moveData(_data.first(), _data.first() + 1, _length - 1);
-			bool unused = resize(_length - 1);
+		PEFF_FORCEINLINE bool popBackWithoutShrink() {
+			bool unused = resizeUninitialized(_length - 1);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndResizeCapacity() {
+		[[nodiscard]] PEFF_FORCEINLINE bool popFront() {
 			_moveData(_data.first(), _data.first() + 1, _length - 1);
 			return resize(_length - 1);
+		}
+
+		PEFF_FORCEINLINE void popFrontWithoutShrink() {
+			_moveData(_data.first(), _data.first() + 1, _length - 1);
+			bool unused = resize(_length - 1);
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {

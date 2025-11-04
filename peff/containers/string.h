@@ -90,21 +90,21 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE void popFront() {
-			_dynArray.popFront();
+		PEFF_FORCEINLINE void popFrontWithoutShrink() {
+			_dynArray.popFrontWithoutShrink();
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndResizeCapacity() {
-			return _dynArray.popFrontAndResizeCapacity();
+		[[nodiscard]] PEFF_FORCEINLINE bool popFront() {
+			return _dynArray.popFront();
 		}
 
-		PEFF_FORCEINLINE void popBack() {
-			_dynArray.popBack();
+		PEFF_FORCEINLINE void popBackWithoutShrink() {
+			_dynArray.popBackWithoutShrink();
 			_dynArray.back() = '\0';
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndResizeCapacity() {
-			if(!_dynArray.popBackAndResizeCapacity())
+		[[nodiscard]] PEFF_FORCEINLINE bool popBack() {
+			if(!_dynArray.popBack())
 				return false;
 			_dynArray.back() = '\0';
 			return true;

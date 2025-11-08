@@ -402,8 +402,7 @@ namespace peff {
 						if (result.value() > 0) {
 							maxNode = curNode;
 							curNode = (Node *)curNode->r;
-						}
-						else if (result.value() < 0)
+						} else if (result.value() < 0)
 							curNode = (Node *)curNode->l;
 						else
 							return curNode;
@@ -443,8 +442,7 @@ namespace peff {
 						if (result > 0) {
 							maxNode = curNode;
 							curNode = (Node *)curNode->r;
-						}
-						else if (result < 0)
+						} else if (result < 0)
 							curNode = (Node *)curNode->l;
 						else
 							return curNode;
@@ -620,12 +618,18 @@ namespace peff {
 					if (node == tree->_cachedMinNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = ThisType::getPrevNode(node, nullptr);
+					if (!node)
+						node = (Node*)tree->_cachedMaxNode;
+					else
+						node = ThisType::getPrevNode(node, nullptr);
 				} else {
 					if (node == tree->_cachedMaxNode)
 						throw std::logic_error("Dereasing the begin iterator");
 
-					node = ThisType::getNextNode(node, nullptr);
+					if (!node)
+						node = (Node*)tree->_cachedMinNode;
+					else
+						node = ThisType::getNextNode(node, nullptr);
 				}
 
 				return *this;

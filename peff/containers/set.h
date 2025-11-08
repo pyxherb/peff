@@ -240,10 +240,29 @@ namespace peff {
 				return *this;
 			}
 
+			PEFF_FORCEINLINE ConstIterator &operator++(int) {
+				return _iterator++;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator--() {
+				--_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator--(int) {
+				return _iterator--;
+			}
+
 			PEFF_FORCEINLINE ConstIterator next() {
 				ConstIterator iterator = *this;
 
 				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator prev() {
+				ConstIterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE const T &operator*() const {

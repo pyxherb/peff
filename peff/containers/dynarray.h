@@ -702,7 +702,7 @@ namespace peff {
 			return resizeUninitialized(_length - 1);
 		}
 
-		PEFF_FORCEINLINE bool popBackWithoutShrink() {
+		PEFF_FORCEINLINE void popBackWithoutShrink() {
 			bool unused = resizeUninitialized(_length - 1);
 		}
 

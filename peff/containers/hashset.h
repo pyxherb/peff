@@ -327,15 +327,15 @@ namespace peff {
 			return *this;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insertWithoutResizeBuckets(T &&data) {
 			return _insert(std::move(data), false);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insertAndResizeBuckets(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&data) {
 			return _insert(std::move(data), true);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType removeWithoutResizeBuckets(const T &data) {
 			if constexpr (Fallible) {
 				return _remove(data, false).hasValue();
 			} else {
@@ -343,7 +343,7 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType removeAndResizeBuckets(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType remove(const T &data) {
 			if constexpr (Fallible) {
 				auto result = _remove(data, true);
 

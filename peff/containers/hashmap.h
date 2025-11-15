@@ -102,17 +102,27 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insertWithoutResizeBuckets(K &&key, V &&value) {
+			Pair pair = Pair{ std::move(key), std::move(value), false };
+			return _set.insertWithoutResizeBuckets(std::move(pair));
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
 			Pair pair = Pair{ std::move(key), std::move(value), false };
 			return _set.insert(std::move(pair));
 		}
 
-		PEFF_FORCEINLINE bool insertAndResizeBuckets(K &&key, V &&value) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insertAndFetchKeyWithoutResizeBuckets(K &&key, V &&value) {
 			Pair pair = Pair{ std::move(key), std::move(value), false };
-			return _set.insertAndResizeBuckets(std::move(pair));
+			return _set.insertWithoutResizeBuckets(std::move(pair));
 		}
 
-		PEFF_FORCEINLINE RemoveResultType remove(const K &key) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insertAndFetchKey(K &&key, V &&value) {
+			Pair pair = Pair{ std::move(key), std::move(value), false };
+			return _set.insert(std::move(pair));
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType removeWithoutResizeBuckets(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
@@ -120,16 +130,16 @@ namespace peff {
 			if constexpr (Fallible) {
 				return _set.remove(*(QueryPair *)pair);
 			} else {
-				_set.remove(*(QueryPair *)pair);
+				_set.removeWithoutResizeBuckets(*(QueryPair *)pair);
 			}
 		}
 
-		PEFF_FORCEINLINE RemoveAndResizeResultType removeAndResizeBuckets(const K &key) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType remove(const K &key) {
 			char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
-			return _set.removeAndResizeBuckets(*(QueryPair *)pair);
+			return _set.remove(*(QueryPair *)pair);
 		}
 
 		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {

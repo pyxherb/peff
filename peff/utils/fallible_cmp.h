@@ -30,8 +30,17 @@ namespace peff {
 
 	template <typename T>
 	struct FallibleCmpThreeway {
-		Option<bool> operator()(const T &lhs, const T &rhs) const {
+		Option<int> operator()(const T &lhs, const T &rhs) const {
+#if __cplusplus >= 202002L
 			return lhs <=> rhs;
+#else
+			if (lhs < rhs)
+				return -1;
+			else if (lhs > rhs)
+				return 1;
+			else
+				return 0;
+#endif
 		}
 	};
 }

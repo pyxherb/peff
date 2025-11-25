@@ -1,6 +1,9 @@
 #ifndef _PEFF_BASE_BASEDEFS_H_
 #define _PEFF_BASE_BASEDEFS_H_
 
+#include <cstddef>
+#include <cassert>
+
 #if defined(_MSC_VER)
 	#define PEFF_DLLEXPORT __declspec(dllexport)
 	#define PEFF_DLLIMPORT __declspec(dllimport)
@@ -17,6 +20,36 @@
 	#else
 		#define PEFF_FORCEINLINE inline
 	#endif
+#endif
+
+#if defined(_MSC_VER)
+	#define PEFF_ASSUME(...) \
+		assert(__VA_ARGS__); \
+		__assume(__VA_ARGS__)
+#elif defined(__GNUC__)
+	#define PEFF_ASSUME(...) \
+		if (__VA_ARGS__)     \
+			;                \
+		else                 \
+			__builtin_assume(false)
+#elif defined(__clang__)
+	#define PEFF_ASSUME(...) \
+		assert(__VA_ARGS__); \
+		__builtin_assume(__VA_ARGS__)
+#else
+	#define PEFF_ASSUME(...) assert(__VA_ARGS__)
+#endif
+
+#if defined(_MSC_VER)
+	#define PEFF_UNREACHABLE(...) \
+		assert(false);            \
+		__assume(false);
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_UNREACHABLE(...) \
+		assert(false);            \
+		__builtin_unreachable()
+#else
+	#define PEFF_UNREACHABLE(...) std::terminate()
 #endif
 
 #if defined(_MSC_VER)

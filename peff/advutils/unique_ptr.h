@@ -36,10 +36,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE UniquePtr() : _pair(nullptr, D{}) {
 		}
-		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _pair(ptr, D{}) {
+		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _pair(+ptr, D{}) {
 		}
 		UniquePtr(const ThisType &) = delete;
-		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _pair(other._pair.first(), std::move(other._pair.second())) {
+		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _pair(+other._pair.first(), std::move(other._pair.second())) {
 			other._pair.first() = nullptr;
 		}
 		PEFF_FORCEINLINE ~UniquePtr() {

@@ -164,7 +164,7 @@ namespace peff {
 			if (!resize(oldSize + data.size()))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data.data(), data.size());
-			_dynArray.data()[data.size()] = '\0';
+			_dynArray.data()[oldSize + data.size()] = '\0';
 			return true;
 		}
 

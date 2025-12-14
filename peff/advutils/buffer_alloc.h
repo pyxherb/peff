@@ -3,7 +3,7 @@
 
 #include "basedefs.h"
 #include <peff/base/alloc.h>
-#include <peff/containers/tree.h>
+#include <peff/containers/rbtree.h>
 
 namespace peff {
 	class BufferAlloc : public Alloc {

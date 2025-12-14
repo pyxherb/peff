@@ -1,7 +1,7 @@
 #ifndef _PEFF_CONTAINERS_SET_H_
 #define _PEFF_CONTAINERS_SET_H_
 
-#include "tree.h"
+#include "rbtree.h"
 
 namespace peff {
 	template <typename T, typename Comparator, bool Fallible, bool IsThreeway>
@@ -67,7 +67,7 @@ namespace peff {
 			_tree.verify();
 		}
 
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const {
 			return _tree.size();
 		}
 

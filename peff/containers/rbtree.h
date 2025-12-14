@@ -1,5 +1,5 @@
-#ifndef _PEFF_CONTAINERS_TREE_H_
-#define _PEFF_CONTAINERS_TREE_H_
+#ifndef _PEFF_CONTAINERS_RBTREE_H_
+#define _PEFF_CONTAINERS_RBTREE_H_
 
 #include <cassert>
 #include <stdexcept>
@@ -514,7 +514,7 @@ namespace peff {
 			_cachedMinNode = nullptr;
 		}
 
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const {
 			return _nNodes;
 		}
 

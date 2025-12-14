@@ -2,7 +2,7 @@
 #define _PEFF_ADVUTILS_SHARED_PTR_H_
 
 #include "basedefs.h"
-#include <peff/containers/tree.h>
+#include <peff/base/alloc.h>
 #include <memory>
 #include <atomic>
 

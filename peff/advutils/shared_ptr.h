@@ -182,11 +182,6 @@ namespace peff {
 				return {};
 			return SharedPtr<T1>(controlBlock, static_cast<T1 *>(ptr));
 		}
-
-		template <typename T1>
-		PEFF_FORCEINLINE operator T1 *() const noexcept {
-			return static_cast<T1 *>(ptr);
-		}
 	};
 
 	template <typename T>

@@ -11,12 +11,12 @@
 namespace peff {
 	class String {
 	private:
-		using ArrayType = DynArray<char, true>;
+		using ArrayType = DynArray<char>;
 		ArrayType _dynArray;
 
 	public:
-		using Iterator = char*;
-		using ConstIterator = const char*;
+		using Iterator = char *;
+		using ConstIterator = const char *;
 
 		PEFF_FORCEINLINE String(Alloc *allocator) : _dynArray(allocator) {
 		}
@@ -55,7 +55,7 @@ namespace peff {
 			_dynArray.clear();
 		}
 
-		PEFF_FORCEINLINE char& at(size_t index) {
+		PEFF_FORCEINLINE char &at(size_t index) {
 			return _dynArray.at(index);
 		}
 
@@ -104,7 +104,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool popBack() {
-			if(!_dynArray.popBack())
+			if (!_dynArray.popBack())
 				return false;
 			_dynArray.back() = '\0';
 			return true;
@@ -119,11 +119,15 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE char *data() {
-			return _dynArray.data();
+			if (_dynArray.size())
+				return _dynArray.data();
+			return const_cast<char *>("");
 		}
 
 		PEFF_FORCEINLINE const char *data() const {
-			return _dynArray.data();
+			if (_dynArray.size())
+				return _dynArray.data();
+			return "";
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool eraseRange(size_t idxStart, size_t idxEnd) {
@@ -136,7 +140,7 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {
 			const size_t oldSize = size();
-			if(!resize(oldSize + length))
+			if (!resize(oldSize + length))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data, length);
 			return true;
@@ -145,7 +149,7 @@ namespace peff {
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data) {
 			const size_t oldSize = size();
 			const size_t dataLength = strlen(data);
-			if(!resize(oldSize + dataLength))
+			if (!resize(oldSize + dataLength))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data, dataLength);
 			return true;
@@ -153,7 +157,7 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const String &data) {
 			const size_t oldSize = size();
-			if(!resize(oldSize + data.size()))
+			if (!resize(oldSize + data.size()))
 				return false;
 			memcpy(_dynArray.data() + oldSize, data.data(), data.size());
 			return true;
@@ -198,7 +202,7 @@ namespace peff {
 			return std::string_view(_dynArray.data(), _dynArray.size() - 1);
 		}
 
-		PEFF_FORCEINLINE bool operator==(const std::string_view& rhs) const {
+		PEFF_FORCEINLINE bool operator==(const std::string_view &rhs) const {
 			if (rhs.size() != size())
 				return false;
 			return !memcmp(_dynArray.data(), rhs.data(), size());

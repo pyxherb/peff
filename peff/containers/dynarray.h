@@ -114,45 +114,6 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _expandToWith(
-			T *newData,
-			size_t length,
-			const T &data) {
-			assert(length > _length);
-
-			{
-				// Because construction of new objects may throw exceptions,
-				// we choose to construct the new objects first.
-				size_t idxLastConstructedObject;
-				ScopeGuard scopeGuard(
-					[this, &idxLastConstructedObject, newData]() noexcept {
-						for (size_t i = _length;
-							i < idxLastConstructedObject;
-							++i) {
-							std::destroy_at<T>(&newData[i]);
-						}
-					});
-
-				for (size_t i = _length;
-					i < length;
-					++i) {
-					idxLastConstructedObject = i;
-					if (!::peff::copy(newData[i], data)) {
-						return false;
-					}
-				}
-
-				scopeGuard.release();
-			}
-
-			if (newData != _data) {
-				if (_data)
-					_moveDataUninitialized(newData, _data, _length);
-			}
-
-			return true;
-		}
-
 		PEFF_FORCEINLINE void _shrink(
 			T *newData,
 			size_t length) noexcept {
@@ -270,113 +231,6 @@ namespace peff {
 					if constexpr (!std::is_trivially_constructible_v<T>) {
 						if (!_expandTo<construct>(_data, length))
 							return false;
-					}
-				} else {
-					if constexpr (!std::is_trivially_destructible_v<T>) {
-						_shrink(_data, length);
-					}
-				}
-			}
-
-			_length = length;
-			return true;
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool _resizeWith(size_t length, const T &filler, bool forceResizeCapacity) {
-			if (length == _length)
-				return true;
-
-			if (!length) {
-				_clear();
-			}
-
-			int capacityStatus = _checkCapacity(length, _capacity);
-			if (capacityStatus > 0) {
-				size_t newCapacity = _capacity ? (_capacity << 1) : length,
-					   newCapacityTotalSize = newCapacity * sizeof(T);
-
-				while (newCapacity < length)
-					newCapacity <<= 1;
-
-				T *newData;
-				bool clearOldData = true;
-
-				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if (_data) {
-						newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
-						clearOldData = false;
-					} else {
-						newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
-					}
-				} else {
-					newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
-				}
-
-				if (!newData)
-					return false;
-
-				ScopeGuard scopeGuard(
-					[this, newCapacityTotalSize, newData]() noexcept {
-						_allocator->release(newData, newCapacityTotalSize, alignof(T));
-					});
-
-				if (!_expandToWith(newData, length, filler)) {
-					return false;
-				}
-
-				scopeGuard.release();
-
-				if (clearOldData)
-					_clear();
-				_capacity = newCapacity;
-				_data = newData;
-			} else if (capacityStatus < 0) {
-				size_t newCapacity = _capacity >> 1,
-					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData;
-				bool clearOldData = true;
-
-				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if (_data) {
-						newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T));
-						clearOldData = false;
-					} else {
-						newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
-					}
-				} else {
-					newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
-				}
-
-				if (!newData) {
-					if (forceResizeCapacity) {
-						return false;
-					}
-					_length = length;
-					return true;
-				}
-
-				if constexpr (std::is_trivially_move_assignable_v<T>) {
-				} else {
-					ScopeGuard scopeGuard(
-						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, alignof(T));
-						});
-
-					_shrink(newData, length);
-
-					scopeGuard.release();
-				}
-
-				if (clearOldData)
-					_clear();
-				_capacity = newCapacity;
-				_data = newData;
-			} else {
-				if (length > _length) {
-					if constexpr (!std::is_trivially_constructible_v<T>) {
-						if (!_expandToWith(_data, length, filler)) {
-							return false;
-						}
 					}
 				} else {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
@@ -507,14 +361,13 @@ namespace peff {
 				}
 			}
 		}
-
 		/// @brief Reserve an area in front of specified index.
 		/// @param index Index to be reserved.
 		/// @param length Length of space to reserve.
 		/// @param construct Determines if to construct objects.
 		/// @return Pointer to the reserved area.
 		template <bool construct>
-		[[nodiscard]] PEFF_FORCEINLINE T *_reserveSlots(
+		[[nodiscard]] PEFF_FORCEINLINE T *_insertRange(
 			size_t index,
 			size_t length) {
 			const size_t
@@ -588,14 +441,6 @@ namespace peff {
 			return _resize<true>(length, false);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool resizeWith(size_t length, const T &filler) {
-			return _resizeWith(length, filler, true);
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrinkWith(size_t length, const T &filler) {
-			return _resizeWith(length, filler, false);
-		}
-
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
 			return _resize<false>(length, true);
 		}
@@ -613,17 +458,47 @@ namespace peff {
 
 			size_t i = 0;
 
-			while (i < _length) {
-				if (!peff::copy(_data[i], rhs._data[i])) {
-					if constexpr (!std::is_trivially_destructible_v<T>) {
-						for (size_t j = 0; j < i; ++j) {
-							std::destroy_at<T>(&_data[j]);
-						}
+			peff::ScopeGuard destructGuard([this, &i]() noexcept {
+				if constexpr (!std::is_trivially_destructible_v<T>) {
+					for (size_t j = 0; j < i; ++j) {
+						std::destroy_at<T>(&_data[j]);
 					}
-					return false;
 				}
+			});
+
+			while (i < _length) {
+				peff::constructAt<T>(&_data[i], rhs._data[i]);
 				++i;
 			}
+
+			destructGuard.release();
+
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool build(const std::initializer_list<T> &rhs) {
+			clear();
+
+			if (!resizeUninitialized(rhs.size())) {
+				return false;
+			}
+
+			size_t i = 0;
+
+			peff::ScopeGuard destructGuard([this, &i]() noexcept {
+				if constexpr (!std::is_trivially_destructible_v<T>) {
+					for (size_t j = 0; j < i; ++j) {
+						std::destroy_at<T>(&_data[j]);
+					}
+				}
+			});
+
+			for(const auto &i : rhs) {
+				peff::constructAt<T>(&_data[i], i);
+				++i;
+			}
+
+			destructGuard.release();
 
 			return true;
 		}
@@ -646,14 +521,20 @@ namespace peff {
 			return _length;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool reserveSlots(size_t index, size_t length) {
-			if (!_reserveSlots<true>(index, length))
+		[[nodiscard]] PEFF_FORCEINLINE bool insertRangeInitialized(size_t index, size_t length) {
+			if (!_insertRange<true>(index, length))
+				return false;
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool insertRangeUninitialized(size_t index, size_t length) {
+			if (!_insertRange<true>(index, length))
 				return false;
 			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(size_t index, T &&data) {
-			T *gap = (T *)_reserveSlots<false>(index, 1);
+			T *gap = (T *)_insertRange<false>(index, 1);
 
 			if (!gap)
 				return false;

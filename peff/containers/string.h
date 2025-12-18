@@ -38,15 +38,17 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool resize(size_t length) {
-			if (!_dynArray.resize(length + 1))
+			if (!_dynArray.resizeUninitialized(length + 1))
 				return false;
 			_dynArray.at(length) = '\0';
 			return true;
 		}
 
 		PEFF_FORCEINLINE bool resizeWith(size_t length, const char &filler) {
-			if (!_dynArray.resizeWith(length + 1, filler))
+			const size_t originalLength = _dynArray.size();
+			if (!_dynArray.resizeUninitialized(length + 1))
 				return false;
+			memset(_dynArray.data() + originalLength, filler, length - originalLength);
 			_dynArray.at(length) = '\0';
 			return true;
 		}
@@ -61,10 +63,6 @@ namespace peff {
 
 		PEFF_FORCEINLINE const char &at(size_t index) const {
 			return _dynArray.at(index);
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool reserveSlots(size_t index, size_t length) {
-			return _dynArray.reserveSlots(index, length);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(size_t index, char &&data) {
@@ -136,6 +134,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
 			_dynArray.extractRange(idxStart, idxEnd + 1);
+		}
+
+		PEFF_FORCEINLINE void extractRangeWithoutShrink(size_t idxStart, size_t idxEnd) {
+			_dynArray.extractRangeWithoutShrink(idxStart, idxEnd + 1);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {

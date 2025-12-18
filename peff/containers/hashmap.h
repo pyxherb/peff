@@ -123,7 +123,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType removeWithoutResizeBuckets(const K &key) {
-			char pair[sizeof(QueryPair)];
+			alignas(QueryPair) char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
@@ -135,7 +135,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType remove(const K &key) {
-			char pair[sizeof(QueryPair)];
+			alignas(QueryPair) char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
@@ -143,7 +143,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
-			char pair[sizeof(QueryPair)];
+			alignas(QueryPair) char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
@@ -151,7 +151,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
-			char pair[sizeof(QueryPair)];
+			alignas(QueryPair) char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 
@@ -168,7 +168,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
-			char pair[sizeof(QueryPair)];
+			alignas(QueryPair) char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
 

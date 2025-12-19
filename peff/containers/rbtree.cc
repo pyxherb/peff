@@ -115,7 +115,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(AbstractNode* node) {
 }
 
 PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_removeFixUp(AbstractNode* node) {
-	// Adopted from SGI STL's stl_tree, with some minor improvements.
+	// From SGI STL's stl_tree, with some minor improvements.
 	AbstractNode* y = node, * x, * p;
 
 	if (!y->l)

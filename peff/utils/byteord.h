@@ -5,6 +5,7 @@
 #include <cstdint>
 
 namespace peff {
+
 	PEFF_UTILS_API extern bool _g_byteOrder;
 
 	/// @brief Get current machine byte order.
@@ -12,6 +13,16 @@ namespace peff {
 	/// @return false The machine is in little-endian mode.
 	PEFF_FORCEINLINE bool getByteOrder() {
 		return _g_byteOrder;
+	}
+
+	constexpr PEFF_FORCEINLINE bool getComptimeByteOrder() {
+#if defined(__GNUC__) || defined(__clang__)
+		return __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+#elif defined(_MSC_VER)
+		return 0;
+#else
+		return getByteOrder();
+#endif
 	}
 
 	constexpr PEFF_FORCEINLINE uint16_t swapByteOrder(uint16_t n) {

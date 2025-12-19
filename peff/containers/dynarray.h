@@ -5,7 +5,6 @@
 #include <cstring>
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
-#include <peff/utils/pair.h>
 
 namespace peff {
 	/// @brief The dynamic array type.

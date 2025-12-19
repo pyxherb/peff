@@ -242,14 +242,14 @@ namespace peff {
 	template <>
 	struct Hasher<String> {
 		PEFF_FORCEINLINE uint64_t operator()(const String &x) const {
-			return djbHash64(x.data(), x.size());
+			return cityHash64(x.data(), x.size());
 		}
 	};
 
 	template <>
 	struct Hasher<std::string_view> {
 		PEFF_FORCEINLINE uint64_t operator()(const std::string_view &x) const {
-			return djbHash64(x.data(), x.size());
+			return cityHash64(x.data(), x.size());
 		}
 	};
 }

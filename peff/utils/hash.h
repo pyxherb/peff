@@ -90,6 +90,8 @@ namespace peff {
 
 	PEFF_UTILS_API uint32_t djbHash32(const char *data, size_t size);
 	PEFF_UTILS_API uint64_t djbHash64(const char *data, size_t size);
+	PEFF_UTILS_API uint32_t cityHash32(const char *s, size_t len);
+	PEFF_UTILS_API uint64_t cityHash64(const char *s, size_t len);
 }
 
 #endif

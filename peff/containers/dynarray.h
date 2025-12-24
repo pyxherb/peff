@@ -433,19 +433,31 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool resize(size_t length) {
+			if (length == _length)
+				return true;
 			return _resize<true>(length, true);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrink(size_t length) {
+			if (length == _length)
+				return true;
 			return _resize<true>(length, false);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
+			if (length == _length)
+				return true;
 			return _resize<false>(length, true);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrinkUninitialized(size_t length) {
+			if (length == _length)
+				return true;
 			return _resize<false>(length, false);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool shrinkToFit() {
+			return _resize<false>(_length, true);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool build(const ThisType &rhs) {

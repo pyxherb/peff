@@ -37,10 +37,6 @@ namespace peff {
 			if (!node)
 				return false;
 
-#ifndef _NDEBUG
-			_tree.verify();
-#endif
-
 			return true;
 		}
 

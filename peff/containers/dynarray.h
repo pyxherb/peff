@@ -20,6 +20,30 @@ namespace peff {
 		peff::RcObjectPtr<Alloc> _allocator;
 		T *_data;
 
+		PEFF_FORCEINLINE static size_t _getGrownCapacity(size_t length, size_t oldCapacity) {
+			if (!oldCapacity)
+				return length;
+
+			size_t newCapacity = oldCapacity + (oldCapacity >> 1);
+
+			if (newCapacity < length)
+				return length;
+
+			return newCapacity;
+		}
+
+		PEFF_FORCEINLINE static size_t _getShrinkedCapacity(size_t length, size_t oldCapacity) {
+			if (!oldCapacity)
+				return length;
+
+			size_t newCapacity = oldCapacity >> 1;
+
+			if (newCapacity > length)
+				return length;
+
+			return newCapacity;
+		}
+
 		PEFF_FORCEINLINE static int _checkCapacity(size_t length, size_t capacity) {
 			if (length > capacity)
 				return 1;
@@ -140,10 +164,7 @@ namespace peff {
 
 			int capacityStatus = _checkCapacity(length, _capacity);
 			if (capacityStatus > 0) {
-				size_t newCapacity = _capacity ? (_capacity << 1) : length;
-
-				while (newCapacity < length)
-					newCapacity <<= 1;
+				size_t newCapacity = _getGrownCapacity(length, _capacity);
 
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData;
@@ -178,10 +199,7 @@ namespace peff {
 				_capacity = newCapacity;
 				_data = newData;
 			} else if (capacityStatus < 0) {
-				size_t newCapacity = _capacity >> 1;
-
-				while ((newCapacity >> 1) > length)
-					newCapacity >>= 1;
+				size_t newCapacity = _getShrinkedCapacity(length, _capacity);
 
 				size_t newCapacityTotalSize = newCapacity * sizeof(T);
 				T *newData;
@@ -264,47 +282,24 @@ namespace peff {
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;
 
-			int capacityStatus = _checkCapacity(newLength, _capacity);
-			assert(capacityStatus <= 0);
-			if (capacityStatus < 0) {
-				size_t newCapacity = _capacity >> 1,
-					   newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T));
+			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
-				if (!newData)
-					return false;
+			_resize<false>(newLength, true);
 
-				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(newData, _data, sizeof(T) * idxStart);
-					memmove(newData + idxStart, _data + idxEnd, sizeof(T) * postGapLength);
-				} else {
-					ScopeGuard scopeGuard(
-						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, alignof(T));
-						});
+			return true;
+		}
 
-					_moveData(newData, _data, idxStart);
-					_moveData(newData + idxStart, _data + idxEnd, postGapLength);
+		[[nodiscard]] PEFF_FORCEINLINE bool eraseRangeWithoutShrink(size_t idxStart, size_t idxEnd) {
+			assert(idxStart < _length);
+			assert(idxEnd <= _length);
 
-					scopeGuard.release();
-				}
+			const size_t gapLength = idxEnd - idxStart;
+			const size_t postGapLength = _length - idxEnd;
+			const size_t newLength = _length - gapLength;
 
-				if (_data)
-					_allocator->release(_data, sizeof(T) * _capacity, alignof(T));
-				_capacity = newCapacity;
-				_data = newData;
-			} else {
-				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					memmove(&_data[idxStart], &_data[idxEnd], postGapLength * sizeof(T));
-				} else {
-					for (size_t i = idxStart; i < idxEnd; ++i)
-						std::destroy_at<T>(&_data[i]);
-					if (idxEnd < _length)
-						_moveDataUninitialized(&_data[idxStart], &_data[idxEnd], postGapLength);
-				}
-			}
+			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
-			_length = newLength;
+			_resize<false>(newLength, false);
 
 			return true;
 		}

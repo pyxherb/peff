@@ -2,9 +2,7 @@
 
 using namespace peff;
 
-PEFF_CONTAINERS_API RBTreeBase::AbstractNode::~AbstractNode() {}
-
-PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMinNode(AbstractNode* node) {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_getMinNode(NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -13,7 +11,7 @@ PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMinNode(AbstractNo
 	return node;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMaxNode(AbstractNode* node) {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_getMaxNode(NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -22,8 +20,8 @@ PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getMaxNode(AbstractNo
 	return node;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_lRot(AbstractNode* x) {
-	AbstractNode* y = x->r;
+PEFF_CONTAINERS_API void RBTreeBase::_lRot(NodeBase *x) noexcept {
+	NodeBase* y = x->r;
 	assert(y);
 
 	x->r = y->l;
@@ -43,8 +41,8 @@ PEFF_CONTAINERS_API void RBTreeBase::_lRot(AbstractNode* x) {
 	x->p = y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_rRot(AbstractNode* x) {
-	AbstractNode* y = x->l;
+PEFF_CONTAINERS_API void RBTreeBase::_rRot(NodeBase *x) noexcept {
+	NodeBase* y = x->l;
 	assert(y);
 
 	x->l = y->r;
@@ -63,8 +61,8 @@ PEFF_CONTAINERS_API void RBTreeBase::_rRot(AbstractNode* x) {
 	x->p = y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(AbstractNode* node) {
-	AbstractNode* p, * gp = node, * u;  // Parent, grandparent and uncle
+PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(NodeBase *node) noexcept {
+	NodeBase* p, * gp = node, * u;  // Parent, grandparent and uncle
 
 	while ((p = gp->p) && _isRed(p)) {
 		gp = p->p;
@@ -114,9 +112,9 @@ PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(AbstractNode* node) {
 	_root->color = RBColor::Black;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_removeFixUp(AbstractNode* node) {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_removeFixUp(NodeBase *node) noexcept {
 	// From SGI STL's stl_tree, with some minor improvements.
-	AbstractNode* y = node, * x, * p;
+	NodeBase* y = node, * x, * p;
 
 	if (!y->l)
 		// The node has right child only.
@@ -242,7 +240,7 @@ PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_removeFixUp(AbstractN
 	return y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_verify(AbstractNode* node, const size_t nBlack, size_t cntBlack) const {
+PEFF_CONTAINERS_API void RBTreeBase::_verify(NodeBase *node, const size_t nBlack, size_t cntBlack) const noexcept {
 	if (!node) {
 		// We have reached a terminal node.
 		if (nBlack != cntBlack)
@@ -260,7 +258,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify(AbstractNode* node, const size_t nB
 	_verify(node->r, nBlack, cntBlack);
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_verify() const {
+PEFF_CONTAINERS_API void RBTreeBase::_verify() const noexcept {
 	if (!_root)
 		return;
 
@@ -268,7 +266,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify() const {
 		throw std::logic_error("Red root node detected");
 
 	size_t nBlack = 0;
-	for (AbstractNode* i = _root; i; i = i->l) {
+	for (NodeBase* i = _root; i; i = i->l) {
 		if (_isBlack(i))
 			++nBlack;
 	}
@@ -276,7 +274,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify() const {
 	_verify(_root, nBlack, 0);
 }
 
-PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getNextNode(const AbstractNode* node, const AbstractNode* lastNode) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_getNextNode(const NodeBase* node, const NodeBase* lastNode) noexcept {
 	assert(node);
 
 	if (node != lastNode) {
@@ -293,7 +291,7 @@ PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getNextNode(const Abs
 	return nullptr;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getPrevNode(const AbstractNode* node, const AbstractNode* firstNode) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_getPrevNode(const NodeBase* node, const NodeBase* firstNode) noexcept {
 	assert(node);
 
 	if (node != firstNode) {
@@ -310,7 +308,7 @@ PEFF_CONTAINERS_API RBTreeBase::AbstractNode* RBTreeBase::_getPrevNode(const Abs
 	return nullptr;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::RBTreeBase() {
+PEFF_CONTAINERS_API RBTreeBase::RBTreeBase() noexcept {
 }
 
 PEFF_CONTAINERS_API RBTreeBase::~RBTreeBase() {

@@ -241,15 +241,23 @@ namespace peff {
 
 	template <>
 	struct Hasher<String> {
-		PEFF_FORCEINLINE uint64_t operator()(const String &x) const {
-			return cityHash64(x.data(), x.size());
+		PEFF_FORCEINLINE std::conditional_t<sizeof(size_t) <= sizeof(uint32_t), uint32_t, uint64_t> operator()(const String &x) const {
+			if constexpr (sizeof(size_t) <= sizeof(uint32_t)) {
+				return cityHash32(x.data(), x.size());
+			} else {
+				return cityHash64(x.data(), x.size());
+			}
 		}
 	};
 
 	template <>
 	struct Hasher<std::string_view> {
-		PEFF_FORCEINLINE uint64_t operator()(const std::string_view &x) const {
-			return cityHash64(x.data(), x.size());
+		PEFF_FORCEINLINE std::conditional_t<sizeof(size_t) <= sizeof(uint32_t), uint32_t, uint64_t> operator()(const std::string_view &x) const {
+			if constexpr (sizeof(size_t) <= sizeof(uint32_t)) {
+				return cityHash32(x.data(), x.size());
+			} else {
+				return cityHash64(x.data(), x.size());
+			}
 		}
 	};
 }

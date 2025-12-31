@@ -28,38 +28,36 @@ namespace peff {
 
 	class RBTreeBase {
 	protected:
-		struct AbstractNode {
-			AbstractNode *p = nullptr, *l = nullptr, *r = nullptr;
+		struct NodeBase {
+			NodeBase *p = nullptr, *l = nullptr, *r = nullptr;
 			RBColor color = RBColor::Black;
-
-			PEFF_CONTAINERS_API virtual ~AbstractNode();
 		};
 
-		AbstractNode *_root = nullptr;
-		AbstractNode *_cachedMinNode = nullptr, *_cachedMaxNode = nullptr;
+		NodeBase *_root = nullptr;
+		NodeBase *_cachedMinNode = nullptr, *_cachedMaxNode = nullptr;
 		size_t _nNodes = 0;
 
-		PEFF_CONTAINERS_API static AbstractNode *_getMinNode(AbstractNode *node);
-		PEFF_CONTAINERS_API static AbstractNode *_getMaxNode(AbstractNode *node);
+		PEFF_CONTAINERS_API static NodeBase *_getMinNode(NodeBase *node) noexcept;
+		PEFF_CONTAINERS_API static NodeBase *_getMaxNode(NodeBase *node) noexcept;
 
-		PEFF_FORCEINLINE static bool _isRed(AbstractNode *node) { return node && node->color == RBColor::Red; }
-		PEFF_FORCEINLINE static bool _isBlack(AbstractNode *node) { return (!node) || node->color == RBColor::Black; }
+		PEFF_FORCEINLINE static bool _isRed(NodeBase *node) noexcept { return node && node->color == RBColor::Red; }
+		PEFF_FORCEINLINE static bool _isBlack(NodeBase *node) noexcept { return (!node) || node->color == RBColor::Black; }
 
-		PEFF_CONTAINERS_API void _lRot(AbstractNode *x);
-		PEFF_CONTAINERS_API void _rRot(AbstractNode *x);
+		PEFF_CONTAINERS_API void _lRot(NodeBase *x) noexcept;
+		PEFF_CONTAINERS_API void _rRot(NodeBase *x) noexcept;
 
-		PEFF_CONTAINERS_API void _insertFixUp(AbstractNode *node);
+		PEFF_CONTAINERS_API void _insertFixUp(NodeBase *node) noexcept;
 
-		PEFF_CONTAINERS_API AbstractNode *_removeFixUp(AbstractNode *node);
+		PEFF_CONTAINERS_API NodeBase *_removeFixUp(NodeBase *node) noexcept;
 
-		PEFF_CONTAINERS_API void _verify(AbstractNode *node, const size_t nBlack, size_t cntBlack) const;
-		PEFF_CONTAINERS_API void _verify() const;
+		PEFF_CONTAINERS_API void _verify(NodeBase *node, const size_t nBlack, size_t cntBlack) const noexcept;
+		PEFF_CONTAINERS_API void _verify() const noexcept;
 
-		PEFF_CONTAINERS_API static AbstractNode *_getNextNode(const AbstractNode *node, const AbstractNode *lastNode) noexcept;
-		PEFF_CONTAINERS_API static AbstractNode *_getPrevNode(const AbstractNode *node, const AbstractNode *firstNode) noexcept;
+		PEFF_CONTAINERS_API static NodeBase *_getNextNode(const NodeBase *node, const NodeBase *lastNode) noexcept;
+		PEFF_CONTAINERS_API static NodeBase *_getPrevNode(const NodeBase *node, const NodeBase *firstNode) noexcept;
 
-		PEFF_CONTAINERS_API RBTreeBase();
-		PEFF_CONTAINERS_API virtual ~RBTreeBase();
+		PEFF_CONTAINERS_API RBTreeBase() noexcept;
+		PEFF_CONTAINERS_API ~RBTreeBase();
 	};
 
 	template <typename T,
@@ -69,10 +67,10 @@ namespace peff {
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class RBTreeImpl : protected RBTreeBase {
 	public:
-		struct Node : public RBTreeBase::AbstractNode {
-			T value;
+		struct Node : public RBTreeBase::NodeBase {
+			T treeKey;
 
-			inline Node(T &&value) : value(std::move(value)) {}
+			inline Node(T &&key) : treeKey(std::move(key)) {}
 			virtual ~Node() {}
 		};
 
@@ -88,27 +86,18 @@ namespace peff {
 		RcObjectPtr<Alloc> _allocator;
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *_allocSingleNode(T &&value) {
-			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
+			Node *node = (Node *)allocAndConstruct<Node>(_allocator.get(), alignof(Node), std::move(value));
 			if (!node)
 				return nullptr;
-
-			ScopeGuard scopeGuard(
-				[this, node]() noexcept {
-					_allocator->release(node, sizeof(Node), alignof(Node));
-				});
-			constructAt<Node>(node, std::move(value));
-			scopeGuard.release();
 
 			return node;
 		}
 
 		PEFF_FORCEINLINE void _deleteSingleNode(Node *node) {
-			std::destroy_at<Node>(node);
-			_allocator->release(node, sizeof(Node), alignof(Node));
+			destroyAndRelease<Node>(_allocator.get(), node, alignof(Node));
 		}
 
 		PEFF_FORCEINLINE void _deleteNodeTree(Node *node) {
-			Node *maxNode = (Node *)_getMaxNode(node);
 			Node *curNode = (Node *)_getMinNode(node);
 			Node *parent = (Node *)node->p;
 			bool walkedRootNode = false;
@@ -138,7 +127,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				while (i) {
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(i->value, key);
+						auto &&result = _comparator(i->treeKey, key);
 
 						if (result.value() > 0)
 							i = (Node *)i->r;
@@ -149,10 +138,10 @@ namespace peff {
 					} else {
 						Option<bool> result;
 
-						if ((result = _comparator(i->value, key)).hasValue()) {
+						if ((result = _comparator(i->treeKey, key)).hasValue()) {
 							if (result.value()) {
 #ifndef NDEBUG
-								if ((result = _comparator(key, i->value)).hasValue()) {
+								if ((result = _comparator(key, i->treeKey)).hasValue()) {
 									assert(!result.value());
 									i = (Node *)i->r;
 								} else {
@@ -161,7 +150,7 @@ namespace peff {
 #else
 								i = (Node *)i->r;
 #endif
-							} else if ((result = _comparator(key, i->value)).hasValue()) {
+							} else if ((result = _comparator(key, i->treeKey)).hasValue()) {
 								if (result.value()) {
 									i = (Node *)i->l;
 								} else
@@ -177,7 +166,7 @@ namespace peff {
 			} else {
 				while (i) {
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(i->value, key);
+						auto &&result = _comparator(i->treeKey, key);
 						if (result > 0)
 							i = (Node *)i->r;
 						else if (result < 0)
@@ -185,10 +174,10 @@ namespace peff {
 						else
 							return i;
 					} else {
-						if (_comparator(i->value, key)) {
-							assert(!_comparator(key, i->value));
+						if (_comparator(i->treeKey, key)) {
+							assert(!_comparator(key, i->treeKey));
 							i = (Node *)i->r;
-						} else if (_comparator(key, i->value)) {
+						} else if (_comparator(key, i->treeKey)) {
 							i = (Node *)i->l;
 						} else
 							return i;
@@ -198,8 +187,8 @@ namespace peff {
 			return nullptr;
 		}
 
-		PEFF_FORCEINLINE Node **_getSlot(const T &key, Node *&parentOut) {
-			Node **i = (Node **)&_root;
+		PEFF_FORCEINLINE NodeBase **_getSlot(const T &key, NodeBase *&parentOut) {
+			NodeBase **i = (NodeBase **)&_root;
 			parentOut = nullptr;
 
 			if constexpr (Fallible) {
@@ -207,32 +196,32 @@ namespace peff {
 					parentOut = *i;
 
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator((*i)->value, key);
+						auto &&result = _comparator((*i)->treeKey, key);
 
 						if (result.value() > 0)
-							i = (Node **)&(*i)->r;
+							i = (NodeBase **)&(*i)->r;
 						else if (result.value() < 0)
-							i = (Node **)&(*i)->l;
+							i = (NodeBase **)&(*i)->l;
 						else
 							return i;
 					} else {
 						Option<bool> result;
 
-						if ((result = _comparator((*i)->value, key)).hasValue()) {
+						if ((result = _comparator((*i)->treeKey, key)).hasValue()) {
 							if (result.value()) {
 #ifndef NDEBUG
-								if ((result = _comparator(key, (*i)->value)).hasValue()) {
+								if ((result = _comparator(key, (*i)->treeKey)).hasValue()) {
 									assert(!result.value());
-									i = (Node **)&(*i)->r;
+									i = (NodeBase **)&(*i)->r;
 								} else {
 									return nullptr;
 								}
 #else
-								i = (Node **)&(*i)->r;
+								i = (NodeBase **)&(*i)->r;
 #endif
-							} else if ((result = _comparator(key, (*i)->value)).hasValue()) {
+							} else if ((result = _comparator(key, (*i)->treeKey)).hasValue()) {
 								if (result.value()) {
-									i = (Node **)&(*i)->l;
+									i = (NodeBase **)&(*i)->l;
 								} else
 									return i;
 							} else {
@@ -248,12 +237,12 @@ namespace peff {
 					while (*i) {
 						parentOut = *i;
 
-						auto &&result = _comparator((*i)->value, key);
+						auto &&result = _comparator(static_cast<Node *>(*i)->treeKey, key);
 
 						if (result > 0) {
-							i = (Node **)&((*i)->r);
+							i = (NodeBase **)&((*i)->r);
 						} else if (result < 0) {
-							i = (Node **)&((*i)->l);
+							i = (NodeBase **)&((*i)->l);
 						} else
 							return nullptr;
 					}
@@ -261,11 +250,11 @@ namespace peff {
 					while (*i) {
 						parentOut = *i;
 
-						if (_comparator((*i)->value, key)) {
-							assert(!_comparator(key, (*i)->value));
-							i = (Node **)&((*i)->r);
-						} else if (_comparator(key, (*i)->value)) {
-							i = (Node **)&((*i)->l);
+						if (_comparator(static_cast<Node *>(*i)->treeKey, key)) {
+							assert(!_comparator(key, static_cast<Node *>(*i)->treeKey));
+							i = (NodeBase **)&((*i)->r);
+						} else if (_comparator(key, static_cast<Node *>(*i)->treeKey)) {
+							i = (NodeBase **)&((*i)->l);
 						} else
 							return nullptr;
 					}
@@ -274,7 +263,7 @@ namespace peff {
 			return i;
 		}
 
-		PEFF_FORCEINLINE bool _insert(Node **slot, Node *parent, Node *node) {
+		PEFF_FORCEINLINE bool _insert(Node *parent, Node *node) {
 			assert(!node->l);
 			assert(!node->r);
 
@@ -286,7 +275,7 @@ namespace peff {
 
 			if constexpr (Fallible) {
 				if constexpr (IsThreeway) {
-					if (auto &&result = _comparator(node->value, parent->value); result.hasValue()) {
+					if (auto &&result = _comparator(node->treeKey, parent->treeKey); result.hasValue()) {
 						if (result.value() > 0)
 							parent->l = node;
 						else if (result.value() < 0)
@@ -298,7 +287,7 @@ namespace peff {
 					}
 				} else {
 					Option<bool> result;
-					if ((result = _comparator(node->value, parent->value)).hasValue()) {
+					if ((result = _comparator(node->treeKey, parent->treeKey)).hasValue()) {
 						if (result.value())
 							parent->l = node;
 						else
@@ -309,7 +298,7 @@ namespace peff {
 				}
 			} else {
 				if (IsThreeway) {
-					auto &&result = _comparator(node->value, parent->value);
+					auto &&result = _comparator(node->treeKey, parent->treeKey);
 					if (result > 0)
 						parent->l = node;
 					else if (result < 0)
@@ -317,7 +306,7 @@ namespace peff {
 					else
 						assert(false);
 				} else {
-					if (_comparator(node->value, parent->value))
+					if (_comparator(node->treeKey, parent->treeKey))
 						parent->l = node;
 					else
 						parent->r = node;
@@ -365,7 +354,7 @@ namespace peff {
 			other._nNodes = 0;
 		}
 
-		virtual inline ~RBTreeImpl() {
+		PEFF_FORCEINLINE ~RBTreeImpl() {
 			if (_root)
 				_deleteNodeTree((Node *)_root);
 		}
@@ -397,7 +386,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				while (curNode) {
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(curNode->value, data);
+						auto &&result = _comparator(curNode->treeKey, data);
 
 						if (result.value() > 0) {
 							maxNode = curNode;
@@ -409,10 +398,10 @@ namespace peff {
 					} else {
 						Option<bool> result;
 
-						if ((result = _comparator(curNode->value, data)).hasValue()) {
+						if ((result = _comparator(curNode->treeKey, data)).hasValue()) {
 							if (result.value()) {
 #ifndef NDEBUG
-								if ((result = _comparator(data, curNode->value)).hasValue()) {
+								if ((result = _comparator(data, curNode->treeKey)).hasValue()) {
 									assert(!result.value());
 									curNode = (Node *)curNode->r;
 								} else {
@@ -422,7 +411,7 @@ namespace peff {
 								maxNode = curNode;
 								curNode = (Node *)curNode->r;
 #endif
-							} else if ((result = _comparator(data, curNode->value)).hasValue()) {
+							} else if ((result = _comparator(data, curNode->treeKey)).hasValue()) {
 								if (result.value()) {
 									curNode = (Node *)curNode->l;
 								} else
@@ -438,7 +427,7 @@ namespace peff {
 			} else {
 				while (curNode) {
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(curNode->value, data);
+						auto &&result = _comparator(curNode->treeKey, data);
 						if (result > 0) {
 							maxNode = curNode;
 							curNode = (Node *)curNode->r;
@@ -447,11 +436,11 @@ namespace peff {
 						else
 							return curNode;
 					} else {
-						if (_comparator(curNode->value, data)) {
-							assert(!_comparator(data, curNode->value));
+						if (_comparator(curNode->treeKey, data)) {
+							assert(!_comparator(data, curNode->treeKey));
 							maxNode = curNode;
 							curNode = (Node *)curNode->r;
-						} else if (_comparator(data, curNode->value)) {
+						} else if (_comparator(data, curNode->treeKey)) {
 							curNode = (Node *)curNode->l;
 						} else
 							return curNode;
@@ -470,19 +459,20 @@ namespace peff {
 		/// @param node Node to be inserted.
 		/// @return Whether the node is inserted successfully, false if node with the same key presents.
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(Node *node) {
-			Node *parent = nullptr, **slot = _getSlot(node->value, parent);
+			NodeBase *parent = nullptr;
+			NodeBase **slot = _getSlot(node->treeKey, parent);
 
 			if (!slot)
 				return false;
 
-			return _insert(slot, parent, node);
+			return _insert(static_cast<Node *>(parent), node);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE Node *insert(T &&key) {
-			Node *parent = nullptr, **slot = _getSlot(key, parent);
+			NodeBase *parent = nullptr, **slot = _getSlot(key, parent);
 
 			if (!slot)
-				return parent;
+				return static_cast<Node *>(parent);
 
 			Node *node = _allocSingleNode(std::move(key));
 			if (!node)
@@ -541,11 +531,11 @@ namespace peff {
 		}
 
 		static Node *getNextNode(const Node *node, const Node *lastNode) noexcept {
-			return (Node *)_getNextNode((const AbstractNode *)node, (const AbstractNode *)lastNode);
+			return (Node *)_getNextNode((const NodeBase *)node, (const NodeBase *)lastNode);
 		}
 
 		static Node *getPrevNode(const Node *node, const Node *firstNode) noexcept {
-			return (Node *)_getPrevNode((const AbstractNode *)node, (const AbstractNode *)firstNode);
+			return (Node *)_getPrevNode((const NodeBase *)node, (const NodeBase *)firstNode);
 		}
 
 		struct Iterator {
@@ -619,7 +609,7 @@ namespace peff {
 						throw std::logic_error("Dereasing the begin iterator");
 
 					if (!node)
-						node = (Node*)tree->_cachedMaxNode;
+						node = (Node *)tree->_cachedMaxNode;
 					else
 						node = ThisType::getPrevNode(node, nullptr);
 				} else {
@@ -627,7 +617,7 @@ namespace peff {
 						throw std::logic_error("Dereasing the begin iterator");
 
 					if (!node)
-						node = (Node*)tree->_cachedMinNode;
+						node = (Node *)tree->_cachedMinNode;
 					else
 						node = ThisType::getNextNode(node, nullptr);
 				}
@@ -680,25 +670,25 @@ namespace peff {
 			PEFF_FORCEINLINE T &operator*() {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return node->value;
+				return node->treeKey;
 			}
 
 			PEFF_FORCEINLINE T &operator*() const {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return node->value;
+				return node->treeKey;
 			}
 
 			PEFF_FORCEINLINE T *operator->() {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return &node->value;
+				return &node->treeKey;
 			}
 
 			PEFF_FORCEINLINE T *operator->() const {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return &node->value;
+				return &node->treeKey;
 			}
 		};
 

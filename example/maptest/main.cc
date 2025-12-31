@@ -6,6 +6,7 @@
 #include <peff/containers/list.h>
 #include <peff/containers/hashset.h>
 #include <peff/containers/hashmap.h>
+#include <peff/containers/radix_tree.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
 #include <peff/advutils/shared_ptr.h>
@@ -378,6 +379,15 @@ int main() {
 		alloc.release(oldP1, 1023, sizeof(std::max_align_t));
 		alloc.release(oldP2, 1023 * 2, sizeof(std::max_align_t));
 		alloc.release(oldP3, 1023 * 3, sizeof(std::max_align_t));
+	}
+
+	{
+		peff::RadixTree<uint32_t, int> test(peff::getDefaultAlloc());
+
+		for (uint32_t i = 0; i < 100; ++i) {
+			if (!test.insert(i, i))
+				std::terminate();
+		}
 	}
 
 	bool endian = peff::getByteOrder();

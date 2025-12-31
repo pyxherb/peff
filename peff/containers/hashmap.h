@@ -343,9 +343,9 @@ namespace peff {
 		}
 	};
 
-	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
+	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>
 	using HashMap = HashMapImpl<K, V, Eq, Hasher, false>;
-	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = Hasher<K>>
+	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>
 	using FallibleHashMap = HashMapImpl<K, V, Eq, Hasher, true>;
 }
 

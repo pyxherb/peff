@@ -286,6 +286,8 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE OptionArray<T, length> &operator=(OptionArray<T, length> &&rhs) noexcept {
+			if (&rhs == this)
+				return *this;
 			for (size_t i = 0; i < length; ++i) {
 				reset(i);
 				if (rhs.hasValue(i)) {

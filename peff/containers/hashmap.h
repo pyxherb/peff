@@ -15,23 +15,6 @@ namespace peff {
 
 			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool isForQuery) : key(std::move(key)), value(std::move(value)), isForQuery(isForQuery) {}
 			Pair(Pair &&rhs) = default;
-
-			PEFF_FORCEINLINE bool copy(Pair &dest) const {
-				peff::Uninitialized<K> copiedKey;
-				peff::Uninitialized<V> copiedValue;
-
-				if(!copiedKey.copyFrom(key)) {
-					return false;
-				}
-
-				if(!copiedValue.copyFrom(value)) {
-					return false;
-				}
-
-				peff::constructAt(&dest, Pair { copiedKey.release(), copiedValue.release(), false });
-
-				return true;
-			}
 		};
 
 		struct QueryPair : Pair {

@@ -316,62 +316,8 @@ namespace peff {
 			return Iterator(_set.findMaxLteq(*(QueryPair *)pair));
 		}
 
-		PEFF_FORCEINLINE bool build(const std::initializer_list<std::pair<K, V>> &initializerList) noexcept {
-			clear();
-
-			ScopeGuard clearScopeGuard([this]() noexcept {
-				clear();
-			});
-
-			for (auto &i : initializerList) {
-				Uninitialized<K> copiedKey;
-				Uninitialized<V> copiedValue;
-
-				if (!copiedKey.copyFrom(i.first))
-					return false;
-				if (!copiedValue.copyFrom(i.second))
-					return false;
-
-				if (!insert(copiedKey.release(), copiedValue.release()))
-					return false;
-			}
-
-			clearScopeGuard.release();
-
-			return true;
-		}
-
 		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
 			_set.remove(iterator._iterator);
-		}
-
-		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			constructAt<ThisType>(&dest, allocator());
-
-			ScopeGuard clearDestGuard([&dest]() noexcept {
-				dest.clear();
-			});
-
-			for (ConstIterator i = beginConst(); i != endConst(); ++i) {
-				Uninitialized<K> copiedKey;
-				Uninitialized<V> copiedValue;
-
-				if (!copiedKey.copyFrom(i.key())) {
-					return false;
-				}
-
-				if (!copiedValue.copyFrom(i.value())) {
-					return false;
-				}
-
-				if (!dest.insert(copiedKey.release(), copiedValue.release())) {
-					return false;
-				}
-			}
-
-			clearDestGuard.release();
-
-			return true;
 		}
 	};
 

@@ -135,31 +135,6 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool copy(List &dest) const {
-			constructAt<ThisType>(&dest, _allocator.get());
-			dest._first = nullptr;
-			dest._last = nullptr;
-			dest._length = 0;
-			dest._allocator = _allocator;
-
-			for (Node *i = _first; i; i = i->next) {
-				Uninitialized<T> copiedData;
-
-				if (!copiedData.copyFrom(i->data)) {
-					return false;
-				}
-
-				Node *newNode = dest._allocNode(copiedData.release());
-				if (!newNode) {
-					dest.clear();
-					return false;
-				}
-				dest.pushBack(newNode);
-			}
-
-			return true;
-		}
-
 		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertFront(NodeHandle node, NodeHandle newNode) {
 			assert(node);
 
@@ -619,31 +594,6 @@ namespace peff {
 			verifyReplaceable(_allocator.get(), rhs);
 
 			_allocator = rhs;
-		}
-
-		PEFF_FORCEINLINE bool build(const std::initializer_list<T> &initializerList) {
-			clear();
-
-			ScopeGuard clearScopeGuard([this]() noexcept {
-				clear();
-			});
-
-			for (auto i = initializerList.begin(); i != initializerList.end(); ++i) {
-				Uninitialized<T> copiedData;
-
-				if (!copiedData.copyFrom(*i))
-					return false;
-
-				Node *node = _allocNode(copiedData.release());
-				if (!node)
-					return false;
-
-				_append(_last, node);
-			}
-
-			clearScopeGuard.release();
-
-			return true;
 		}
 	};
 }

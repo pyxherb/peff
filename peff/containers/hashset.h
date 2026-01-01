@@ -46,18 +46,6 @@ namespace peff {
 
 			Element(Element &&rhs) = default;
 			Element &operator=(Element &&rhs) = default;
-
-			PEFF_FORCEINLINE bool copy(Element &dest) const {
-				peff::Uninitialized<T> copiedData;
-
-				if (!copiedData.copyFrom(data)) {
-					return false;
-				}
-
-				peff::constructAt(&dest, copiedData.release(), hashCode);
-
-				return true;
-			}
 		};
 		using Bucket = List<Element>;
 	public:
@@ -725,30 +713,6 @@ namespace peff {
 
 		PEFF_FORCEINLINE size_t size() const {
 			return _size;
-		}
-
-		PEFF_FORCEINLINE bool copy(ThisType &dest) const {
-			constructAt<ThisType>(&dest, allocator());
-
-			ScopeGuard clearDestGuard([&dest]() noexcept {
-				dest.clear();
-			});
-
-			for (ConstIterator i = beginConst(); i != endConst(); ++i) {
-				Uninitialized<T> copiedData;
-
-				if (!copiedData.copyFrom(*i)) {
-					return false;
-				}
-
-				if (!dest.insert(copiedData.release())) {
-					return false;
-				}
-			}
-
-			clearDestGuard.release();
-
-			return true;
 		}
 	};
 

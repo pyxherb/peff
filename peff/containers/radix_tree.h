@@ -22,12 +22,12 @@ namespace peff {
 		using Height = typename ::peff::AutoSizeUInteger<HEIGHT_MAX>::type;
 
 		struct Node {
+			Node *p = nullptr;
+			Node *children[2] = {};
+			OptionArray<V, 2> radixValue;
 			Height height = 0;
 			uint8_t nUsedChildren = 0;
 			uint8_t offset = 0;
-			Node *p = nullptr;
-			Node *children[2] = {};
-			Option<V> radixValue[2];
 
 			PEFF_FORCEINLINE Node() {
 			}
@@ -121,7 +121,7 @@ namespace peff {
 				shift = height;
 				offset = (index >> shift) & 1;
 
-				if ((!node->children[offset]) && (!node->radixValue[offset].hasValue())) {
+				if ((!node->children[offset]) && (!node->radixValue.hasValue(offset))) {
 					Node *newNode = _allocSingleNode();
 					if (!newNode)
 						return false;
@@ -134,7 +134,7 @@ namespace peff {
 					node = newNode;
 					insertionFlags.setBit(i);
 				} else {
-					assert(!node->radixValue[offset]);
+					assert(!node->radixValue.hasValue(offset));
 					node = node->children[offset];
 				}
 				++i;
@@ -144,10 +144,10 @@ namespace peff {
 
 			Node *leaf = node;
 			offset = index & 1;
-			if (leaf->children[offset] || leaf->radixValue[offset])
+			if (leaf->children[offset] || leaf->radixValue.hasValue(offset))
 				// The key exists.
 				std::terminate();
-			leaf->radixValue[offset] = std::move(data);
+			leaf->radixValue.setValue(offset, std::move(data));
 			return true;
 		}
 
@@ -241,9 +241,9 @@ namespace peff {
 			while (height) {
 				offset = ((index >> shift) & 1);
 				if (!node->children[offset]) {
-					if (!node->radixValue[offset].hasValue())
+					if (!node->radixValue.hasValue(offset))
 						std::terminate();
-					return *node->radixValue[offset];
+					return node->radixValue.value(offset);
 				}
 				node = node->children[offset];
 				--shift;
@@ -501,7 +501,7 @@ namespace peff {
 
 				if (direction == IteratorDirection::Forward) {
 					if (!isRight) {
-						if (node->radixValue[1]) {
+						if (node->radixValue.hasValue(1)) {
 							isRight = true;
 							return *this;
 						}
@@ -510,7 +510,7 @@ namespace peff {
 					node = ThisType::getNextNode(node);
 				} else {
 					if (isRight) {
-						if (node->radixValue[0]) {
+						if (node->radixValue.hasValue(0)) {
 							isRight = false;
 							return *this;
 						}
@@ -540,7 +540,7 @@ namespace peff {
 						throw std::logic_error("Dereasing the begin iterator");
 
 					if (!isRight) {
-						if (node->radixValue[0]) {
+						if (node->radixValue.hasValue(0)) {
 							isRight = true;
 							return *this;
 						}
@@ -556,7 +556,7 @@ namespace peff {
 						throw std::logic_error("Dereasing the begin iterator");
 
 					if (isRight) {
-						if (node->radixValue[0]) {
+						if (node->radixValue.hasValue(0)) {
 							isRight = false;
 							return *this;
 						}
@@ -621,25 +621,25 @@ namespace peff {
 			PEFF_FORCEINLINE V &operator*() {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return isRight ? *node->radixValue[1] : *node->radixValue[0];
+				return isRight ? node->radixValue.value(1) : node->radixValue.value(0);
 			}
 
 			PEFF_FORCEINLINE V &operator*() const {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return isRight ? *node->radixValue[1] : *node->radixValue[0];
+				return isRight ? node->radixValue.value(1) : node->radixValue.value(0);
 			}
 
 			PEFF_FORCEINLINE V *operator->() {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return isRight ? &*node->radixValue[1] : &*node->radixValue[0];
+				return isRight ? &node->radixValue.value(1) : &node->radixValue.value(0);
 			}
 
 			PEFF_FORCEINLINE V *operator->() const {
 				if (!node)
 					throw std::logic_error("Deferencing the end iterator");
-				return isRight ? &*node->radixValue[1] : &*node->radixValue[0];
+				return isRight ? &node->radixValue.value(1) : &node->radixValue.value(0);
 			}
 		};
 
@@ -647,7 +647,7 @@ namespace peff {
 			Node *node = _getMinNode(_root);
 			bool isRight;
 			if (node)
-				isRight = node->radixValue[0] ? false : true;
+				isRight = node->radixValue.hasValue(0) ? false : true;
 			else
 				isRight = false;
 			return Iterator((Node *)node, this, IteratorDirection::Forward, isRight);
@@ -659,7 +659,7 @@ namespace peff {
 			Node *node = _getMaxNode(_root);
 			bool isRight;
 			if (node)
-				isRight = node->radixValue[1] ? true : false;
+				isRight = node->radixValue.hasValue(1) ? true : false;
 			else
 				isRight = false;
 			return Iterator((Node *)node, this, IteratorDirection::Reversed, isRight);

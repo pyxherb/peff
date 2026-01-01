@@ -196,32 +196,32 @@ namespace peff {
 					parentOut = *i;
 
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator((*i)->treeKey, key);
+						auto &&result = _comparator(static_cast<Node *>(*i)->treeKey, key);
 
 						if (result.value() > 0)
-							i = (NodeBase **)&(*i)->r;
+							i = (NodeBase **)&static_cast<Node *>(*i)->r;
 						else if (result.value() < 0)
-							i = (NodeBase **)&(*i)->l;
+							i = (NodeBase **)&static_cast<Node *>(*i)->l;
 						else
 							return i;
 					} else {
 						Option<bool> result;
 
-						if ((result = _comparator((*i)->treeKey, key)).hasValue()) {
+						if ((result = _comparator(static_cast<Node *>(*i)->treeKey, key)).hasValue()) {
 							if (result.value()) {
 #ifndef NDEBUG
-								if ((result = _comparator(key, (*i)->treeKey)).hasValue()) {
+								if ((result = _comparator(key, static_cast<Node *>(*i)->treeKey)).hasValue()) {
 									assert(!result.value());
-									i = (NodeBase **)&(*i)->r;
+									i = (NodeBase **)&static_cast<Node *>(*i)->r;
 								} else {
 									return nullptr;
 								}
 #else
-								i = (NodeBase **)&(*i)->r;
+								i = (NodeBase **)&static_cast<Node *>(*i)->r;
 #endif
-							} else if ((result = _comparator(key, (*i)->treeKey)).hasValue()) {
+							} else if ((result = _comparator(key, static_cast<Node *>(*i)->treeKey)).hasValue()) {
 								if (result.value()) {
-									i = (NodeBase **)&(*i)->l;
+									i = (NodeBase **)&static_cast<Node *>(*i)->l;
 								} else
 									return i;
 							} else {

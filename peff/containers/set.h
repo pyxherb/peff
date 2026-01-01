@@ -102,7 +102,7 @@ namespace peff {
 
 				assert(node);
 
-				return node->value;
+				return node->treeKey;
 			}
 		}
 
@@ -121,7 +121,7 @@ namespace peff {
 
 				assert(node);
 
-				return node->value;
+				return node->treeKey;
 			}
 		}
 
@@ -236,7 +236,7 @@ namespace peff {
 				return *this;
 			}
 
-			PEFF_FORCEINLINE ConstIterator &operator++(int) {
+			PEFF_FORCEINLINE ConstIterator operator++(int) {
 				return _iterator++;
 			}
 
@@ -245,7 +245,7 @@ namespace peff {
 				return *this;
 			}
 
-			PEFF_FORCEINLINE ConstIterator &operator--(int) {
+			PEFF_FORCEINLINE ConstIterator operator--(int) {
 				return _iterator--;
 			}
 

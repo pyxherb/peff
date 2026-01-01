@@ -388,6 +388,10 @@ int main() {
 			if (!test.insert(i, i))
 				std::terminate();
 		}
+
+		for (auto i = test.beginReversed(); i != test.endReversed(); ++i) {
+			printf("Value: %d\n", *i);
+		}
 	}
 
 	bool endian = peff::getByteOrder();

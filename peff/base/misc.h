@@ -1,5 +1,5 @@
-#ifndef _PEFF_UTILS_MISC_H_
-#define _PEFF_UTILS_MISC_H_
+#ifndef _PEFF_BASE_MISC_H_
+#define _PEFF_BASE_MISC_H_
 
 #include "basedefs.h"
 #include <peff/base/alloc.h>

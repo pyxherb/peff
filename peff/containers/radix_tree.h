@@ -9,6 +9,7 @@
 #include <peff/base/alloc.h>
 #include <peff/base/scope_guard.h>
 #include "misc.h"
+#include <limits>
 
 namespace peff {
 	template <typename K, typename V>
@@ -17,15 +18,16 @@ namespace peff {
 		static_assert(std::is_integral_v<K>, "The key must be integral type");
 		using ThisType = RadixTree<K, V>;
 
-		using Height = size_t;
+		constexpr static uintmax_t HEIGHT_MAX = std::numeric_limits<K>::digits;
+		using Height = typename ::peff::AutoSizeUInteger<HEIGHT_MAX>::type;
 
 		struct Node {
-			size_t nUsedChildren = 0;
+			Height height = 0;
+			uint8_t nUsedChildren = 0;
+			uint8_t offset = 0;
 			Node *p = nullptr;
-			size_t offset = 0;
 			Node *children[2] = {};
 			Option<V> radixValue[2];
-			Height height = 0;
 
 			PEFF_FORCEINLINE Node() {
 			}

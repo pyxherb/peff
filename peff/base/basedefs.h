@@ -67,7 +67,19 @@
 	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...)
 #endif
 
-#define PEFF_CONTAINER_OF(t, m, p) ((t *)(((char *)p) - offsetof(t, m)))
+#define PEFF_OFFSETOF(t, m) ((size_t)(&reinterpret_cast<const volatile char &>(static_cast<const t *>(nullptr)->m)))
+#define PEFF_CONTAINER_OF(t, m, p) ((t *)(((char *)p) - PEFF_OFFSETOF(t, m)))
+
+#ifdef _MSC_VER
+	#define PEFF_RESTRICT_PTR(type, name) type *__restrict name
+	#define PEFF_RESTRICT_REF(type, name) type &__restrict name
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_RESTRICT_PTR(type, name) type *__restrict__ name
+	#define PEFF_RESTRICT_REF(type, name) type &__restrict__ name
+#else
+	#define PEFF_RESTRICT_PTR(type, name) type *name
+	#define PEFF_RESTRICT_REF(type, name) type &name
+#endif
 
 #if PEFF_DYNAMIC_LINK
 	#if IS_PEFF_BASE_BUILDING

@@ -42,7 +42,9 @@ struct Coroutine {
 
 		struct AllocatorInfo {
 			peff::Alloc *allocator;
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			size_t c;
+#endif
 		};
 
 		static void *operator new(size_t size, peff::Alloc *allocator, int n) noexcept {
@@ -52,12 +54,17 @@ struct Coroutine {
 				return nullptr;
 
 			AllocatorInfo allocatorInfo = {
-				allocator,
+				allocator
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
+				,
 				peff::g_rcObjectPtrCounter
+#endif
 			};
 
 			memcpy(p + size, &allocatorInfo, sizeof(allocatorInfo));
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			allocator->incRef(peff::g_rcObjectPtrCounter++);
+#endif
 
 			return p;
 		}
@@ -65,10 +72,12 @@ struct Coroutine {
 		static void operator delete(void *p, size_t size) noexcept {
 			AllocatorInfo allocatorInfo;
 
-			memcpy(&allocatorInfo, (char *) p + size, sizeof(allocatorInfo));
+			memcpy(&allocatorInfo, (char *)p + size, sizeof(allocatorInfo));
 
 			allocatorInfo.allocator->release(p, size, sizeof(std::max_align_t));
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			allocatorInfo.allocator->decRef(allocatorInfo.c);
+#endif
 		}
 	};
 

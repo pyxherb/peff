@@ -17,12 +17,14 @@ namespace peff {
 	struct IsRcObject<T, std::void_t<decltype(std::declval<T>().incRef((size_t)0))>, std::void_t<decltype(std::declval<T>().decRef((size_t)0))>> : std::true_type {
 	};
 
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 	class RcObjectPtrCounterResetEventListener {
 	private:
 		RcObjectPtrCounterResetEventListener *_prev = nullptr, *_next = nullptr;
 
 		friend PEFF_BASE_API void registerRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
 		friend PEFF_BASE_API void unregisterRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
+
 	public:
 		PEFF_BASE_API RcObjectPtrCounterResetEventListener();
 		PEFF_BASE_API virtual ~RcObjectPtrCounterResetEventListener();
@@ -36,6 +38,7 @@ namespace peff {
 	PEFF_BASE_API size_t acquireGlobalRcObjectPtrCounter();
 	PEFF_BASE_API void registerRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
 	PEFF_BASE_API void unregisterRcObjectPtrCounterResetEventListener(RcObjectPtrCounterResetEventListener *listener);
+#endif
 
 #if __cplusplus >= 202002L
 	template <typename T>
@@ -48,7 +51,9 @@ namespace peff {
 	template <typename T>
 	class RcObjectPtr {
 	public:
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 		size_t _counter = SIZE_MAX;
+#endif
 
 	private:
 		using ThisType = RcObjectPtr<T>;
@@ -57,8 +62,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr)
 			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			_counter = acquireGlobalRcObjectPtrCounter();
 			_ptr->incRef(_counter);
+#else
+			_ptr->incRef(SIZE_MAX);
+#endif
 			this->_ptr = _ptr;
 		}
 
@@ -66,7 +75,11 @@ namespace peff {
 		PEFF_FORCEINLINE void reset() noexcept
 			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
 			if (_ptr) {
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 				_ptr->decRef(_counter);
+#else
+				_ptr->decRef(SIZE_MAX);
+#endif
 			}
 			_ptr = nullptr;
 		}
@@ -85,9 +98,13 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE RcObjectPtr(ThisType &&other) noexcept {
 			_ptr = other._ptr;
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			_counter = other._counter;
+#endif
 			other._ptr = nullptr;
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			other._counter = SIZE_MAX;
+#endif
 		}
 		PEFF_FORCEINLINE ~RcObjectPtr() {
 			reset();
@@ -109,10 +126,14 @@ namespace peff {
 			reset();
 
 			_ptr = other._ptr;
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			_counter = other._counter;
+#endif
 
 			other._ptr = nullptr;
+#if PEFF_ENABLE_RCOBJ_DEBUGGING
 			other._counter = SIZE_MAX;
+#endif
 
 			return *this;
 		}

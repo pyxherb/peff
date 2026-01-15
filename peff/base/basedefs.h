@@ -1,6 +1,7 @@
 #ifndef _PEFF_BASE_BASEDEFS_H_
 #define _PEFF_BASE_BASEDEFS_H_
 
+#include <peff/generated/config.h>
 #include <cstddef>
 #include <cassert>
 
@@ -71,12 +72,15 @@
 #define PEFF_CONTAINER_OF(t, m, p) ((t *)(((char *)p) - PEFF_OFFSETOF(t, m)))
 
 #ifdef _MSC_VER
+	#define PEFF_RESTRICT __restrict
 	#define PEFF_RESTRICT_PTR(type, name) type *__restrict name
 	#define PEFF_RESTRICT_REF(type, name) type &__restrict name
 #elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_RESTRICT __restrict__
 	#define PEFF_RESTRICT_PTR(type, name) type *__restrict__ name
 	#define PEFF_RESTRICT_REF(type, name) type &__restrict__ name
 #else
+	#define PEFF_RESTRICT
 	#define PEFF_RESTRICT_PTR(type, name) type *name
 	#define PEFF_RESTRICT_REF(type, name) type &name
 #endif

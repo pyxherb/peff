@@ -23,7 +23,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void decStrongRef() noexcept {
 			if (!--nStrongRefs) {
-				if(nWeakRefs) {
+				if (nWeakRefs) {
 					onStrongRefZero();
 				} else {
 					onStrongRefZero();
@@ -53,10 +53,13 @@ namespace peff {
 
 	class _SharedFromThisHelper {
 	public:
-		PEFF_FORCEINLINE static void setControlBlock(SharedFromThisBase* sft, SharedPtrControlBlock* controlBlock) noexcept {
+		PEFF_FORCEINLINE static void setControlBlock(SharedFromThisBase *sft, SharedPtrControlBlock *controlBlock) noexcept {
 			sft->controlBlock = controlBlock;
 		}
 	};
+
+	template <typename T>
+	class WeakPtr;
 
 	template <typename T>
 	class SharedPtr {
@@ -87,9 +90,14 @@ namespace peff {
 			}
 		};
 
+	private:
 		SharedPtrControlBlock *controlBlock;
 		T *ptr;
 
+		friend class WeakPtr<T>;
+		friend class SharedFromThis;
+
+	public:
 		PEFF_FORCEINLINE void reset() noexcept {
 			if (controlBlock)
 				controlBlock->decStrongRef();

@@ -1,0 +1,6 @@
+#ifndef _PEFF_GENERATED_CONFIG_H_
+#define _PEFF_GENERATED_CONFIG_H_
+
+#cmakedefine01 PEFF_ENABLE_RCOBJ_DEBUGGING
+
+#endif

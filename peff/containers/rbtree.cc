@@ -244,12 +244,14 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify(NodeBase *node, const size_t nBlack
 	if (!node) {
 		// We have reached a terminal node.
 		if (nBlack != cntBlack)
-			throw std::logic_error("Inequal black node counts detected");
+			// Inequal black node counts detected
+			std::terminate();
 		return;
 	}
 
 	if (_isRed(node) && _isRed(node->p))
-		throw std::logic_error("Connected red nodes detected");
+		// Connected red nodes detected
+		std::terminate();
 
 	if (_isBlack(node))
 		++cntBlack;
@@ -263,7 +265,8 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify() const noexcept {
 		return;
 
 	if (_isRed(_root))
-		throw std::logic_error("Red root node detected");
+		// Red root node detected
+		std::terminate();
 
 	size_t nBlack = 0;
 	for (NodeBase* i = _root; i; i = i->l) {

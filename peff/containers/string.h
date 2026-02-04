@@ -88,21 +88,21 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE void popFrontWithoutShrink() {
-			_dynArray.popFrontWithoutShrink();
+		PEFF_FORCEINLINE void popFront() {
+			_dynArray.popFront();
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popFront() {
-			return _dynArray.popFront();
+		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndShrink() {
+			return _dynArray.popFrontAndShrink();
 		}
 
-		PEFF_FORCEINLINE void popBackWithoutShrink() {
-			_dynArray.popBackWithoutShrink();
+		PEFF_FORCEINLINE void popBack() {
+			_dynArray.popBack();
 			_dynArray.back() = '\0';
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popBack() {
-			if (!_dynArray.popBack())
+		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndShrink() {
+			if (!_dynArray.popBackAndShrink())
 				return false;
 			_dynArray.back() = '\0';
 			return true;
@@ -128,16 +128,20 @@ namespace peff {
 			return "";
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool eraseRange(size_t idxStart, size_t idxEnd) {
-			return _dynArray.eraseRange(idxStart, idxEnd);
+		PEFF_FORCEINLINE void eraseRange(size_t idxStart, size_t idxEnd) {
+			_dynArray.eraseRange(idxStart, idxEnd);
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool eraseRangeAndShrink(size_t idxStart, size_t idxEnd) {
+			return _dynArray.eraseRangeAndShrink(idxStart, idxEnd);
+		}
+
+		PEFF_FORCEINLINE bool extractRangeAndShrink(size_t idxStart, size_t idxEnd) {
+			return _dynArray.extractRangeAndShrink(idxStart, idxEnd + 1);
 		}
 
 		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
 			_dynArray.extractRange(idxStart, idxEnd + 1);
-		}
-
-		PEFF_FORCEINLINE void extractRangeWithoutShrink(size_t idxStart, size_t idxEnd) {
-			_dynArray.extractRangeWithoutShrink(idxStart, idxEnd + 1);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {

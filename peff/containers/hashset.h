@@ -49,9 +49,7 @@ namespace peff {
 		};
 		using Bucket = List<Element>;
 	public:
-		using InternalRemoveResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
 		using RemoveResultType = typename std::conditional_t<Fallible, bool, void>;
-		using RemoveAndResizeResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
 		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<T &>, T &>;
 		using BucketNodeHandleQueryResultType = typename std::conditional_t<Fallible, Option<typename Bucket::NodeHandle>, typename Bucket::NodeHandle>;
 		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const T &>, const T &>;
@@ -213,9 +211,13 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE InternalRemoveResultType _remove(const T &data, bool forceResizeBuckets) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType _remove(const T &data, bool forceResizeBuckets) {
 			if (!_buckets.size()) {
-				return false;
+				if constexpr (Fallible) {
+					return true;
+				} else {
+					return;
+				}
 			}
 
 			HashCode hashCode;
@@ -223,7 +225,7 @@ namespace peff {
 				if (auto result = _hasher(data); result.hasValue()) {
 					hashCode = result.value();
 				} else
-					return NULL_OPTION;
+					return false;
 			} else {
 				hashCode = _hasher(data);
 			}
@@ -236,7 +238,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				BucketNodeHandleQueryResultType maybeNode = _getBucketSlot(bucket, data);
 				if (!maybeNode.hasValue()) {
-					return NULL_OPTION;
+					return false;
 				}
 
 				node = maybeNode.value();
@@ -248,26 +250,14 @@ namespace peff {
 				typename Bucket::NodeHandle nextNode = Bucket::next(node, 1);
 
 				bucket.detach(node);
-
-				Bucket deleterBucket(alloc.get());
-
-				if (!_checkAndResizeBuckets()) {
-					if (forceResizeBuckets) {
-						if (nextNode) {
-							typename Bucket::NodeHandle result = bucket.insertFront(nextNode, node);
-							assert(result);
-						} else {
-							bucket.pushFront(node);
-						}
-						return false;
-					}
-				}
-
-				deleterBucket.deleteNode(node);
+				bucket.deleteNode(node);
 
 				--_size;
 			}
-			return true;
+
+			if constexpr (Fallible) {
+				return true;
+			}
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get(const T &data, size_t &index) const {
@@ -323,22 +313,11 @@ namespace peff {
 			return _insert(std::move(data), true);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType removeWithoutResizeBuckets(const T &data) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const T &data) {
 			if constexpr (Fallible) {
 				return _remove(data, false).hasValue();
 			} else {
-				bool unused = _remove(data, false);
-			}
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType remove(const T &data) {
-			if constexpr (Fallible) {
-				auto result = _remove(data, true);
-
-				if (!result.hasValue())
-					return NULL_OPTION;
-			} else {
-				return _remove(data, true);
+				_remove(data, false);
 			}
 		}
 

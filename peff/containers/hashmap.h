@@ -67,7 +67,6 @@ namespace peff {
 
 	public:
 		using RemoveResultType = typename SetType::RemoveResultType;
-		using RemoveAndResizeResultType = typename SetType::RemoveAndResizeResultType;
 		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<V &>, V &>;
 		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const V &>, const V &>;
 		using ContainsResultType = typename SetType::ContainsResultType;
@@ -105,7 +104,7 @@ namespace peff {
 			return _set.insert(std::move(pair));
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType removeWithoutResizeBuckets(const K &key) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const K &key) {
 			alignas(QueryPair) char pair[sizeof(QueryPair)];
 
 			_constructKeyOnlyPairByCopy(key, pair);
@@ -113,16 +112,8 @@ namespace peff {
 			if constexpr (Fallible) {
 				return _set.remove(*(QueryPair *)pair);
 			} else {
-				_set.removeWithoutResizeBuckets(*(QueryPair *)pair);
+				_set.remove(*(QueryPair *)pair);
 			}
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE RemoveAndResizeResultType remove(const K &key) {
-			alignas(QueryPair) char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
-			return _set.remove(*(QueryPair *)pair);
 		}
 
 		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {

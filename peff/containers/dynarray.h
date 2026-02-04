@@ -274,7 +274,7 @@ namespace peff {
 			_capacity = 0;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool eraseRange(size_t idxStart, size_t idxEnd) {
+		[[nodiscard]] PEFF_FORCEINLINE bool eraseRangeAndShrink(size_t idxStart, size_t idxEnd) {
 			assert(idxStart < _length);
 			assert(idxEnd <= _length);
 
@@ -284,12 +284,10 @@ namespace peff {
 
 			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
-			_resize<false>(newLength, true);
-
-			return true;
+			return _resize<false>(newLength, true);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool eraseRangeWithoutShrink(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE void eraseRange(size_t idxStart, size_t idxEnd) {
 			assert(idxStart < _length);
 			assert(idxEnd <= _length);
 
@@ -299,12 +297,10 @@ namespace peff {
 
 			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
-			_resize<false>(newLength, false);
-
-			return true;
+			_length = newLength;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool extractRange(size_t idxStart, size_t idxEnd) {
+		[[nodiscard]] PEFF_FORCEINLINE bool extractRangeAndShrink(size_t idxStart, size_t idxEnd) {
 			const size_t newLength = idxEnd - idxStart;
 
 			if (newLength == _length)
@@ -331,7 +327,7 @@ namespace peff {
 			return _resize<false>(newLength, true);
 		}
 
-		PEFF_FORCEINLINE void extractRangeWithoutShrink(size_t idxStart, size_t idxEnd) {
+		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
 			const size_t newLength = idxEnd - idxStart;
 
 			if (newLength == _length)
@@ -574,20 +570,20 @@ namespace peff {
 			return at(_length - 1);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popBack() {
+		[[nodiscard]] PEFF_FORCEINLINE bool popBackAndShrink() {
 			return resizeUninitialized(_length - 1);
 		}
 
-		PEFF_FORCEINLINE void popBackWithoutShrink() {
+		PEFF_FORCEINLINE void popBack() {
 			bool unused = resizeUninitialized(_length - 1);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool popFront() {
+		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndShrink() {
 			_moveData(_data, _data + 1, _length - 1);
 			return resize(_length - 1);
 		}
 
-		PEFF_FORCEINLINE void popFrontWithoutShrink() {
+		PEFF_FORCEINLINE void popFront() {
 			_moveData(_data, _data + 1, _length - 1);
 			bool unused = resize(_length - 1);
 		}

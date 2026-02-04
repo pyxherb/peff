@@ -281,11 +281,11 @@ int main() {
 	}
 
 		arr.extractRange(10, 20);
-		if (!arr.eraseRange(0, 7))
+		if (!arr.eraseRangeAndShrink(0, 7))
 			throw std::bad_alloc();
 
 		str.extractRange(10, 20);
-		if (!str.eraseRange(0, 7))
+		if (!str.eraseRangeAndShrink(0, 7))
 			throw std::bad_alloc();
 
 		for (size_t i = 0; i < arr.size(); ++i) {

@@ -9,6 +9,7 @@
 #include <peff/containers/radix_tree.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
+#include <peff/containers/binary_heap.h>
 #include <peff/advutils/shared_ptr.h>
 #include <peff/advutils/buffer_alloc.h>
 #include <iostream>
@@ -121,7 +122,7 @@ int main() {
 	{
 		peff::FallibleHashSet<int, FallibleComparator<int>, FallibleHasher<int>> test(&peff::g_stdAlloc);
 
-		for (size_t i = 0; i < 1024; ++i) {
+		for (int i = 0; i < 1024; ++i) {
 			if (test.insert(+i)) {
 				if (test.size() != 1) {
 					std::terminate();
@@ -274,11 +275,11 @@ int main() {
 			puts("");
 		}
 
-	{
-		B bi;
-		bi.p = bi.p + 1;
-		bi.p = bi.p - 1;
-	}
+		{
+			B bi;
+			bi.p = bi.p + 1;
+			bi.p = bi.p - 1;
+		}
 
 		arr.extractRange(10, 20);
 		if (!arr.eraseRangeAndShrink(0, 7))
@@ -391,6 +392,30 @@ int main() {
 
 		for (auto i = test.beginReversed(); i != test.endReversed(); ++i) {
 			printf("Value: %d\n", *i);
+		}
+	}
+
+	{
+		peff::BinaryHeapArray<uint32_t> test(peff::getDefaultAlloc());
+
+		for (uint32_t i = 0; i < 10; ++i) {
+			if (!test.insert(+i))
+				std::terminate();
+
+			puts("------------------");
+			for (auto j = test.begin(); j != test.end(); ++j) {
+				printf("Value: %u\n", *j);
+			}
+		}
+
+		for (uint32_t i = 10; i; --i) {
+			if (!test.popBackAndShrink())
+				std::terminate();
+
+			puts("------------------");
+			for (auto j = test.begin(); j != test.end(); ++j) {
+				printf("Value: %u\n", *j);
+			}
 		}
 	}
 

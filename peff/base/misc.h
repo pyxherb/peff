@@ -47,6 +47,11 @@ namespace peff {
 		}
 	};
 
+	enum class ControlFlow : bool {
+		Break = false,
+		Continue = true
+	};
+
 	enum class Endian : uint8_t {
 		Little = 0,
 		Big

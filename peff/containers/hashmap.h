@@ -315,6 +315,10 @@ namespace peff {
 		PEFF_FORCEINLINE size_t size() const {
 			return _set.size();
 		}
+
+		PEFF_FORCEINLINE bool shrinkBuckets() {
+			return _set.shrinkBuckets();
+		}
 	};
 
 	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>

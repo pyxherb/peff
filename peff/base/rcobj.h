@@ -42,7 +42,7 @@ namespace peff {
 
 #if __cplusplus >= 202002L
 	template <typename T>
-	concept RcObjectConcept = requires(T * rcObject) {
+	concept RcObjectTrait = requires(T * rcObject) {
 		rcObject->incRef(0);
 		rcObject->decRef(0);
 	};
@@ -61,7 +61,7 @@ namespace peff {
 		T *_ptr = nullptr;
 
 		PEFF_FORCEINLINE void _setAndIncRef(T *_ptr)
-			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
+			PEFF_REQUIRES_CONCEPT(RcObjectTrait<T>) {
 #if PEFF_ENABLE_RCOBJ_DEBUGGING
 			_counter = acquireGlobalRcObjectPtrCounter();
 			_ptr->incRef(_counter);
@@ -73,7 +73,7 @@ namespace peff {
 
 	public:
 		PEFF_FORCEINLINE void reset() noexcept
-			PEFF_REQUIRES_CONCEPT(RcObjectConcept<T>) {
+			PEFF_REQUIRES_CONCEPT(RcObjectTrait<T>) {
 			if (_ptr) {
 #if PEFF_ENABLE_RCOBJ_DEBUGGING
 				_ptr->decRef(_counter);

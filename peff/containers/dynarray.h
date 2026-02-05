@@ -621,6 +621,14 @@ namespace peff {
 		PEFF_FORCEINLINE ConstIterator end() const {
 			return _data + _length;
 		}
+
+		PEFF_FORCEINLINE ConstIterator beginConst() const {
+			return _data;
+		}
+
+		PEFF_FORCEINLINE ConstIterator endConst() const {
+			return _data + _length;
+		}
 	};
 }
 

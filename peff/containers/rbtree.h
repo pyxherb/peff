@@ -70,8 +70,8 @@ namespace peff {
 		struct Node : public RBTreeBase::NodeBase {
 			T treeKey;
 
-			inline Node(T &&key) : treeKey(std::move(key)) {}
-			virtual ~Node() {}
+			PEFF_FORCEINLINE Node(T &&key) : treeKey(std::move(key)) {}
+			PEFF_FORCEINLINE ~Node() {}
 		};
 
 		using NodeType = Node;

@@ -282,7 +282,10 @@ namespace peff {
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;
 
-			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
+			if (!(_length - idxEnd)) {
+				_destructData(_data + idxStart, gapLength);
+			} else
+				_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
 			return _resize<false>(newLength, true);
 		}
@@ -295,7 +298,10 @@ namespace peff {
 			const size_t postGapLength = _length - idxEnd;
 			const size_t newLength = _length - gapLength;
 
-			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
+			if (!(_length - idxEnd)) {
+				_destructData(_data + idxStart, gapLength);
+			} else
+				_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
 			_length = newLength;
 		}
@@ -495,7 +501,7 @@ namespace peff {
 				}
 			});
 
-			for(const auto &i : rhs) {
+			for (const auto &i : rhs) {
 				peff::constructAt<T>(&_data[i], i);
 				++i;
 			}

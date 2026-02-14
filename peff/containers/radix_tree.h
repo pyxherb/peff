@@ -10,6 +10,7 @@
 #include <peff/base/scope_guard.h>
 #include "misc.h"
 #include <limits>
+#include <stdexcept>
 
 namespace peff {
 	template <typename K, typename V>

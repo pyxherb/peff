@@ -9,7 +9,7 @@
 #include "misc.h"
 #include <peff/utils/hash.h>
 #include <peff/base/scope_guard.h>
-#include <memory>
+#include <stdexcept>
 
 #if __cplusplus >= 202002L
 	#include <concepts>

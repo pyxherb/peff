@@ -17,8 +17,8 @@
 #include <peff/base/misc.h>
 #include <peff/base/scope_guard.h>
 #include <peff/utils/fallible_cmp.h>
-#include "list.h"
 #include <peff/utils/option.h>
+#include <stdexcept>
 
 namespace peff {
 	enum class RBColor {

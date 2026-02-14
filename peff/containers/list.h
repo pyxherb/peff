@@ -9,6 +9,7 @@
 #include <peff/base/alloc.h>
 #include <peff/base/scope_guard.h>
 #include <peff/base/misc.h>
+#include <stdexcept>
 
 namespace peff {
 	template <typename T>

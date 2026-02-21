@@ -42,15 +42,15 @@
 #endif
 
 #if defined(_MSC_VER)
-	#define PEFF_UNREACHABLE(...) \
+	#define PEFF_UNREACHABLE() \
 		assert(false);            \
 		__assume(false);
 #elif defined(__GNUC__) || defined(__clang__)
-	#define PEFF_UNREACHABLE(...) \
+	#define PEFF_UNREACHABLE() \
 		assert(false);            \
 		__builtin_unreachable()
 #else
-	#define PEFF_UNREACHABLE(...) std::terminate()
+	#define PEFF_UNREACHABLE() std::terminate()
 #endif
 
 #if defined(_MSC_VER)

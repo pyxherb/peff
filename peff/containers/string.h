@@ -161,6 +161,15 @@ namespace peff {
 			return true;
 		}
 
+		[[nodiscard]] PEFF_FORCEINLINE bool append(char data) {
+			const size_t oldSize = size();
+			const size_t dataLength = 1;
+			if (!resize(oldSize + dataLength))
+				return false;
+			_dynArray.data()[oldSize] = data;
+			return true;
+		}
+
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const String &data) {
 			const size_t oldSize = size();
 			if (!resize(oldSize + data.size()))

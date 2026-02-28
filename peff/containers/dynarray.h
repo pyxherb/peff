@@ -107,6 +107,7 @@ namespace peff {
 			assert(length > _length);
 
 			if constexpr (construct) {
+				static_assert(std::is_constructible_v<T>, "The type is not defaultly constructible");
 				// Because construction of new objects may throw exceptions,
 				// we choose to construct the new objects first.
 				size_t idxLastConstructedObject;
@@ -152,10 +153,22 @@ namespace peff {
 			}
 		}
 
+		///
+		/// @brief Internal method for resizing.
+		///
+		/// @tparam construct Indicates if to construct new elements using default constructor.
+		/// @tparam forceResizeCapacity Indicates if to shrink the capacity automatically.
+		/// @param length New length for resizing.
+		/// @return Whether the resizing operation is performed successfully.
+		///
 		template <bool construct, bool forceResizeCapacity>
 		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length) {
 			if (!length) {
-				_clear();
+				if constexpr (forceResizeCapacity) {
+					_clear();
+				} else {
+					_shrink(_data, 0);
+				}
 				return true;
 			}
 
@@ -239,7 +252,7 @@ namespace peff {
 						if (!_expandTo<construct>(_data, length))
 							return false;
 					}
-				} else if(length < _length) {
+				} else if (length < _length) {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
 						_shrink(_data, length);
 					}
@@ -250,6 +263,9 @@ namespace peff {
 			return true;
 		}
 
+		///
+		/// @brief Internal method for clearing the dynamic array, the capacity will be released immediately.
+		///
 		PEFF_FORCEINLINE void _clear() {
 			if constexpr (!std::is_trivial_v<T>) {
 				for (size_t i = 0; i < _length; ++i)
@@ -301,11 +317,6 @@ namespace peff {
 
 			if (newLength == _length)
 				return true;
-
-			if (!newLength) {
-				clear();
-				return true;
-			}
 
 			return _resize<false, true>(newLength);
 		}
@@ -406,30 +417,59 @@ namespace peff {
 			return _capacity;
 		}
 
+		///
+		/// @brief Resize and shrink the capacity automatically.
+		///
+		/// @param length New length for resizing.
+		/// @return Whether the resizing operation is performed successfully.
+		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeAndShrink(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<true, true>(length);
 		}
 
+		///
+		/// @brief Resize, but don't shrink the capacity.
+		///
+		/// @param length New length for resizing.
+		/// @return Whether the resizing operation is performed successfully.
+		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resize(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<true, false>(length);
 		}
 
+		///
+		/// @brief Resize and shrink the capacity automatically, but don't initialize the new elements.
+		///
+		/// @param length New length for resizing.
+		/// @return Whether the resizing operation is performed successfully.
+		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeAndShrinkUninitialized(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<false, true>(length);
 		}
 
+		///
+		/// @brief Resize, but don't shrink the capacity and don't initialize the new elements.
+		///
+		/// @param length New length for resizing.
+		/// @return Whether the resizing operation is performed successfully.
+		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<false, false>(length);
 		}
 
+		///
+		/// @brief Shrink the capacity to the dynamic array's length.
+		///
+		/// @return PEFF_FORCEINLINE
+		///
 		[[nodiscard]] PEFF_FORCEINLINE bool shrinkToFit() {
 			return _resize<false, true>(_length);
 		}
@@ -488,7 +528,15 @@ namespace peff {
 			return true;
 		}
 
+		///
+		/// @brief Clear the dynamic array, but don't clear the capacity.
+		///
 		PEFF_FORCEINLINE void clear() {
+			if (!resizeUninitialized(0))
+				std::terminate();
+		}
+
+		PEFF_FORCEINLINE void clearAndShrink() {
 			_clear();
 		}
 

@@ -76,7 +76,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
-			clear();
+			clearAndShrink();
 
 			comparator = std::move(rhs.comparator);
 			_set = std::move(rhs._set);
@@ -168,6 +168,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			_set.clear();
+		}
+
+		PEFF_FORCEINLINE void clearAndShrink() {
+			_set.clearAndShrink();
 		}
 
 		struct Iterator {

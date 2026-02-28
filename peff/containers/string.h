@@ -73,6 +73,10 @@ namespace peff {
 			_dynArray.clear();
 		}
 
+		PEFF_FORCEINLINE void clearAndShrink() {
+			_dynArray.clearAndShrink();
+		}
+
 		PEFF_FORCEINLINE char &at(size_t index) {
 			return _dynArray.at(index);
 		}

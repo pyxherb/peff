@@ -100,7 +100,7 @@ namespace peff {
 						oldBuckets.at(index).pushFront(j);
 					}
 				}
-				newBuckets.clear();
+				newBuckets.clearAndShrink();
 			});
 
 			for (size_t i = 0; i < nOldBuckets; ++i) {
@@ -293,7 +293,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
-			clear();
+			clearAndShrink();
 
 			_buckets = std::move(other._buckets);
 			_size = other._size;
@@ -342,6 +342,10 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			_buckets.clear();
+		}
+
+		PEFF_FORCEINLINE void clearAndShrink() {
+			_buckets.clearAndShrink();
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {

@@ -154,9 +154,6 @@ namespace peff {
 
 		template <bool construct, bool forceResizeCapacity>
 		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length) {
-			if (length == _length)
-				return true;
-
 			if (!length) {
 				_clear();
 				return true;
@@ -242,7 +239,7 @@ namespace peff {
 						if (!_expandTo<construct>(_data, length))
 							return false;
 					}
-				} else {
+				} else if(length < _length) {
 					if constexpr (!std::is_trivially_destructible_v<T>) {
 						_shrink(_data, length);
 					}

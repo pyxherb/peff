@@ -406,25 +406,25 @@ namespace peff {
 			return _capacity;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool resize(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeAndShrink(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<true, true>(length);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrink(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resize(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<true, false>(length);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeAndShrinkUninitialized(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<false, true>(length);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool resizeWithoutShrinkUninitialized(size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
 			if (length == _length)
 				return true;
 			return _resize<false, false>(length);

@@ -53,6 +53,22 @@ namespace peff {
 			return true;
 		}
 
+		PEFF_FORCEINLINE bool resizeAndShrink(size_t length) {
+			if (!_dynArray.resizeAndShrinkUninitialized(length + 1))
+				return false;
+			_dynArray.at(length) = '\0';
+			return true;
+		}
+
+		PEFF_FORCEINLINE bool resizeAndShrinkWith(size_t length, const char &filler) {
+			const size_t originalLength = _dynArray.size();
+			if (!_dynArray.resizeAndShrinkUninitialized(length + 1))
+				return false;
+			memset(_dynArray.data() + originalLength, filler, length - originalLength);
+			_dynArray.at(length) = '\0';
+			return true;
+		}
+
 		PEFF_FORCEINLINE void clear() {
 			_dynArray.clear();
 		}

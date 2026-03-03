@@ -168,6 +168,7 @@ namespace peff {
 					_clear();
 				} else {
 					_shrink(_data, 0);
+					_length = 0;
 				}
 				return true;
 			}

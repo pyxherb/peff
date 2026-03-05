@@ -323,6 +323,11 @@ int main() {
 				std::terminate();
 		}
 
+		for (size_t i = 0; i < 32; ++i) {
+			if (!m.insert(+i, +i))
+				std::terminate();
+		}
+
 		for (size_t i = 0; i < 32; i += 2) {
 			m.remove(i);
 		}
@@ -420,6 +425,15 @@ int main() {
 	}
 
 	bool endian = peff::getByteOrder();
+
+	peff::String s1(peff::getDefaultAlloc()), s2(peff::getDefaultAlloc());
+	if (!s1.build("extfns"))
+		std::terminate();
+	if (!s2.build("extfns"))
+		std::terminate();
+
+	if (peff::cityHash64(s1.data(), s1.size()) != peff::cityHash64(s2.data(), s2.size()))
+		std::terminate();
 
 	if (endian)
 		puts("Big endian");

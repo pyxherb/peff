@@ -8,7 +8,10 @@ namespace peff {
 	PEFF_REQUIRES_CONCEPT(std::invocable<Eq, const K &, const K &>)
 	class HashMapImpl final {
 	private:
+		static_assert(std::is_move_constructible_v<K>, "The key must be move-constructible");
+		static_assert(std::is_move_constructible_v<V>, "The value must be move-constructible");
 		struct Pair {
+			// TODO: Use uninitialized instead of raw data type.
 			K key;
 			V value;
 			bool isForQuery;
@@ -23,7 +26,7 @@ namespace peff {
 			QueryPair(QueryPair &&rhs) = default;
 
 			PEFF_FORCEINLINE bool copy(QueryPair &dest) const {
-				if (!Pair::copy((Pair&)dest)) {
+				if (!Pair::copy((Pair &)dest)) {
 					return false;
 				}
 
@@ -325,9 +328,9 @@ namespace peff {
 		}
 	};
 
-	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>
+	template <typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>
 	using HashMap = HashMapImpl<K, V, Eq, Hasher, false>;
-	template<typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>
+	template <typename K, typename V, typename Eq = std::equal_to<K>, typename Hasher = peff::Hasher<K>>
 	using FallibleHashMap = HashMapImpl<K, V, Eq, Hasher, true>;
 }
 

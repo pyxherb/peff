@@ -529,6 +529,18 @@ namespace peff {
 			return true;
 		}
 
+		[[nodiscard]] PEFF_FORCEINLINE bool buildAndShrink(const ThisType &rhs) {
+			if (!build(rhs))
+				return false;
+			return shrinkToFit();
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool buildAndShrink(const std::initializer_list<T> &rhs) {
+			if (!build(rhs))
+				return false;
+			return shrinkToFit();
+		}
+
 		///
 		/// @brief Clear the dynamic array, but don't clear the capacity.
 		///

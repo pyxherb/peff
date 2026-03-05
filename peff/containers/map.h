@@ -7,13 +7,18 @@ namespace peff {
 	template <typename K, typename V, typename Lt, bool Fallible, bool IsThreeway>
 	class MapImpl final {
 	private:
+		static_assert(std::is_move_constructible_v<K>, "The key must be move-constructible");
+		static_assert(std::is_move_constructible_v<V>, "The value must be move-constructible");
 		struct Pair {
+			// TODO: Use uninitialized instead of raw data type.
 			K key;
 			V value;
 			bool isForQuery;
 
 			PEFF_FORCEINLINE Pair(K &&k, V &&v, bool isForQuery = false) : key(std::move(k)), value(std::move(v)), isForQuery(isForQuery) {}
 			Pair(Pair &&rhs) = default;
+
+			PEFF_FORCEINLINE Pair &operator=(Pair &&rhs) noexcept = default;
 		};
 
 		struct QueryPair : public Pair {

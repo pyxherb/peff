@@ -57,6 +57,17 @@ namespace peff {
 		Big
 	};
 
+	template<typename T>
+	PEFF_FORCEINLINE void moveAssignOrMoveConstruct(T &lhs, T &&rhs) noexcept {
+		if constexpr (std::is_move_assignable_v<T>) {
+			lhs = std::move(rhs);
+		} else {
+			static_assert(std::is_move_constructible_v<T>, "The type must at least be move-constructible");
+			std::destroy_at<T>(&lhs);
+			peff::constructAt<T>(&lhs, std::move(lhs));
+		}
+	}
+
 	PEFF_BASE_API Endian testNativeEndian();
 }
 

@@ -35,6 +35,7 @@ namespace peff {
 	PEFF_REQUIRES_CONCEPT(std::invocable<EqCmp, const T &, const T &>)
 	class HashSetImpl {
 	public:
+		static_assert(std::is_move_constructible_v<T>, "The element must be move-constructible");
 		using HasherResult = decltype(std::declval<Hasher>()(std::declval<T>()));
 		using HashCode = typename details::HashCodeResultTypeExtractor<HasherResult>::type;
 
@@ -48,6 +49,7 @@ namespace peff {
 			Element &operator=(Element &&rhs) = default;
 		};
 		using Bucket = List<Element>;
+
 	public:
 		using RemoveResultType = typename std::conditional_t<Fallible, bool, void>;
 		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<T &>, T &>;
@@ -197,9 +199,16 @@ namespace peff {
 			size_t index = ((size_t)hashCode) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 
+			for (auto &i : bucket) {
+				if (_equalityComparator(i.data, tmpData)) {
+					moveAssignOrMoveConstruct<T>(i.data, std::move(tmpData));
+					goto inserted;
+				}
+			}
 			if (!bucket.pushFront(Element(std::move(tmpData), hashCode)))
 				return false;
 
+		inserted:
 			if (!_checkAndResizeBuckets()) {
 				if (forceResizeBuckets) {
 					bucket.popFront();

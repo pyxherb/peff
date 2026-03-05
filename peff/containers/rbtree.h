@@ -67,6 +67,7 @@ namespace peff {
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class RBTreeImpl : protected RBTreeBase {
 	public:
+		static_assert(std::is_move_constructible_v<T>, "The key must be move-constructible");
 		struct Node : public RBTreeBase::NodeBase {
 			T treeKey;
 
@@ -462,8 +463,7 @@ namespace peff {
 			NodeBase *parent = nullptr;
 			NodeBase **slot = _getSlot(node->treeKey, parent);
 
-			if (!slot)
-				return false;
+			assert (slot);
 
 			return _insert(static_cast<Node *>(parent), node);
 		}
@@ -471,14 +471,19 @@ namespace peff {
 		[[nodiscard]] PEFF_FORCEINLINE Node *insert(T &&key) {
 			NodeBase *parent = nullptr, **slot = _getSlot(key, parent);
 
-			if (!slot)
-				return static_cast<Node *>(parent);
+			if (!slot) {
+				Node *node = static_cast<Node *>(parent);
+				moveAssignOrMoveConstruct<T>(node->treeKey, std::move(key));
+				return node;
+			}
 
 			Node *node = _allocSingleNode(std::move(key));
 			if (!node)
 				return nullptr;
-			if (!insert(node))
+			if (!insert(node)) {
 				_deleteSingleNode(node);
+				return nullptr;
+			}
 
 			return node;
 		}

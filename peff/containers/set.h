@@ -8,6 +8,7 @@ namespace peff {
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
 	class SetImpl final {
 	private:
+		static_assert(std::is_move_constructible_v<T>, "The element must be move-constructible");
 		using Tree = std::conditional_t<Fallible, FallibleRBTree<T, Comparator, IsThreeway>, RBTree<T, Comparator, IsThreeway>>;
 		Tree _tree;
 		using ThisType = SetImpl<T, Comparator, Fallible, IsThreeway>;

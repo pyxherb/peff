@@ -215,6 +215,18 @@ namespace peff {
 			return true;
 		}
 
+		PEFF_FORCEINLINE bool buildAndShrink(const std::string_view &src) {
+			if (!resizeAndShrink(src.size()))
+				return false;
+			memcpy(_dynArray.data(), src.data(), src.size());
+			_dynArray.data()[src.size()] = '\0';
+			return true;
+		}
+
+		PEFF_FORCEINLINE bool shrinkToFit() {
+			return _dynArray.shrinkToFit();
+		}
+
 		PEFF_FORCEINLINE Iterator begin() {
 			return _dynArray.begin();
 		}
@@ -274,23 +286,9 @@ namespace peff {
 
 	template <>
 	struct Hasher<String> {
+		Hasher<std::string_view> innerHasher;
 		PEFF_FORCEINLINE std::conditional_t<sizeof(size_t) <= sizeof(uint32_t), uint32_t, uint64_t> operator()(const String &x) const {
-			if constexpr (sizeof(size_t) <= sizeof(uint32_t)) {
-				return cityHash32(x.data(), x.size());
-			} else {
-				return cityHash64(x.data(), x.size());
-			}
-		}
-	};
-
-	template <>
-	struct Hasher<std::string_view> {
-		PEFF_FORCEINLINE std::conditional_t<sizeof(size_t) <= sizeof(uint32_t), uint32_t, uint64_t> operator()(const std::string_view &x) const {
-			if constexpr (sizeof(size_t) <= sizeof(uint32_t)) {
-				return cityHash32(x.data(), x.size());
-			} else {
-				return cityHash64(x.data(), x.size());
-			}
+			return innerHasher(x);
 		}
 	};
 }

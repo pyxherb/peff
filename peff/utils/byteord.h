@@ -5,7 +5,6 @@
 #include <cstdint>
 
 namespace peff {
-
 	PEFF_UTILS_API extern bool _g_byteOrder;
 
 	/// @brief Get current machine byte order.

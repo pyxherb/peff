@@ -11,37 +11,47 @@ namespace peff {
 		static_assert(std::is_move_constructible_v<K>, "The key must be move-constructible");
 		static_assert(std::is_move_constructible_v<V>, "The value must be move-constructible");
 		struct Pair {
-			// TODO: Use uninitialized instead of raw data type.
-			K key;
-			V value;
+			Uninit<K> key;
+			Uninit<V> value;
+			bool keyConstructed;
+			bool valueConstructed;
 			bool isForQuery;
 
-			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool isForQuery) : key(std::move(key)), value(std::move(value)), isForQuery(isForQuery) {}
-			Pair(Pair &&rhs) = default;
+			PEFF_FORCEINLINE Pair() : keyConstructed(false), valueConstructed(false), isForQuery(true) {}
+			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool isForQuery) : key(std::move(key)), value(std::move(value)), isForQuery(isForQuery), keyConstructed(true), valueConstructed(true) {}
+			PEFF_FORCEINLINE Pair(Pair &&rhs) noexcept: isForQuery(false) {
+				if (rhs.keyConstructed) {
+					key = std::move(rhs.key.get());
+					rhs.keyConstructed = false;
+					keyConstructed = true;
+				}
+				if (rhs.valueConstructed) {
+					value = std::move(rhs.value.get());
+					rhs.valueConstructed = false;
+					valueConstructed = true;
+				}
+			}
+
+			PEFF_FORCEINLINE ~Pair() {
+				if (keyConstructed)
+					key.destroy();
+				if (valueConstructed)
+					value.destroy();
+			}
 		};
 
-		struct QueryPair : Pair {
+		struct QueryPair : public Pair {
 			const K *queryKey;
 
-			QueryPair(QueryPair &&rhs) = default;
-
-			PEFF_FORCEINLINE bool copy(QueryPair &dest) const {
-				if (!Pair::copy((Pair &)dest)) {
-					return false;
-				}
-
-				dest.queryKey = queryKey;
-
-				return true;
-			}
+			PEFF_FORCEINLINE QueryPair(const K *queryKey): Pair(), queryKey(queryKey) {}
 		};
 
 		struct PairComparator {
 			Eq eqComparator;
 
 			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<K>(), std::declval<K>())) operator()(const Pair &lhs, const Pair &rhs) const {
-				const K &l = lhs.isForQuery ? *((const QueryPair &)lhs).queryKey : lhs.key,
-						&r = rhs.isForQuery ? *((const QueryPair &)rhs).queryKey : rhs.key;
+				const K &l = lhs.isForQuery ? *((const QueryPair &)lhs).queryKey : lhs.key.get(),
+						&r = rhs.isForQuery ? *((const QueryPair &)rhs).queryKey : rhs.key.get();
 				return eqComparator(l, r);
 			}
 		};
@@ -50,7 +60,7 @@ namespace peff {
 			Hasher hasher;
 
 			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const Pair &pair) const {
-				const K &k = pair.isForQuery ? *((const QueryPair &)pair).queryKey : pair.key;
+				const K &k = pair.isForQuery ? *((const QueryPair &)pair).queryKey : pair.key.get();
 				return hasher(k);
 			}
 		};
@@ -62,11 +72,6 @@ namespace peff {
 		SetType _set;
 
 		using ThisType = HashMapImpl<K, V, Eq, Hasher, Fallible>;
-
-		PEFF_FORCEINLINE static void _constructKeyOnlyPairByCopy(const K &key, char *dest) {
-			((QueryPair *)dest)->isForQuery = true;
-			((QueryPair *)dest)->queryKey = &key;
-		}
 
 	public:
 		using RemoveResultType = typename SetType::RemoveResultType;
@@ -88,76 +93,60 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insertWithoutResizeBuckets(K &&key, V &&value) {
-			Pair pair = Pair{ std::move(key), std::move(value), false };
+			Pair pair = Pair(std::move(key), std::move(value), false);
 			return _set.insertWithoutResizeBuckets(std::move(pair));
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
-			Pair pair = Pair{ std::move(key), std::move(value), false };
+			Pair pair = Pair(std::move(key), std::move(value), false);
 			return _set.insert(std::move(pair));
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insertAndFetchKeyWithoutResizeBuckets(K &&key, V &&value) {
-			Pair pair = Pair{ std::move(key), std::move(value), false };
+			Pair pair = Pair(std::move(key), std::move(value), false);
 			return _set.insertWithoutResizeBuckets(std::move(pair));
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insertAndFetchKey(K &&key, V &&value) {
-			Pair pair = Pair{ std::move(key), std::move(value), false };
+			Pair pair = Pair(std::move(key), std::move(value), false);
 			return _set.insert(std::move(pair));
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const K &key) {
-			alignas(QueryPair) char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
 			if constexpr (Fallible) {
-				return _set.remove(*(QueryPair *)pair);
+				return _set.remove(QueryPair(&key));
 			} else {
-				_set.remove(*(QueryPair *)pair);
+				_set.remove(QueryPair(&key));
 			}
 		}
 
 		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
-			alignas(QueryPair) char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
-			return _set.contains(*(QueryPair *)pair);
+			return _set.contains(QueryPair(&key));
 		}
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
-			alignas(QueryPair) char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
 			if constexpr (Fallible) {
-				auto maybePair = _set.at(*(QueryPair *)pair);
+				auto maybePair = _set.at(QueryPair(&key));
 
 				if (!maybePair.hasValue())
 					return NULL_OPTION;
 
-				return maybePair.value().value;
+				return maybePair.value().value.get();
 			} else {
-				return _set.at(*(QueryPair *)pair).value;
+				return _set.at(QueryPair(&key)).value.get();
 			}
 		}
 
 		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
-			alignas(QueryPair) char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
 			if constexpr (Fallible) {
-				auto maybePair = _set.at(*(QueryPair *)pair);
+				auto maybePair = _set.at(QueryPair(&key));
 
 				if (!maybePair.hasValue())
 					return NULL_OPTION;
 
-				return maybePair.value().value;
+				return maybePair.value().value.get();
 			} else {
-				return _set.at(*(QueryPair *)pair).value;
+				return _set.at(QueryPair(&key)).value.get();
 			}
 		}
 
@@ -214,15 +203,15 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE K &key() const {
-				return _iterator->key;
+				return _iterator->key.get();
 			}
 
 			PEFF_FORCEINLINE V &value() const {
-				return _iterator->value;
+				return _iterator->value.get();
 			}
 
 			PEFF_FORCEINLINE std::pair<K &, V &> operator*() const {
-				return { _iterator->key, _iterator->value };
+				return { _iterator->key.get(), _iterator->value.get() };
 			}
 		};
 
@@ -312,11 +301,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Iterator find(const K &key) {
-			char pair[sizeof(QueryPair)];
-
-			_constructKeyOnlyPairByCopy(key, pair);
-
-			return Iterator(_set.find(*(QueryPair *)pair));
+			return Iterator(_set.find(QueryPair(&key)));
 		}
 
 		PEFF_FORCEINLINE size_t size() const {

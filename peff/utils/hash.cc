@@ -47,21 +47,15 @@ constexpr static const uint32_t CITYHASH_C1 = 0xcc9e2d51;
 constexpr static const uint32_t CITYHASH_C2 = 0x1b873593;
 
 PEFF_FORCEINLINE uint64_t _cityHashFetch64(const char *p) {
-	if (((uintptr_t)p) & 0x07) {
-		return peff::getByteOrder() ? *p : peff::swapByteOrder(*(uint64_t *)p);
-	}
 	uint64_t data;
 	memcpy(&data, p, sizeof(data));
-	return data;
+	return peff::getByteOrder() ? data : peff::swapByteOrder(data);
 }
 
 PEFF_FORCEINLINE uint32_t _cityHashFetch32(const char *p) {
-	if (((uintptr_t)p) & 0x03) {
-		return peff::getByteOrder() ? *p : peff::swapByteOrder(*(uint32_t *)p);
-	}
 	uint32_t data;
 	memcpy(&data, p, sizeof(data));
-	return data;
+	return peff::getByteOrder() ? data : peff::swapByteOrder(data);
 }
 
 static uint32_t _cityHashFMix(uint32_t h) {

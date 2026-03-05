@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <functional>
 #include <climits>
+#include <cstdint>
 
 namespace peff {
 	template <uintmax_t Max>
@@ -24,7 +25,7 @@ namespace peff {
 							uint64_t,
 							uintmax_t>>>>;
 	};
-	
+
 	template <typename... Ts>
 	struct IsOneOf {
 		constexpr static bool value = false;

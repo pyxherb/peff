@@ -98,9 +98,9 @@ namespace peff {
 	struct Hasher<std::string_view> {
 		PEFF_FORCEINLINE std::conditional_t<sizeof(size_t) <= sizeof(uint32_t), uint32_t, uint64_t> operator()(const std::string_view &x) const {
 			if constexpr (sizeof(size_t) <= sizeof(uint32_t)) {
-				return djbHash32(x.data(), x.size());
+				return cityHash32(x.data(), x.size());
 			} else {
-				return djbHash64(x.data(), x.size());
+				return cityHash64(x.data(), x.size());
 			}
 		}
 	};

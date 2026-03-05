@@ -426,19 +426,39 @@ int main() {
 
 	bool endian = peff::getByteOrder();
 
-	peff::String s1(peff::getDefaultAlloc()), s2(peff::getDefaultAlloc());
-	if (!s1.build("extfns"))
-		std::terminate();
-	if (!s2.build("extfns"))
-		std::terminate();
-
-	if (peff::cityHash64(s1.data(), s1.size()) != peff::cityHash64(s2.data(), s2.size()))
-		std::terminate();
-
 	if (endian)
 		puts("Big endian");
 	else
 		puts("Little endian");
+
+	peff::HashMap<int, peff::String> hm(&peff::g_stdAlloc);
+
+	for (int i = 0; i < 16; i++) {
+		int j = i & 1 ? i : 32 - i;
+		printf("Inserting: %d\n", j);
+		peff::String s(&peff::g_stdAlloc);
+
+		if(!s.build(std::to_string(j)))
+			throw std::bad_alloc();
+		if (!hm.insert(+j, std::move(s)))
+			throw std::bad_alloc();
+	}
+
+
+	for (int i = 0; i < 16; i++) {
+		int j = i & 1 ? i : 32 - i;
+		printf("Removing: %d\n", j);
+
+		hm.remove(j);
+
+		auto k = hm.begin();
+		while (k != hm.end()) {
+			printf("%d: %s\n", k.key(), k.value().data());
+			++k;
+		}
+
+		// map.dump(std::cout);
+	}
 
 	return 0;
 }

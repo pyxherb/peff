@@ -56,13 +56,13 @@ namespace peff {
 			if constexpr (std::is_trivially_move_assignable_v<T>) {
 				memmove(newData, oldData, sizeof(T) * length);
 			} else {
-				if (newData + length < oldData) {
+				if (newData + length <= oldData) {
 					for (size_t i = 0; i < length; ++i) {
-						newData[i] = std::move(oldData[i]);
+						moveAssignOrMoveConstruct<T>(newData[i], std::move(oldData[i]));
 					}
 				} else {
 					for (size_t i = length; i > 0; --i) {
-						newData[i - 1] = std::move(oldData[i - 1]);
+						moveAssignOrMoveConstruct<T>(newData[i - 1], std::move(oldData[i - 1]));
 					}
 				}
 			}
@@ -623,13 +623,21 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool popFrontAndShrink() {
-			_moveData(_data, _data + 1, _length - 1);
-			return resize(_length - 1);
+			T frontData = std::move(front());
+			size_t len = _length - 1;
+			_moveData(_data, _data + 1, len);
+			if (!resize(len)) {
+				_moveData(_data + 1, _data, len);
+				constructAt(&_data[0], std::move(frontData));
+				return false;
+			}
+			return true;
 		}
 
 		PEFF_FORCEINLINE void popFront() {
 			_moveData(_data, _data + 1, _length - 1);
-			bool unused = resize(_length - 1);
+			bool result = resize(_length - 1);
+			assert(result);
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {

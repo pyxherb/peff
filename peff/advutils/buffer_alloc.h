@@ -46,6 +46,7 @@ namespace peff {
 
 		PEFF_ADVUTILS_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_ADVUTILS_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
+		PEFF_ADVUTILS_API virtual void *reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
 		PEFF_ADVUTILS_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_ADVUTILS_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;
@@ -90,6 +91,7 @@ namespace peff {
 
 		PEFF_ADVUTILS_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_ADVUTILS_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
+		PEFF_ADVUTILS_API virtual void *reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept override;
 		PEFF_ADVUTILS_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_ADVUTILS_API virtual bool isReplaceable(const Alloc *rhs) const noexcept override;

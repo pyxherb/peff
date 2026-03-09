@@ -40,7 +40,11 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #endif
 }
 
-PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+PEFF_BASE_API void *StdAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	return nullptr;
+}
+
+PEFF_BASE_API void *StdAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 #ifdef _MSC_VER
 	if (alignment > 1) {
 		return _aligned_realloc(ptr, newSize, newAlignment);
@@ -48,16 +52,16 @@ PEFF_BASE_API void* StdAlloc::realloc(void* ptr, size_t size, size_t alignment, 
 		return ::realloc(ptr, newSize);
 	}
 #else
-	if(alignment > 1) {
+	if (alignment > 1) {
 		void *p;
 
-#if __ANDROID__
-		if(!(p = memalign(newAlignment, newSize)))
+	#if __ANDROID__
+		if (!(p = memalign(newAlignment, newSize)))
 			return nullptr;
-#else
-		if(!(p = aligned_alloc(newAlignment, newSize)))
+	#else
+		if (!(p = aligned_alloc(newAlignment, newSize)))
 			return nullptr;
-#endif
+	#endif
 
 		memcpy(p, ptr, size);
 
@@ -114,7 +118,11 @@ PEFF_BASE_API void *VoidAlloc::alloc(size_t size, size_t alignment) noexcept {
 	std::terminate();
 }
 
-PEFF_BASE_API void* VoidAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+PEFF_BASE_API void *VoidAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	std::terminate();
+}
+
+PEFF_BASE_API void *VoidAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 	std::terminate();
 }
 
@@ -151,7 +159,11 @@ PEFF_BASE_API void *NullAlloc::alloc(size_t size, size_t alignment) noexcept {
 	return nullptr;
 }
 
-PEFF_BASE_API void* NullAlloc::realloc(void* ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+PEFF_BASE_API void *NullAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
+	return nullptr;
+}
+
+PEFF_BASE_API void *NullAlloc::reallocInPlace(void *ptr, size_t size, size_t alignment, size_t newSize, size_t newAlignment) noexcept {
 	return nullptr;
 }
 

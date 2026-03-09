@@ -101,7 +101,7 @@ namespace peff {
 		}
 
 		template <bool construct>
-		[[nodiscard]] PEFF_FORCEINLINE bool _expandTo(
+		[[nodiscard]] PEFF_FORCEINLINE void _expandTo(
 			T *newData,
 			size_t length) {
 			assert(length > _length);
@@ -134,8 +134,6 @@ namespace peff {
 				if (_data)
 					_moveDataUninitialized(newData, _data, _length);
 			}
-
-			return true;
 		}
 
 		PEFF_FORCEINLINE void _shrink(
@@ -191,18 +189,47 @@ namespace peff {
 							return false;
 					}
 				} else {
-					if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-						return false;
-
-					ScopeGuard scopeGuard(
-						[this, newCapacityTotalSize, newData]() noexcept {
-							_allocator->release(newData, newCapacityTotalSize, alignof(T));
-						});
-
-					if (!_expandTo<construct>(newData, length))
-						return false;
-
-					scopeGuard.release();
+					if (_data) {
+						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+							return false;
+						if constexpr (std::is_nothrow_constructible_v<T>) {
+							_expandTo<construct>(newData, length);
+						} else {
+							ScopeGuard scopeGuard(
+								[this, newCapacityTotalSize, newData]() noexcept {
+									_allocator->release(newData, newCapacityTotalSize, alignof(T));
+								});
+							_expandTo<construct>(newData, length);
+							scopeGuard.release();
+						}
+					} else {
+						if constexpr (std::is_nothrow_constructible_v<T>) {
+							if ((newData = (T *)_allocator->reallocInPlace(
+									 _data,
+									 sizeof(T) * _capacity, alignof(T),
+									 newCapacityTotalSize, alignof(T)))) {
+								_expandTo<construct>(newData, length);
+							} else {
+								if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+									return false;
+								ScopeGuard scopeGuard(
+									[this, newCapacityTotalSize, newData]() noexcept {
+										_allocator->release(newData, newCapacityTotalSize, alignof(T));
+									});
+								_expandTo<construct>(newData, length);
+								scopeGuard.release();
+							}
+						} else {
+							if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+								return false;
+							ScopeGuard scopeGuard(
+								[this, newCapacityTotalSize, newData]() noexcept {
+									_allocator->release(newData, newCapacityTotalSize, alignof(T));
+								});
+							_expandTo<construct>(newData, length);
+							scopeGuard.release();
+						}
+					}
 				}
 
 				if (clearOldData)
@@ -250,8 +277,7 @@ namespace peff {
 			} else {
 				if (length > _length) {
 					if constexpr (!std::is_trivially_constructible_v<T>) {
-						if (!_expandTo<construct>(_data, length))
-							return false;
+						_expandTo<construct>(_data, length);
 					}
 				} else if (length < _length) {
 					if constexpr (!std::is_trivially_destructible_v<T>) {

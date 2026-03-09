@@ -31,16 +31,16 @@ namespace peff {
 	};
 
 	template <typename T>
-	struct OneshotScopeGuard {
+	struct Deferred {
 		T callback;
 
 		static_assert(std::is_nothrow_invocable_v<T>, "The callback must be noexcept");
 
-		OneshotScopeGuard() = delete;
-		PEFF_FORCEINLINE OneshotScopeGuard(T &&callback)
+		Deferred() = delete;
+		PEFF_FORCEINLINE Deferred(T &&callback)
 			: callback(std::move(callback)) {
 		}
-		PEFF_FORCEINLINE ~OneshotScopeGuard() {
+		PEFF_FORCEINLINE ~Deferred() {
 			callback();
 		}
 	};

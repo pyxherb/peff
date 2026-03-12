@@ -101,33 +101,35 @@ namespace peff {
 		}
 
 		template <bool construct>
-		[[nodiscard]] PEFF_FORCEINLINE void _expandTo(
+		PEFF_FORCEINLINE void _expandTo(
 			T *newData,
 			size_t length) {
 			assert(length > _length);
 
 			if constexpr (construct) {
 				static_assert(std::is_constructible_v<T>, "The type is not defaultly constructible");
-				// Because construction of new objects may throw exceptions,
-				// we choose to construct the new objects first.
-				size_t idxLastConstructedObject;
-				ScopeGuard scopeGuard(
-					[this, &idxLastConstructedObject, newData]() noexcept {
-						for (size_t i = _length;
-							i < idxLastConstructedObject;
-							++i) {
-							std::destroy_at<T>(&newData[i]);
-						}
-					});
+				if constexpr (!std::is_trivially_constructible_v<T>) {
+					// Because construction of new objects may throw exceptions,
+					// we choose to construct the new objects first.
+					size_t idxLastConstructedObject;
+					ScopeGuard scopeGuard(
+						[this, &idxLastConstructedObject, newData]() noexcept {
+							for (size_t i = _length;
+								i < idxLastConstructedObject;
+								++i) {
+								std::destroy_at<T>(&newData[i]);
+							}
+						});
 
-				for (size_t i = _length;
-					i < length;
-					++i) {
-					idxLastConstructedObject = i;
-					constructAt<T>(&newData[i]);
+					for (size_t i = _length;
+						i < length;
+						++i) {
+						idxLastConstructedObject = i;
+						constructAt<T>(&newData[i]);
+					}
+
+					scopeGuard.release();
 				}
-
-				scopeGuard.release();
 			}
 
 			if (newData != _data) {
@@ -141,8 +143,10 @@ namespace peff {
 			size_t length) noexcept {
 			assert(length < _length);
 
-			for (size_t i = length; i < _length; ++i) {
-				std::destroy_at<T>(&_data[i]);
+			if constexpr (!std::is_trivially_destructible_v<T>) {
+				for (size_t i = length; i < _length; ++i) {
+					std::destroy_at<T>(&_data[i]);
+				}
 			}
 
 			if (newData != _data) {
@@ -151,142 +155,134 @@ namespace peff {
 			}
 		}
 
-		///
-		/// @brief Internal method for resizing.
-		///
-		/// @tparam construct Indicates if to construct new elements using default constructor.
-		/// @tparam forceResizeCapacity Indicates if to shrink the capacity automatically.
-		/// @param length New length for resizing.
-		/// @return Whether the resizing operation is performed successfully.
-		///
-		template <bool construct, bool forceResizeCapacity>
-		[[nodiscard]] PEFF_FORCEINLINE bool _resize(size_t length) {
-			if (!length) {
-				if constexpr (forceResizeCapacity) {
-					_clear();
-				} else {
-					_shrink(_data, 0);
-					_length = 0;
-				}
-				return true;
-			}
+		template <bool construct>
+		[[nodiscard]] PEFF_FORCEINLINE bool _growCapacity(size_t length, size_t newCapacity) {
+			assert(newCapacity > _length);
+			assert(length > _length);
 
-			int capacityStatus = _checkCapacity(length, _capacity);
-			if (capacityStatus > 0) {
-				size_t newCapacity = _getGrownCapacity(length, _capacity);
+			size_t newCapacityTotalSize = newCapacity * sizeof(T);
+			T *newData;
+			bool clearOldData = true;
 
-				size_t newCapacityTotalSize = newCapacity * sizeof(T);
-				T *newData;
-				bool clearOldData = true;
-
-				if constexpr (std::is_trivially_move_assignable_v<T>) {
-					if (_data) {
-						if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
-							return false;
-						clearOldData = false;
-					} else {
-						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-							return false;
-					}
-				} else {
-					if (_data) {
-						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-							return false;
-						if constexpr (std::is_nothrow_constructible_v<T>) {
-							_expandTo<construct>(newData, length);
-						} else {
-							ScopeGuard scopeGuard(
-								[this, newCapacityTotalSize, newData]() noexcept {
-									_allocator->release(newData, newCapacityTotalSize, alignof(T));
-								});
-							_expandTo<construct>(newData, length);
-							scopeGuard.release();
-						}
-					} else {
-						if constexpr (std::is_nothrow_constructible_v<T>) {
-							if ((newData = (T *)_allocator->reallocInPlace(
-									 _data,
-									 sizeof(T) * _capacity, alignof(T),
-									 newCapacityTotalSize, alignof(T)))) {
-								_expandTo<construct>(newData, length);
-							} else {
-								if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-									return false;
-								ScopeGuard scopeGuard(
-									[this, newCapacityTotalSize, newData]() noexcept {
-										_allocator->release(newData, newCapacityTotalSize, alignof(T));
-									});
-								_expandTo<construct>(newData, length);
-								scopeGuard.release();
-							}
-						} else {
-							if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-								return false;
-							ScopeGuard scopeGuard(
-								[this, newCapacityTotalSize, newData]() noexcept {
-									_allocator->release(newData, newCapacityTotalSize, alignof(T));
-								});
-							_expandTo<construct>(newData, length);
-							scopeGuard.release();
-						}
-					}
-				}
-
-				if (clearOldData)
-					_clear();
-				_capacity = newCapacity;
-				_data = newData;
-			} else if (capacityStatus < 0) {
-				if constexpr (forceResizeCapacity) {
-					size_t newCapacity = _getShrinkedCapacity(length, _capacity);
-
-					size_t newCapacityTotalSize = newCapacity * sizeof(T);
-					T *newData;
-					bool clearOldData = true;
-
-					if constexpr (std::is_trivially_move_assignable_v<T>) {
-						if (_data) {
-							if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
-								return false;
-							clearOldData = false;
-						} else {
-							if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-								return false;
-						}
-					} else {
-						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
-							return false;
-					}
-
-					if (!newData) {
+			if constexpr (std::is_trivially_move_assignable_v<T>) {
+				if (_data) {
+					if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
 						return false;
-					}
-
-					if constexpr (std::is_trivially_move_assignable_v<T>) {
-					} else {
-						_shrink(newData, length);
-					}
-
-					if (clearOldData)
-						_clear();
-					_capacity = newCapacity;
-					_data = newData;
+					clearOldData = false;
 				} else {
-					_shrink(_data, length);
+					if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+						return false;
 				}
 			} else {
-				if (length > _length) {
-					if constexpr (!std::is_trivially_constructible_v<T>) {
-						_expandTo<construct>(_data, length);
+				if (_data) {
+					if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+						return false;
+					if constexpr (std::is_nothrow_constructible_v<T>) {
+						_expandTo<construct>(newData, length);
+					} else {
+						ScopeGuard scopeGuard(
+							[this, newCapacityTotalSize, newData]() noexcept {
+								_allocator->release(newData, newCapacityTotalSize, alignof(T));
+							});
+						_expandTo<construct>(newData, length);
+						scopeGuard.release();
 					}
-				} else if (length < _length) {
-					if constexpr (!std::is_trivially_destructible_v<T>) {
-						_shrink(_data, length);
+				} else {
+					if constexpr (std::is_nothrow_constructible_v<T>) {
+						if ((newData = (T *)_allocator->reallocInPlace(
+								 _data,
+								 sizeof(T) * _capacity, alignof(T),
+								 newCapacityTotalSize, alignof(T)))) {
+							_expandTo<construct>(newData, length);
+						} else {
+							if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+								return false;
+							ScopeGuard scopeGuard(
+								[this, newCapacityTotalSize, newData]() noexcept {
+									_allocator->release(newData, newCapacityTotalSize, alignof(T));
+								});
+							_expandTo<construct>(newData, length);
+							scopeGuard.release();
+						}
+					} else {
+						if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+							return false;
+						ScopeGuard scopeGuard(
+							[this, newCapacityTotalSize, newData]() noexcept {
+								_allocator->release(newData, newCapacityTotalSize, alignof(T));
+							});
+						_expandTo<construct>(newData, length);
+						scopeGuard.release();
 					}
 				}
 			}
 
+			if (clearOldData)
+				_clear();
+			_capacity = newCapacity;
+			_data = newData;
 			_length = length;
+			return true;
+		}
+
+		[[nodiscard]] PEFF_FORCEINLINE bool _shrinkCapacity(size_t length, size_t newCapacity) {
+			assert(length <= _length);
+			assert(newCapacity <= _capacity);
+
+			size_t newCapacityTotalSize = newCapacity * sizeof(T);
+			T *newData;
+			bool clearOldData = true;
+
+			if constexpr (std::is_trivially_move_assignable_v<T>) {
+				if (_data) {
+					if (!(newData = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), newCapacityTotalSize, alignof(T))))
+						return false;
+					clearOldData = false;
+				} else {
+					if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+						return false;
+				}
+			} else {
+				if (!(newData = (T *)_allocator->alloc(newCapacityTotalSize, alignof(T))))
+					return false;
+			}
+
+			if (!newData) {
+				return false;
+			}
+
+			if constexpr (std::is_trivially_move_assignable_v<T>) {
+			} else {
+				_shrink(newData, length);
+			}
+
+			if (clearOldData)
+				_clear();
+			_capacity = newCapacity;
+			_data = newData;
+			_length = length;
+			return true;
+		}
+
+		template <bool construct>
+		[[nodiscard]] PEFF_FORCEINLINE bool _autoGrowCapacity(size_t length) {
+			if (length > _capacity) {
+				if (!_growCapacity<construct>(length, _getGrownCapacity(length, _capacity)))
+					return false;
+			}
+			return true;
+		}
+
+		template <bool construct>
+		[[nodiscard]] PEFF_FORCEINLINE bool _autoShrinkCapacity(size_t length) {
+			if (!length) {
+				_clear();
+				return true;
+			}
+			if (length < (_capacity >> 1)) {
+				if (!_shrinkCapacity(length, _getShrinkedCapacity(length, _capacity)))
+					return false;
+			}
 			return true;
 		}
 
@@ -320,7 +316,7 @@ namespace peff {
 			}
 			_moveData(_data + idxStart, _data + idxEnd, _length - idxEnd);
 
-			return _resize<false, true>(newLength);
+			return _shrinkCapacity(newLength, newLength);
 		}
 
 		PEFF_FORCEINLINE void eraseRange(size_t idxStart, size_t idxEnd) {
@@ -345,7 +341,7 @@ namespace peff {
 			if (newLength == _length)
 				return true;
 
-			return _resize<false, true>(newLength);
+			return _shrinkCapacity(newLength, newLength);
 		}
 
 		PEFF_FORCEINLINE void extractRange(size_t idxStart, size_t idxEnd) {
@@ -361,10 +357,10 @@ namespace peff {
 
 			if (idxStart) {
 				_moveData(_data, _data + idxStart, newLength);
-				bool result = _resize<false, false>(newLength);
+				bool result = resize(newLength);
 				assert(result);
 			} else {
-				bool result = _resize<false, false>(newLength);
+				bool result = resize(newLength);
 				assert(result);
 			}
 		}
@@ -381,7 +377,7 @@ namespace peff {
 				oldLength = _length,
 				newLength = _length + length;
 
-			if (!_resize<construct, false>(newLength))
+			if (!_autoGrowCapacity<construct>(newLength))
 				return nullptr;
 
 			T *gapStart = &_data[index];
@@ -403,6 +399,7 @@ namespace peff {
 				}
 			}
 
+			_length = newLength;
 			return gapStart;
 		}
 
@@ -450,10 +447,23 @@ namespace peff {
 		/// @param length New length for resizing.
 		/// @return Whether the resizing operation is performed successfully.
 		///
+		/// @note The capacity will be shrinked if the construction is failed.
+		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeAndShrink(size_t length) {
-			if (length == _length)
-				return true;
-			return _resize<true, true>(length);
+			if (length > _length) {
+				if (length > _capacity) {
+					if (!_growCapacity<true>(length, length))
+						return false;
+				} else {
+					if (!_shrinkCapacity(length, length))
+						return false;
+					_expandTo<true>(_data, length);
+				}
+			} else if (length < _length) {
+				if (!_shrinkCapacity(length, length))
+					return false;
+			}
+			return true;
 		}
 
 		///
@@ -463,9 +473,17 @@ namespace peff {
 		/// @return Whether the resizing operation is performed successfully.
 		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resize(size_t length) {
-			if (length == _length)
-				return true;
-			return _resize<true, false>(length);
+			if (length > _length) {
+				if (length > _capacity) {
+					if (!_autoGrowCapacity<true>(length))
+						return false;
+				} else {
+					_expandTo<true>(_data, length);
+				}
+			} else if (length < _length) {
+				_shrink(_data, length);
+			}
+			return true;
 		}
 
 		///
@@ -475,9 +493,20 @@ namespace peff {
 		/// @return Whether the resizing operation is performed successfully.
 		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeAndShrinkUninitialized(size_t length) {
-			if (length == _length)
-				return true;
-			return _resize<false, true>(length);
+			if (length > _length) {
+				if (length > _capacity) {
+					if (!_growCapacity<false>(length, length))
+						return false;
+				} else {
+					if (!_shrinkCapacity(length, length))
+						return false;
+					_expandTo<false>(_data, length);
+				}
+			} else if (length < _length) {
+				if (!_shrinkCapacity(length, length))
+					return false;
+			}
+			return true;
 		}
 
 		///
@@ -487,9 +516,17 @@ namespace peff {
 		/// @return Whether the resizing operation is performed successfully.
 		///
 		[[nodiscard]] PEFF_FORCEINLINE bool resizeUninitialized(size_t length) {
-			if (length == _length)
-				return true;
-			return _resize<false, false>(length);
+			if (length > _length) {
+				if (length > _capacity) {
+					if (!_autoGrowCapacity<false>(length))
+						return false;
+				} else {
+					_expandTo<false>(_data, length);
+				}
+			} else if (length < _length) {
+				_shrink(_data, length);
+			}
+			return true;
 		}
 
 		///
@@ -498,7 +535,9 @@ namespace peff {
 		/// @return PEFF_FORCEINLINE
 		///
 		[[nodiscard]] PEFF_FORCEINLINE bool shrinkToFit() {
-			return _resize<false, true>(_length);
+			if(_length > _capacity)
+				return _shrinkCapacity(_length, _length);
+			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool build(const ThisType &rhs) {
@@ -652,7 +691,7 @@ namespace peff {
 			T frontData = std::move(front());
 			size_t len = _length - 1;
 			_moveData(_data, _data + 1, len);
-			if (!resize(len)) {
+			if (!_shrinkCapacity(len, len)) {
 				_moveData(_data + 1, _data, len);
 				constructAt(&_data[0], std::move(frontData));
 				return false;

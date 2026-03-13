@@ -584,8 +584,8 @@ namespace peff {
 				}
 			});
 
-			for (const auto &i : rhs) {
-				peff::constructAt<T>(&_data[i], i);
+			for (const auto &item : rhs) {
+				peff::constructAt<T>(&_data[i], item);
 				++i;
 			}
 

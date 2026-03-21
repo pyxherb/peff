@@ -479,9 +479,11 @@ namespace peff {
 						return false;
 				} else {
 					_expandTo<true>(_data, length);
+					_length = length;
 				}
 			} else if (length < _length) {
 				_shrink(_data, length);
+				_length = length;
 			}
 			return true;
 		}
@@ -522,9 +524,11 @@ namespace peff {
 						return false;
 				} else {
 					_expandTo<false>(_data, length);
+					_length = length;
 				}
 			} else if (length < _length) {
 				_shrink(_data, length);
+				_length = length;
 			}
 			return true;
 		}
@@ -535,7 +539,7 @@ namespace peff {
 		/// @return PEFF_FORCEINLINE
 		///
 		[[nodiscard]] PEFF_FORCEINLINE bool shrinkToFit() {
-			if(_length > _capacity)
+			if (_length > _capacity)
 				return _shrinkCapacity(_length, _length);
 			return true;
 		}

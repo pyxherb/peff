@@ -307,7 +307,7 @@ namespace peff {
 	}
 
 	template <typename T, typename D, typename... Args>
-	PEFF_FORCEINLINE SharedPtr<T> make_sharedWithControlBlock(peff::Alloc *allocator, Args &&...args) {
+	PEFF_FORCEINLINE SharedPtr<T> make_shared_with_control_block(peff::Alloc *allocator, Args &&...args) {
 		T *ptr = peff::alloc_and_construct<T>(allocator, alignof(T), std::forward<Args>(args)...);
 		if (!ptr)
 			return {};

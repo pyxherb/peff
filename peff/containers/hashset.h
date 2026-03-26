@@ -41,9 +41,9 @@ namespace peff {
 
 		struct Element {
 			T data;
-			HashCode hashCode;
+			HashCode hash_code;
 
-			PEFF_FORCEINLINE Element(T &&data, HashCode hashCode) : data(std::move(data)), hashCode(hashCode) {}
+			PEFF_FORCEINLINE Element(T &&data, HashCode hash_code) : data(std::move(data)), hash_code(hash_code) {}
 
 			Element(Element &&rhs) = default;
 			Element &operator=(Element &&rhs) = default;
@@ -64,10 +64,10 @@ namespace peff {
 		BucketsType _buckets;
 
 		size_t _size = 0;
-		EqCmp _equalityComparator;
+		EqCmp _eq_cmp;
 		Hasher _hasher;
 
-		PEFF_FORCEINLINE int _checkCapacity() {
+		PEFF_FORCEINLINE int _check_capacity() {
 			size_t capacity = _buckets.size() << 1;
 
 			if (capacity < _size)
@@ -80,87 +80,87 @@ namespace peff {
 			return 0;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE static bool _resizeBuckets(size_t newSize, BucketsType &oldBuckets, BucketsType &newBuckets) {
+		[[nodiscard]] PEFF_FORCEINLINE static bool _resize_buckets(size_t new_size, BucketsType &old_buckets, BucketsType &new_buckets) {
 			{
-				if (!newBuckets.resizeUninitialized(newSize)) {
+				if (!new_buckets.resize_uninit(new_size)) {
 					return false;
 				}
-				for (size_t i = 0; i < newBuckets.size(); ++i) {
-					peff::constructAt<Bucket>(&newBuckets.at(i), newBuckets.allocator());
+				for (size_t i = 0; i < new_buckets.size(); ++i) {
+					peff::construct_at<Bucket>(&new_buckets.at(i), new_buckets.allocator());
 				}
 			}
 
-			const size_t nOldBuckets = oldBuckets.size();
-			ScopeGuard restoreGuard([newSize, &oldBuckets, &newBuckets, nOldBuckets]() noexcept {
-				for (size_t i = 0; i < newSize; ++i) {
-					Bucket &bucket = newBuckets.at(i);
+			const size_t num_old_buckets = old_buckets.size();
+			ScopeGuard restore_guard([new_size, &old_buckets, &new_buckets, num_old_buckets]() noexcept {
+				for (size_t i = 0; i < new_size; ++i) {
+					Bucket &bucket = new_buckets.at(i);
 
-					for (typename Bucket::NodeHandle j = bucket.firstNode(); j; j = j->next) {
-						size_t index = ((size_t)j->data.hashCode) % nOldBuckets;
+					for (typename Bucket::NodeHandle j = bucket.first_node(); j; j = j->next) {
+						size_t index = ((size_t)j->data.hash_code) % num_old_buckets;
 
 						bucket.detach(j);
-						oldBuckets.at(index).pushFront(j);
+						old_buckets.at(index).push_front(j);
 					}
 				}
-				newBuckets.clearAndShrink();
+				new_buckets.clear_and_shrink();
 			});
 
-			for (size_t i = 0; i < nOldBuckets; ++i) {
-				Bucket &bucket = oldBuckets.at(i);
+			for (size_t i = 0; i < num_old_buckets; ++i) {
+				Bucket &bucket = old_buckets.at(i);
 
-				for (typename Bucket::NodeHandle j = bucket.firstNode(); j;) {
+				for (typename Bucket::NodeHandle j = bucket.first_node(); j;) {
 					typename Bucket::NodeHandle next = j->next;
-					size_t index = ((size_t)j->data.hashCode) % newSize;
+					size_t index = ((size_t)j->data.hash_code) % new_size;
 
 					bucket.detach(j);
-					newBuckets.at(index).pushFront(j);
+					new_buckets.at(index).push_front(j);
 					j = next;
 				}
 			}
 
-			restoreGuard.release();
+			restore_guard.release();
 
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _getBucketSlot(const Bucket &bucket, const T &data) const {
-			for (auto i = bucket.firstNode(); i; i = i->next) {
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get_bucket_slot(const Bucket &bucket, const T &data) const {
+			for (auto i = bucket.first_node(); i; i = i->next) {
 				if constexpr (Fallible) {
-					if (auto result = _equalityComparator(i->data.data, data); result.hasValue()) {
+					if (auto result = _eq_cmp(i->data.data, data); result.has_value()) {
 						return i;
 					} else {
 						return NULL_OPTION;
 					}
 				} else {
-					if (_equalityComparator(i->data.data, data)) {
+					if (_eq_cmp(i->data.data, data)) {
 						return i;
 					}
 				}
 			}
 
-			return Bucket::nullNodeHandle();
+			return Bucket::null_node_handle();
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool _checkAndResizeBuckets() {
+		[[nodiscard]] PEFF_FORCEINLINE bool _check_and_resize_buckets() {
 			size_t size = _buckets.size();
 
-			switch (_checkCapacity()) {
+			switch (_check_capacity()) {
 				case 1: {
-					BucketsType newBuckets(_buckets.allocator());
-					if (!_resizeBuckets(size ? size << 1 : 1, _buckets, newBuckets)) {
+					BucketsType new_buckets(_buckets.allocator());
+					if (!_resize_buckets(size ? size << 1 : 1, _buckets, new_buckets)) {
 						return false;
 					}
-					_buckets = std::move(newBuckets);
+					_buckets = std::move(new_buckets);
 					break;
 				}
 				case 0:
 					break;
 				case -1: {
-					BucketsType newBuckets(_buckets.allocator());
-					if (!_resizeBuckets(size >> 1, _buckets, newBuckets)) {
+					BucketsType new_buckets(_buckets.allocator());
+					if (!_resize_buckets(size >> 1, _buckets, new_buckets)) {
 						return false;
 					}
-					_buckets = std::move(newBuckets);
+					_buckets = std::move(new_buckets);
 					break;
 				}
 			}
@@ -168,7 +168,7 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE bool _isBucketsInitialized() {
+		PEFF_FORCEINLINE bool is_buckets_inited() {
 			return _buckets.size();
 		}
 
@@ -176,42 +176,42 @@ namespace peff {
 		/// @param buckets Buckets to be operated.
 		/// @param data Element to insert.
 		/// @return true for succeeded, false if failed.
-		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data, bool forceResizeBuckets) {
+		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data, bool force_resize_buckets) {
 			if (!_buckets.size()) {
-				if (!_buckets.resizeUninitialized(1)) {
+				if (!_buckets.resize_uninit(1)) {
 					return false;
 				}
 
-				peff::constructAt<Bucket>(&_buckets.at(0), _buckets.allocator());
+				peff::construct_at<Bucket>(&_buckets.at(0), _buckets.allocator());
 			}
 
-			T tmpData = std::move(data);
+			T tmp_data = std::move(data);
 
-			HashCode hashCode;
+			HashCode hash_code;
 			if constexpr (Fallible) {
-				if (auto result = _hasher(tmpData); result.hasValue()) {
-					hashCode = result.value();
+				if (auto result = _hasher(tmp_data); result.has_value()) {
+					hash_code = result.value();
 				} else
 					return false;
 			} else {
-				hashCode = _hasher(tmpData);
+				hash_code = _hasher(tmp_data);
 			}
-			size_t index = ((size_t)hashCode) % _buckets.size();
+			size_t index = ((size_t)hash_code) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 
 			for (auto &i : bucket) {
-				if (_equalityComparator(i.data, tmpData)) {
-					moveAssignOrMoveConstruct<T>(i.data, std::move(tmpData));
+				if (_eq_cmp(i.data, tmp_data)) {
+					move_assign_or_move_construct<T>(i.data, std::move(tmp_data));
 					goto inserted;
 				}
 			}
-			if (!bucket.pushFront(Element(std::move(tmpData), hashCode)))
+			if (!bucket.push_front(Element(std::move(tmp_data), hash_code)))
 				return false;
 
 		inserted:
-			if (!_checkAndResizeBuckets()) {
-				if (forceResizeBuckets) {
-					bucket.popFront();
+			if (!_check_and_resize_buckets()) {
+				if (force_resize_buckets) {
+					bucket.pop_front();
 					return false;
 				}
 			}
@@ -220,7 +220,7 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType _remove(const T &data, bool forceResizeBuckets) {
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType _remove(const T &data, bool force_resize_buckets) {
 			if (!_buckets.size()) {
 				if constexpr (Fallible) {
 					return true;
@@ -229,37 +229,37 @@ namespace peff {
 				}
 			}
 
-			HashCode hashCode;
+			HashCode hash_code;
 			if constexpr (Fallible) {
-				if (auto result = _hasher(data); result.hasValue()) {
-					hashCode = result.value();
+				if (auto result = _hasher(data); result.has_value()) {
+					hash_code = result.value();
 				} else
 					return false;
 			} else {
-				hashCode = _hasher(data);
+				hash_code = _hasher(data);
 			}
-			size_t index = ((size_t)hashCode) % _buckets.size();
+			size_t index = ((size_t)hash_code) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 			peff::RcObjectPtr<Alloc> alloc = bucket.allocator();
 
 			typename Bucket::NodeHandle node;
 
 			if constexpr (Fallible) {
-				BucketNodeHandleQueryResultType maybeNode = _getBucketSlot(bucket, data);
-				if (!maybeNode.hasValue()) {
+				BucketNodeHandleQueryResultType maybe_node = _get_bucket_slot(bucket, data);
+				if (!maybe_node.has_value()) {
 					return false;
 				}
 
-				node = maybeNode.value();
+				node = maybe_node.value();
 			} else {
-				node = _getBucketSlot(bucket, data);
+				node = _get_bucket_slot(bucket, data);
 			}
 
 			if (node) {
-				typename Bucket::NodeHandle nextNode = Bucket::next(node, 1);
+				typename Bucket::NodeHandle next_node = Bucket::next(node, 1);
 
 				bucket.detach(node);
-				bucket.deleteNode(node);
+				bucket.delete_node(node);
 
 				--_size;
 			}
@@ -271,22 +271,22 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get(const T &data, size_t &index) const {
 			if (!_buckets.size()) {
-				return Bucket::nullNodeHandle();
+				return Bucket::null_node_handle();
 			}
 
-			HashCode hashCode;
+			HashCode hash_code;
 			if constexpr (Fallible) {
-				if (auto result = _hasher(data); result.hasValue()) {
-					hashCode = result.value();
+				if (auto result = _hasher(data); result.has_value()) {
+					hash_code = result.value();
 				} else
 					return NULL_OPTION;
 			} else {
-				hashCode = _hasher(data);
+				hash_code = _hasher(data);
 			}
-			size_t i = ((size_t)hashCode) % _buckets.size();
+			size_t i = ((size_t)hash_code) % _buckets.size();
 			const Bucket &bucket = _buckets.at(i);
 
-			return _getBucketSlot(bucket, data);
+			return _get_bucket_slot(bucket, data);
 		}
 
 	public:
@@ -296,17 +296,17 @@ namespace peff {
 		PEFF_FORCEINLINE HashSetImpl(ThisType &&other)
 			: _buckets(std::move(other._buckets)),
 			  _size(other._size),
-			  _equalityComparator(std::move(other._equalityComparator)),
+			  _eq_cmp(std::move(other._eq_cmp)),
 			  _hasher(std::move(other._hasher)) {
 			other._size = 0;
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
-			clearAndShrink();
+			clear_and_shrink();
 
 			_buckets = std::move(other._buckets);
 			_size = other._size;
-			_equalityComparator = std::move(other._equalityComparator);
+			_eq_cmp = std::move(other._eq_cmp);
 			_hasher = std::move(other._hasher);
 
 			other._size = 0;
@@ -314,7 +314,7 @@ namespace peff {
 			return *this;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insertWithoutResizeBuckets(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insert_without_resize_buckets(T &&data) {
 			return _insert(std::move(data), false);
 		}
 
@@ -324,7 +324,7 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const T &data) {
 			if constexpr (Fallible) {
-				return _remove(data, false).hasValue();
+				return _remove(data, false).has_value();
 			} else {
 				_remove(data, false);
 			}
@@ -338,12 +338,12 @@ namespace peff {
 		[[nodiscard]] PEFF_FORCEINLINE ContainsResultType contains(const T &data) const {
 			size_t index;
 			if constexpr (Fallible) {
-				auto maybeHandle = _get(data, index);
+				auto maybe_handle = _get(data, index);
 
-				if (!maybeHandle.hasValue())
+				if (!maybe_handle.has_value())
 					return NULL_OPTION;
 
-				return maybeHandle.value();
+				return maybe_handle.value();
 			} else {
 				return _get(data, index);
 			}
@@ -353,61 +353,61 @@ namespace peff {
 			_buckets.clear();
 		}
 
-		PEFF_FORCEINLINE void clearAndShrink() {
-			_buckets.clearAndShrink();
+		PEFF_FORCEINLINE void clear_and_shrink() {
+			_buckets.clear_and_shrink();
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _buckets.allocator();
 		}
 
-		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
+		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
 			for (auto &i : _buckets) {
-				i.replaceAllocator(rhs);
+				i.replace_allocator(rhs);
 			}
-			_buckets.replaceAllocator(rhs);
+			_buckets.replace_allocator(rhs);
 		}
 
 		struct Iterator {
-			size_t idxCurBucket;
-			typename Bucket::NodeHandle bucketNodeHandle;
-			ThisType *hashSet;
+			size_t idx_cur_bucket;
+			typename Bucket::NodeHandle bucket_node_handle;
+			ThisType *hash_set;
 			IteratorDirection direction;
 
 			PEFF_FORCEINLINE Iterator(
-				ThisType *hashSet,
-				size_t idxCurBucket,
-				typename Bucket::NodeHandle bucketNodeHandle,
+				ThisType *hash_set,
+				size_t idx_cur_bucket,
+				typename Bucket::NodeHandle bucket_node_handle,
 				IteratorDirection direction)
-				: idxCurBucket(idxCurBucket),
-				  bucketNodeHandle(bucketNodeHandle),
-				  hashSet(hashSet),
+				: idx_cur_bucket(idx_cur_bucket),
+				  bucket_node_handle(bucket_node_handle),
+				  hash_set(hash_set),
 				  direction(direction) {}
 
 			Iterator(const Iterator &it) = default;
 			PEFF_FORCEINLINE Iterator(Iterator &&it) {
-				idxCurBucket = it.idxCurBucket;
-				bucketNodeHandle = it.bucketNodeHandle;
-				hashSet = it.hashSet;
+				idx_cur_bucket = it.idx_cur_bucket;
+				bucket_node_handle = it.bucket_node_handle;
+				hash_set = it.hash_set;
 				direction = it.direction;
 
-				it.idxCurBucket = SIZE_MAX;
-				it.bucketNodeHandle = Bucket::nullNodeHandle();
-				it.hashSet = nullptr;
+				it.idx_cur_bucket = SIZE_MAX;
+				it.bucket_node_handle = Bucket::null_node_handle();
+				it.hash_set = nullptr;
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				idxCurBucket = rhs.idxCurBucket;
-				bucketNodeHandle = rhs.bucketNodeHandle;
-				hashSet = rhs.hashSet;
+				idx_cur_bucket = rhs.idx_cur_bucket;
+				bucket_node_handle = rhs.bucket_node_handle;
+				hash_set = rhs.hash_set;
 				return *this;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				constructAt<Iterator>(this, std::move(rhs));
+				construct_at<Iterator>(this, std::move(rhs));
 				return *this;
 			}
 
@@ -417,36 +417,36 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {
-				if (idxCurBucket == SIZE_MAX)
+				if (idx_cur_bucket == SIZE_MAX)
 					throw std::logic_error("Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
-					typename Bucket::NodeHandle nextNode = Bucket::next(bucketNodeHandle, 1);
-					if (!nextNode) {
-						while ((!nextNode) && (idxCurBucket != SIZE_MAX)) {
-							if (++idxCurBucket >= hashSet->_buckets.size()) {
-								idxCurBucket = SIZE_MAX;
-								nextNode = nullptr;
+					typename Bucket::NodeHandle next_node = Bucket::next(bucket_node_handle, 1);
+					if (!next_node) {
+						while ((!next_node) && (idx_cur_bucket != SIZE_MAX)) {
+							if (++idx_cur_bucket >= hash_set->_buckets.size()) {
+								idx_cur_bucket = SIZE_MAX;
+								next_node = nullptr;
 							} else {
-								nextNode = hashSet->_buckets.at(idxCurBucket).firstNode();
+								next_node = hash_set->_buckets.at(idx_cur_bucket).first_node();
 							}
 						}
 					}
-					bucketNodeHandle = nextNode;
+					bucket_node_handle = next_node;
 				} else {
-					typename Bucket::NodeHandle nextNode = Bucket::prev(bucketNodeHandle, 1);
-					if (!nextNode) {
-						while ((!nextNode) && (idxCurBucket != SIZE_MAX)) {
-							if (!idxCurBucket) {
-								idxCurBucket = SIZE_MAX;
-								nextNode = nullptr;
+					typename Bucket::NodeHandle next_node = Bucket::prev(bucket_node_handle, 1);
+					if (!next_node) {
+						while ((!next_node) && (idx_cur_bucket != SIZE_MAX)) {
+							if (!idx_cur_bucket) {
+								idx_cur_bucket = SIZE_MAX;
+								next_node = nullptr;
 							} else {
-								--idxCurBucket;
-								nextNode = hashSet->_buckets.at(idxCurBucket).lastNode();
+								--idx_cur_bucket;
+								next_node = hash_set->_buckets.at(idx_cur_bucket).last_node();
 							}
 						}
 					}
-					bucketNodeHandle = nextNode;
+					bucket_node_handle = next_node;
 				}
 
 				return *this;
@@ -460,39 +460,39 @@ namespace peff {
 
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
-					if (idxCurBucket == SIZE_MAX) {
-						idxCurBucket = hashSet->_buckets.size();
-						bucketNodeHandle = hashSet->_buckets.at(idxCurBucket).lastNode();
+					if (idx_cur_bucket == SIZE_MAX) {
+						idx_cur_bucket = hash_set->_buckets.size();
+						bucket_node_handle = hash_set->_buckets.at(idx_cur_bucket).last_node();
 					} else {
-						typename Bucket::NodeHandle nextNode = Bucket::prev(bucketNodeHandle, 1);
-						if (!nextNode) {
-							while (!nextNode) {
-								if (!idxCurBucket) {
+						typename Bucket::NodeHandle next_node = Bucket::prev(bucket_node_handle, 1);
+						if (!next_node) {
+							while (!next_node) {
+								if (!idx_cur_bucket) {
 									throw std::logic_error("Decreasing the beginning iterator");
 								} else {
-									--idxCurBucket;
-									nextNode = hashSet->_buckets.at(idxCurBucket).lastNode();
+									--idx_cur_bucket;
+									next_node = hash_set->_buckets.at(idx_cur_bucket).last_node();
 								}
 							}
 						}
-						bucketNodeHandle = nextNode;
+						bucket_node_handle = next_node;
 					}
 				} else {
-					if (idxCurBucket == SIZE_MAX) {
-						idxCurBucket = 0;
-						bucketNodeHandle = hashSet->_buckets.at(0).firstNode();
+					if (idx_cur_bucket == SIZE_MAX) {
+						idx_cur_bucket = 0;
+						bucket_node_handle = hash_set->_buckets.at(0).first_node();
 					} else {
-						typename Bucket::NodeHandle nextNode = Bucket::next(bucketNodeHandle, 1);
-						if (!nextNode) {
-							while (!nextNode) {
-								if (++idxCurBucket >= hashSet->_buckets.size()) {
+						typename Bucket::NodeHandle next_node = Bucket::next(bucket_node_handle, 1);
+						if (!next_node) {
+							while (!next_node) {
+								if (++idx_cur_bucket >= hash_set->_buckets.size()) {
 									throw std::logic_error("Decreasing the beginning iterator");
 								} else {
-									nextNode = hashSet->_buckets.at(idxCurBucket).firstNode();
+									next_node = hash_set->_buckets.at(idx_cur_bucket).first_node();
 								}
 							}
 						}
-						bucketNodeHandle = nextNode;
+						bucket_node_handle = next_node;
 					}
 				}
 
@@ -506,9 +506,9 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &it) const {
-				if (hashSet != it.hashSet)
+				if (hash_set != it.hash_set)
 					throw std::logic_error("Cannot compare iterators from different containers");
-				return bucketNodeHandle == it.bucketNodeHandle;
+				return bucket_node_handle == it.bucket_node_handle;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &&rhs) const {
@@ -517,9 +517,9 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const Iterator &it) const {
-				if (hashSet != it.hashSet)
+				if (hash_set != it.hash_set)
 					throw std::logic_error("Cannot compare iterators from different containers");
-				return bucketNodeHandle != it.bucketNodeHandle;
+				return bucket_node_handle != it.bucket_node_handle;
 			}
 
 			PEFF_FORCEINLINE bool operator!=(Iterator &&rhs) const {
@@ -528,34 +528,34 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE T &operator*() {
-				if (!bucketNodeHandle)
+				if (!bucket_node_handle)
 					throw std::logic_error("Deferencing the end iterator");
-				return bucketNodeHandle->data.data;
+				return bucket_node_handle->data.data;
 			}
 
 			PEFF_FORCEINLINE T &operator*() const {
-				if (!bucketNodeHandle)
+				if (!bucket_node_handle)
 					throw std::logic_error("Deferencing the end iterator");
-				return bucketNodeHandle->data.data;
+				return bucket_node_handle->data.data;
 			}
 
 			PEFF_FORCEINLINE T *operator->() {
-				if (!bucketNodeHandle)
+				if (!bucket_node_handle)
 					throw std::logic_error("Deferencing the end iterator");
-				return &bucketNodeHandle->data.data;
+				return &bucket_node_handle->data.data;
 			}
 
 			PEFF_FORCEINLINE T *operator->() const {
-				if (!bucketNodeHandle)
+				if (!bucket_node_handle)
 					throw std::logic_error("Deferencing the end iterator");
-				return &bucketNodeHandle->data.data;
+				return &bucket_node_handle->data.data;
 			}
 		};
 
 		PEFF_FORCEINLINE Iterator begin() {
 			for (size_t i = 0; i < _buckets.size(); ++i) {
-				auto &curBucket = _buckets.at(i);
-				typename Bucket::NodeHandle node = curBucket.firstNode();
+				auto &cur_bucket = _buckets.at(i);
+				typename Bucket::NodeHandle node = cur_bucket.first_node();
 				if (node) {
 					return Iterator(this, i, node, IteratorDirection::Forward);
 				}
@@ -565,30 +565,30 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(this, SIZE_MAX, nullptr, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE Iterator beginReversed() {
+		PEFF_FORCEINLINE Iterator begin_reversed() {
 			for (size_t i = _buckets.size(); i; --i) {
-				auto &curBucket = _buckets.at(i);
-				typename Bucket::NodeHandle node = curBucket.lastNode();
+				auto &cur_bucket = _buckets.at(i);
+				typename Bucket::NodeHandle node = cur_bucket.last_node();
 				if (node) {
 					return Iterator(this, i, node, IteratorDirection::Reversed);
 				}
 			}
 
-			auto &curBucket = _buckets.at(0);
-			typename Bucket::NodeHandle node = curBucket.lastNode();
+			auto &cur_bucket = _buckets.at(0);
+			typename Bucket::NodeHandle node = cur_bucket.last_node();
 			if (node) {
 				return Iterator(this, 0, node, IteratorDirection::Reversed);
 			}
-			return endReversed();
+			return end_reversed();
 		}
 
-		PEFF_FORCEINLINE Iterator endReversed() {
+		PEFF_FORCEINLINE Iterator end_reversed() {
 			return Iterator(this, SIZE_MAX, nullptr, IteratorDirection::Reversed);
 		}
 
 		struct ConstIterator {
 			Iterator _iterator;
-			PEFF_FORCEINLINE ConstIterator(Iterator &&iteratorIn) : _iterator(iteratorIn) {
+			PEFF_FORCEINLINE ConstIterator(Iterator &&iterator_in) : _iterator(iterator_in) {
 			}
 			ConstIterator(const ConstIterator &rhs) = default;
 			ConstIterator(ConstIterator &&rhs) = default;
@@ -633,24 +633,24 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
-		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator beginConstReversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->beginReversed());
+		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->begin_reversed());
 		}
-		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
+		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
 		}
 
 		PEFF_FORCEINLINE Iterator find(const T &value) {
 			size_t index;
 			if constexpr (Fallible) {
 				BucketNodeHandleQueryResultType node = _get(value, index);
-				if (!node.hasValue())
+				if (!node.has_value())
 					return end();
 				if (typename Bucket::NodeHandle handle = node.value(); handle)
 					return Iterator(this, index, handle, IteratorDirection::Forward);
@@ -671,12 +671,12 @@ namespace peff {
 			size_t index;
 			typename Bucket::NodeHandle node;
 			if constexpr (Fallible) {
-				auto maybeNode = _get(value, index);
+				auto maybe_node = _get(value, index);
 
-				if (!maybeNode.hasValue())
+				if (!maybe_node.has_value())
 					return NULL_OPTION;
 
-				node = maybeNode.value();
+				node = maybe_node.value();
 			} else {
 				node = _get(value, index);
 			}
@@ -689,12 +689,12 @@ namespace peff {
 			size_t index;
 			typename Bucket::NodeHandle node;
 			if constexpr (Fallible) {
-				auto maybeNode = _get(value, index);
+				auto maybe_node = _get(value, index);
 
-				if (!maybeNode.hasValue())
+				if (!maybe_node.has_value())
 					return NULL_OPTION;
 
-				node = maybeNode.value();
+				node = maybe_node.value();
 			} else {
 				node = _get(value, index);
 			}
@@ -707,8 +707,8 @@ namespace peff {
 			return _size;
 		}
 
-		PEFF_FORCEINLINE bool shrinkBuckets() {
-			return _buckets.shrinkToFit();
+		PEFF_FORCEINLINE bool shrink_buckets() {
+			return _buckets.shrink_to_fit();
 		}
 	};
 

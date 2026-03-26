@@ -6,9 +6,6 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 include_directories(BEFORE SYSTEM ${PROJECT_SOURCE_DIR})
 
-add_subdirectory("peff")
-add_subdirectory("example")
-
 #
 # Check for AddressSanitizer if user has chosen to enable it for debugging.
 #
@@ -32,6 +29,9 @@ if(CMAKE_BUILD_TYPE)
         endif()
     endif()
 endif()
+
+add_subdirectory("peff")
+add_subdirectory("example")
 
 # Generate the version file for the config file
 include(CMakePackageConfigHelpers)

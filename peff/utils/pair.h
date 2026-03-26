@@ -3,6 +3,7 @@
 
 #include "basedefs.h"
 #include <type_traits>
+#include <utility>
 
 namespace peff {
 	template<typename T, bool IsKey, bool IsEmpty>

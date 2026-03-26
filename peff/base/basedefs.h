@@ -54,18 +54,18 @@
 #endif
 
 #if defined(_MSC_VER)
-	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...) \
-		apiModifier extern template class name<__VA_ARGS__>;
-	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...) \
-		apiModifier template class name<__VA_ARGS__>;
+	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...) \
+		api_modifier extern template class name<__VA_ARGS__>;
+	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...) \
+		api_modifier template class name<__VA_ARGS__>;
 #elif defined(__GNUC__) || defined(__clang__)
-	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...) \
-		extern template class apiModifier name<__VA_ARGS__>;
-	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...) \
+	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...) \
+		extern template class api_modifier name<__VA_ARGS__>;
+	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...) \
 		template class name<__VA_ARGS__>;
 #else
-	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...)
-	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(apiModifier, name, ...)
+	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...)
+	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...)
 #endif
 
 #define PEFF_OFFSETOF(t, m) ((size_t)(&reinterpret_cast<const volatile char &>(static_cast<const t *>(nullptr)->m)))

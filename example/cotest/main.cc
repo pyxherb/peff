@@ -11,7 +11,7 @@ struct Coroutine {
 	using Handle = std::coroutine_handle<promise_type>;
 
 	struct promise_type {
-		int returnValue;
+		int result;
 
 		static Coroutine get_return_object_on_allocation_failure() noexcept {
 			return Coroutine({});
@@ -30,12 +30,12 @@ struct Coroutine {
 		}
 
 		std::suspend_always yield_value(int value) noexcept {
-			returnValue = value;
+			result = value;
 			return {};
 		}
 
 		void return_value(int value) noexcept {
-			returnValue = value;
+			result = value;
 		}
 
 		void unhandled_exception() { std::terminate(); }
@@ -53,52 +53,52 @@ struct Coroutine {
 			if (!p)
 				return nullptr;
 
-			AllocatorInfo allocatorInfo = {
+			AllocatorInfo allocator_info = {
 				allocator
 #if PEFF_ENABLE_RCOBJ_DEBUGGING
 				,
-				peff::g_rcObjectPtrCounter
+				peff::g_rcobj_ptr_counter
 #endif
 			};
 
-			memcpy(p + size, &allocatorInfo, sizeof(allocatorInfo));
+			memcpy(p + size, &allocator_info, sizeof(allocator_info));
 #if PEFF_ENABLE_RCOBJ_DEBUGGING
-			allocator->incRef(peff::g_rcObjectPtrCounter++);
+			allocator->inc_ref(peff::g_rcobj_ptr_counter++);
 #endif
 
 			return p;
 		}
 
 		static void operator delete(void *p, size_t size) noexcept {
-			AllocatorInfo allocatorInfo;
+			AllocatorInfo allocator_info;
 
-			memcpy(&allocatorInfo, (char *)p + size, sizeof(allocatorInfo));
+			memcpy(&allocator_info, (char *)p + size, sizeof(allocator_info));
 
-			allocatorInfo.allocator->release(p, size, sizeof(std::max_align_t));
+			allocator_info.allocator->release(p, size, sizeof(std::max_align_t));
 #if PEFF_ENABLE_RCOBJ_DEBUGGING
-			allocatorInfo.allocator->decRef(allocatorInfo.c);
+			allocator_info.allocator->dec_ref(allocator_info.c);
 #endif
 		}
 	};
 
-	Handle coroutineHandle;
+	Handle coro_handle;
 
-	Coroutine(Handle coroutineHandle) : coroutineHandle(coroutineHandle) {}
+	Coroutine(Handle coro_handle) : coro_handle(coro_handle) {}
 	~Coroutine() {
-		if (coroutineHandle)
-			coroutineHandle.destroy();
+		if (coro_handle)
+			coro_handle.destroy();
 	}
 
 	bool done() {
-		return coroutineHandle.done();
+		return coro_handle.done();
 	}
 
 	int resume() {
-		if (!coroutineHandle.done()) {
-			coroutineHandle.resume();
-			if (!coroutineHandle)
+		if (!coro_handle.done()) {
+			coro_handle.resume();
+			if (!coro_handle)
 				return INT_MIN;
-			return coroutineHandle.promise().returnValue;
+			return coro_handle.promise().result;
 		}
 
 		std::terminate();
@@ -120,7 +120,7 @@ int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	Coroutine co = coroutine(peff::getDefaultAlloc(), 100);
+	Coroutine co = coroutine(peff::default_allocator(), 100);
 
 	while (!co.done()) {
 		printf("%d\n", co.resume());

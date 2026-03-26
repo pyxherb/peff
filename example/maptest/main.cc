@@ -27,23 +27,23 @@ peff::RcObjectPtr<RcObj> test;
 struct Test {
 	uint8_t test[1024];
 
-	virtual void testA() {
-		puts("testA");
+	virtual void test_a() {
+		puts("test_a");
 	}
 };
 
 struct Test2 : public peff::SharedFromThis<Test2> {
 	std::atomic_size_t ref = 0;
 
-	virtual void onRefZero() noexcept = 0;
+	virtual void on_ref_zero() noexcept = 0;
 
-	size_t incRef(size_t globalRc) {
+	size_t inc_ref(size_t global_ref_count) {
 		return ++ref;
 	}
 
-	size_t decRef(size_t globalRc) {
+	size_t dec_ref(size_t global_ref_count) {
 		if (!--ref) {
-			onRefZero();
+			on_ref_zero();
 			return 0;
 		}
 		return ref;
@@ -51,8 +51,8 @@ struct Test2 : public peff::SharedFromThis<Test2> {
 
 	uint8_t test2[1024];
 
-	virtual void testB() {
-		puts("testB");
+	virtual void test_b() {
+		puts("test_b");
 	}
 };
 
@@ -72,7 +72,7 @@ public:
 		}
 		printf("Destructed %s\n", name);
 	}
-	virtual void onRefZero() noexcept {
+	virtual void on_ref_zero() noexcept {
 		delete this;
 	}
 };
@@ -110,17 +110,17 @@ int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	peff::String s(&peff::g_stdAlloc);
+	peff::String s(&peff::g_std_allocator);
 	s.resize(3);
 	memcpy(s.data(), "123", 3);
 	assert(((std::string_view)s) == "123");
 
-	peff::DynArray<SomethingUncopyable> a(&peff::g_stdAlloc);
+	peff::DynArray<SomethingUncopyable> a(&peff::g_std_allocator);
 
-	peff::SharedPtr<RcObj> outerSharedPtr;
+	peff::SharedPtr<RcObj> outer_shared_ptr;
 
 	{
-		peff::FallibleHashSet<int, FallibleComparator<int>, FallibleHasher<int>> test(&peff::g_stdAlloc);
+		peff::FallibleHashSet<int, FallibleComparator<int>, FallibleHasher<int>> test(&peff::g_std_allocator);
 
 		for (int i = 0; i < 1024; ++i) {
 			if (test.insert(+i)) {
@@ -131,22 +131,22 @@ int main() {
 		}
 	}
 	{
-		peff::SharedPtr<RcObj> sharedPtr = peff::makeShared<RcObj>(peff::getDefaultAlloc(), "SharedPtr");
-		peff::SharedPtr<Test2> test2Ptr = sharedPtr.castTo<Test2>();
+		peff::SharedPtr<RcObj> shared_ptr = peff::make_shared<RcObj>(peff::default_allocator(), "SharedPtr");
+		peff::SharedPtr<Test2> test2_ptr = shared_ptr.cast_to<Test2>();
 
-		outerSharedPtr = sharedPtr;
+		outer_shared_ptr = shared_ptr;
 
-		auto test2PtrLocked = peff::WeakPtr<Test2>(test2Ptr).lock();
-		auto test2PtrFromThis = test2Ptr->sharedFromThis();
+		auto test2_ptr_locked = peff::WeakPtr<Test2>(test2_ptr).lock();
+		auto test2_ptr_from_this = test2_ptr->shared_from_this();
 
-		peff::Set<int> map(&peff::g_stdAlloc);
-		peff::RcObjectPtr<RcObj> strongRef;
-		strongRef = new RcObj("StrongRef");
+		peff::Set<int> map(&peff::g_std_allocator);
+		peff::RcObjectPtr<RcObj> strong_ref;
+		strong_ref = new RcObj("StrongRef");
 
-		test = strongRef;
+		test = strong_ref;
 
-		strongRef->testA();
-		strongRef->testB();
+		strong_ref->test_a();
+		strong_ref->test_b();
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -174,9 +174,9 @@ int main() {
 		}
 	}
 	test.reset();
-	outerSharedPtr.reset();
+	outer_shared_ptr.reset();
 	{
-		peff::HashSet<int> map(&peff::g_stdAlloc);
+		peff::HashSet<int> map(&peff::g_std_allocator);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -203,28 +203,19 @@ int main() {
 
 			// map.dump(std::cout);
 		}
-		/*
-		peff::HashSet<int> map2(&myStdAlloc);
-		if (!peff::copyAssign(map2, map))
-			throw std::bad_alloc();
-
-		auto k = map2.begin();
-		while (k != map2.end()) {
-			printf("%d\n", *(k++));
-		}*/
 	}
 	{
-		peff::Map<int, peff::String> map(&peff::g_stdAlloc);
+		peff::Map<int, peff::String> map(&peff::g_std_allocator);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
 
-			peff::String s(&peff::g_stdAlloc);
+			peff::String s(&peff::g_std_allocator);
 			{
-				std::string stdString = std::to_string(j);
-				if (!s.resize(stdString.size()))
+				std::string std_string = std::to_string(j);
+				if (!s.resize(std_string.size()))
 					throw std::bad_alloc();
-				memcpy(s.data(), stdString.data(), stdString.size());
+				memcpy(s.data(), std_string.data(), std_string.size());
 			}
 
 			std::string_view sv = (std::string_view)s;
@@ -237,23 +228,23 @@ int main() {
 	}
 
 	{
-		peff::BitArray bitArr(&peff::g_stdAlloc);
+		peff::BitArray bit_arr(&peff::g_std_allocator);
 
-		bitArr.resizeUninitialized(64);
+		bit_arr.resize_uninit(64);
 
-		bitArr.fillSet(0, 64);
-		bitArr.fillClear(0, 48);
+		bit_arr.fill_set(0, 64);
+		bit_arr.fill_clear(0, 48);
 
-		for (size_t i = 0; i < bitArr.bitSize(); ++i) {
-			printf("%s", bitArr.getBit(i) ? "1" : "0");
+		for (size_t i = 0; i < bit_arr.bit_size(); ++i) {
+			printf("%s", bit_arr.get_bit(i) ? "1" : "0");
 		}
 
 		puts("");
 	}
 
 	{
-		peff::DynArray<int> arr(&peff::g_stdAlloc);
-		peff::String str(&peff::g_stdAlloc);
+		peff::DynArray<int> arr(&peff::g_std_allocator);
+		peff::String str(&peff::g_std_allocator);
 
 		for (int i = 0; i < 32; i++) {
 			int tmp = i;
@@ -281,12 +272,12 @@ int main() {
 			bi.p = bi.p - 1;
 		}
 
-		arr.extractRange(10, 20);
-		if (!arr.eraseRangeAndShrink(0, 7))
+		arr.extract_range(10, 20);
+		if (!arr.erase_range_and_shrink(0, 7))
 			throw std::bad_alloc();
 
-		str.extractRange(10, 20);
-		if (!str.eraseRangeAndShrink(0, 7))
+		str.extract_range(10, 20);
+		if (!str.erase_range_and_shrink(0, 7))
 			throw std::bad_alloc();
 
 		for (size_t i = 0; i < arr.size(); ++i) {
@@ -302,20 +293,20 @@ int main() {
 		puts("");
 	}
 
-	peff::DynArray<B> arr(&peff::g_stdAlloc);
+	peff::DynArray<B> arr(&peff::g_std_allocator);
 	for (int i = 0; i < 32; i++) {
 		int tmp = i + 1048576;
-		if (!arr.pushFront(B()))
+		if (!arr.push_front(B()))
 			throw std::bad_alloc();
 	}
 
-	size_t szBuffer = peff::BufferAlloc::calcAllocSize(sizeof(peff::Map<size_t, size_t>::NodeType), alignof(std::max_align_t)) *
+	size_t buffer_size = peff::BufferAlloc::calc_alloc_size(sizeof(peff::Map<size_t, size_t>::NodeType), alignof(std::max_align_t)) *
 					  32,
 		   alignment = alignof(std::max_align_t);
 
-	char *b = (char *)peff::g_stdAlloc.alloc(szBuffer, alignment);
+	char *b = (char *)peff::g_std_allocator.alloc(buffer_size, alignment);
 	{
-		peff::BufferAlloc ba(b, szBuffer);
+		peff::BufferAlloc ba(b, buffer_size);
 		peff::Map<size_t, size_t> m(&ba);
 
 		for (size_t i = 0; i < 32; ++i) {
@@ -337,12 +328,12 @@ int main() {
 				std::terminate();
 		}
 	}
-	peff::g_stdAlloc.release(b, szBuffer, alignment);
+	peff::g_std_allocator.release(b, buffer_size, alignment);
 
 	{
 		char buffer[1024];
-		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
-		peff::UpstreamedBufferAlloc alloc(&bufferAlloc, &peff::g_stdAlloc);
+		peff::BufferAlloc buffer_alloc(buffer, sizeof(buffer));
+		peff::UpstreamedBufferAlloc alloc(&buffer_alloc, &peff::g_std_allocator);
 
 		for (size_t i = 8; i < 1024; ++i) {
 			void *const p1 = alloc.alloc(i, sizeof(std::max_align_t));
@@ -362,46 +353,46 @@ int main() {
 
 	{
 		char buffer[1024];
-		peff::BufferAlloc bufferAlloc(buffer, sizeof(buffer));
-		peff::UpstreamedBufferAlloc alloc(&bufferAlloc, &peff::g_stdAlloc);
+		peff::BufferAlloc buffer_alloc(buffer, sizeof(buffer));
+		peff::UpstreamedBufferAlloc alloc(&buffer_alloc, &peff::g_std_allocator);
 
-		void *oldP1 = nullptr, *oldP2 = nullptr, *oldP3 = nullptr;
+		void *old_p1 = nullptr, *old_p2 = nullptr, *old_p3 = nullptr;
 
 		for (size_t i = 8; i < 1024; ++i) {
-			void *const p1 = oldP1 ? alloc.realloc(oldP1, i - 1, sizeof(std::max_align_t), i, sizeof(std::max_align_t)) : alloc.alloc(i, sizeof(std::max_align_t));
+			void *const p1 = old_p1 ? alloc.realloc(old_p1, i - 1, sizeof(std::max_align_t), i, sizeof(std::max_align_t)) : alloc.alloc(i, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p1);
-			void *const p2 = oldP2 ? alloc.realloc(oldP2, (i - 1) * 2, sizeof(std::max_align_t), i * 2, sizeof(std::max_align_t)) : alloc.alloc(i * 2, sizeof(std::max_align_t));
+			void *const p2 = old_p2 ? alloc.realloc(old_p2, (i - 1) * 2, sizeof(std::max_align_t), i * 2, sizeof(std::max_align_t)) : alloc.alloc(i * 2, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p2);
 			memset(p1, 0, i);
 			memset(p2, 0, i * 2);
-			oldP1 = p1;
-			oldP2 = p2;
-			void *const p3 = oldP3 ? alloc.realloc(oldP3, (i - 1) * 3, sizeof(std::max_align_t), i * 3, sizeof(std::max_align_t)) : alloc.alloc(i * 3, sizeof(std::max_align_t));
+			old_p1 = p1;
+			old_p2 = p2;
+			void *const p3 = old_p3 ? alloc.realloc(old_p3, (i - 1) * 3, sizeof(std::max_align_t), i * 3, sizeof(std::max_align_t)) : alloc.alloc(i * 3, sizeof(std::max_align_t));
 			printf("Allocated: %p\n", p3);
 			memset(p3, 0, i * 3);
-			oldP3 = p3;
+			old_p3 = p3;
 		}
 
-		alloc.release(oldP1, 1023, sizeof(std::max_align_t));
-		alloc.release(oldP2, 1023 * 2, sizeof(std::max_align_t));
-		alloc.release(oldP3, 1023 * 3, sizeof(std::max_align_t));
+		alloc.release(old_p1, 1023, sizeof(std::max_align_t));
+		alloc.release(old_p2, 1023 * 2, sizeof(std::max_align_t));
+		alloc.release(old_p3, 1023 * 3, sizeof(std::max_align_t));
 	}
 
 	{
-		peff::RadixTree<uint32_t, int> test(peff::getDefaultAlloc());
+		peff::RadixTree<uint32_t, int> test(peff::default_allocator());
 
 		for (uint32_t i = 0; i < 100; ++i) {
 			if (!test.insert(i, i))
 				std::terminate();
 		}
 
-		for (auto i = test.beginReversed(); i != test.endReversed(); ++i) {
+		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
 			printf("Value: %d\n", *i);
 		}
 	}
 
 	{
-		peff::BinaryHeapArray<uint32_t> test(peff::getDefaultAlloc());
+		peff::BinaryHeapArray<uint32_t> test(peff::default_allocator());
 
 		for (uint32_t i = 0; i < 10; ++i) {
 			if (!test.insert(+i))
@@ -414,7 +405,7 @@ int main() {
 		}
 
 		for (uint32_t i = 10; i; --i) {
-			if (!test.popBackAndShrink())
+			if (!test.pop_back_and_shrink())
 				std::terminate();
 
 			puts("------------------");
@@ -424,19 +415,19 @@ int main() {
 		}
 	}
 
-	bool endian = peff::getByteOrder();
+	bool endian = peff::get_byte_order();
 
 	if (endian)
 		puts("Big endian");
 	else
 		puts("Little endian");
 
-	peff::HashMap<int, peff::String> hm(&peff::g_stdAlloc);
+	peff::HashMap<int, peff::String> hm(&peff::g_std_allocator);
 
 	for (int i = 0; i < 16; i++) {
 		int j = i & 1 ? i : 32 - i;
 		printf("Inserting: %d\n", j);
-		peff::String s(&peff::g_stdAlloc);
+		peff::String s(&peff::g_std_allocator);
 
 		if(!s.build(std::to_string(j)))
 			throw std::bad_alloc();

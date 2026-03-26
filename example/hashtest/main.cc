@@ -10,7 +10,7 @@ int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-	printf("%llu\n", peff::cityHash64("16", sizeof("16") - 1));
+	printf("%llu\n", peff::city_hash64("16", sizeof("16") - 1));
 
 	return 0;
 }

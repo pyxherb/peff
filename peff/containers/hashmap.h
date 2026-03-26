@@ -13,46 +13,46 @@ namespace peff {
 		struct Pair {
 			Uninit<K> key;
 			Uninit<V> value;
-			bool keyConstructed;
-			bool valueConstructed;
-			bool isForQuery;
+			bool key_constructed;
+			bool value_constructed;
+			bool for_query;
 
-			PEFF_FORCEINLINE Pair() : keyConstructed(false), valueConstructed(false), isForQuery(true) {}
-			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool isForQuery) : key(std::move(key)), value(std::move(value)), isForQuery(isForQuery), keyConstructed(true), valueConstructed(true) {}
-			PEFF_FORCEINLINE Pair(Pair &&rhs) noexcept: isForQuery(false) {
-				if (rhs.keyConstructed) {
+			PEFF_FORCEINLINE Pair() : key_constructed(false), value_constructed(false), for_query(true) {}
+			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool for_query) : key(std::move(key)), value(std::move(value)), for_query(for_query), key_constructed(true), value_constructed(true) {}
+			PEFF_FORCEINLINE Pair(Pair &&rhs) noexcept: for_query(false) {
+				if (rhs.key_constructed) {
 					key = std::move(rhs.key.get());
-					rhs.keyConstructed = false;
-					keyConstructed = true;
+					rhs.key_constructed = false;
+					key_constructed = true;
 				}
-				if (rhs.valueConstructed) {
+				if (rhs.value_constructed) {
 					value = std::move(rhs.value.get());
-					rhs.valueConstructed = false;
-					valueConstructed = true;
+					rhs.value_constructed = false;
+					value_constructed = true;
 				}
 			}
 
 			PEFF_FORCEINLINE ~Pair() {
-				if (keyConstructed)
+				if (key_constructed)
 					key.destroy();
-				if (valueConstructed)
+				if (value_constructed)
 					value.destroy();
 			}
 		};
 
 		struct QueryPair : public Pair {
-			const K *queryKey;
+			const K *query_key;
 
-			PEFF_FORCEINLINE QueryPair(const K *queryKey): Pair(), queryKey(queryKey) {}
+			PEFF_FORCEINLINE QueryPair(const K *query_key): Pair(), query_key(query_key) {}
 		};
 
 		struct PairComparator {
-			Eq eqComparator;
+			Eq eq_cmp;
 
 			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<K>(), std::declval<K>())) operator()(const Pair &lhs, const Pair &rhs) const {
-				const K &l = lhs.isForQuery ? *((const QueryPair &)lhs).queryKey : lhs.key.get(),
-						&r = rhs.isForQuery ? *((const QueryPair &)rhs).queryKey : rhs.key.get();
-				return eqComparator(l, r);
+				const K &l = lhs.for_query ? *((const QueryPair &)lhs).query_key : lhs.key.get(),
+						&r = rhs.for_query ? *((const QueryPair &)rhs).query_key : rhs.key.get();
+				return eq_cmp(l, r);
 			}
 		};
 
@@ -60,7 +60,7 @@ namespace peff {
 			Hasher hasher;
 
 			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const Pair &pair) const {
-				const K &k = pair.isForQuery ? *((const QueryPair &)pair).queryKey : pair.key.get();
+				const K &k = pair.for_query ? *((const QueryPair &)pair).query_key : pair.key.get();
 				return hasher(k);
 			}
 		};
@@ -84,7 +84,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
-			clearAndShrink();
+			clear_and_shrink();
 
 			comparator = std::move(rhs.comparator);
 			_set = std::move(rhs._set);
@@ -92,22 +92,12 @@ namespace peff {
 			return *this;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insertWithoutResizeBuckets(K &&key, V &&value) {
+		[[nodiscard]] PEFF_FORCEINLINE bool insert_without_resize_buckets(K &&key, V &&value) {
 			Pair pair = Pair(std::move(key), std::move(value), false);
-			return _set.insertWithoutResizeBuckets(std::move(pair));
+			return _set.insert_without_resize_buckets(std::move(pair));
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
-			Pair pair = Pair(std::move(key), std::move(value), false);
-			return _set.insert(std::move(pair));
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool insertAndFetchKeyWithoutResizeBuckets(K &&key, V &&value) {
-			Pair pair = Pair(std::move(key), std::move(value), false);
-			return _set.insertWithoutResizeBuckets(std::move(pair));
-		}
-
-		[[nodiscard]] PEFF_FORCEINLINE bool insertAndFetchKey(K &&key, V &&value) {
 			Pair pair = Pair(std::move(key), std::move(value), false);
 			return _set.insert(std::move(pair));
 		}
@@ -126,12 +116,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
 			if constexpr (Fallible) {
-				auto maybePair = _set.at(QueryPair(&key));
+				auto maybe_pair = _set.at(QueryPair(&key));
 
-				if (!maybePair.hasValue())
+				if (!maybe_pair.has_value())
 					return NULL_OPTION;
 
-				return maybePair.value().value.get();
+				return maybe_pair.value().value.get();
 			} else {
 				return _set.at(QueryPair(&key)).value.get();
 			}
@@ -139,12 +129,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
 			if constexpr (Fallible) {
-				auto maybePair = _set.at(QueryPair(&key));
+				auto maybe_pair = _set.at(QueryPair(&key));
 
-				if (!maybePair.hasValue())
+				if (!maybe_pair.has_value())
 					return NULL_OPTION;
 
-				return maybePair.value().value.get();
+				return maybe_pair.value().value.get();
 			} else {
 				return _set.at(QueryPair(&key)).value.get();
 			}
@@ -154,21 +144,21 @@ namespace peff {
 			return _set.allocator();
 		}
 
-		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
-			_set.replaceAllocator(rhs);
+		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+			_set.replace_allocator(rhs);
 		}
 
 		PEFF_FORCEINLINE void clear() {
 			_set.clear();
 		}
 
-		PEFF_FORCEINLINE void clearAndShrink() {
-			_set.clearAndShrink();
+		PEFF_FORCEINLINE void clear_and_shrink() {
+			_set.clear_and_shrink();
 		}
 
 		struct Iterator {
 			typename SetType::Iterator _iterator;
-			PEFF_FORCEINLINE Iterator(typename SetType::Iterator &&iteratorIn) : _iterator(iteratorIn) {
+			PEFF_FORCEINLINE Iterator(typename SetType::Iterator &&iterator_in) : _iterator(iterator_in) {
 			}
 			Iterator(const Iterator &rhs) = default;
 			Iterator(Iterator &&rhs) = default;
@@ -221,16 +211,16 @@ namespace peff {
 		Iterator end() {
 			return Iterator(_set.end());
 		}
-		Iterator beginReversed() {
-			return Iterator(_set.beginReversed());
+		Iterator begin_reversed() {
+			return Iterator(_set.begin_reversed());
 		}
-		Iterator endReversed() {
-			return Iterator(_set.endReversed());
+		Iterator end_reversed() {
+			return Iterator(_set.end_reversed());
 		}
 
 		struct ConstIterator {
 			Iterator _iterator;
-			PEFF_FORCEINLINE ConstIterator(Iterator &&iteratorIn) : _iterator(iteratorIn) {
+			PEFF_FORCEINLINE ConstIterator(Iterator &&iterator_in) : _iterator(iterator_in) {
 			}
 			ConstIterator(const ConstIterator &rhs) = default;
 			ConstIterator(ConstIterator &&rhs) = default;
@@ -271,29 +261,29 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
-		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator beginConstReversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->beginReversed());
+		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->begin_reversed());
 		}
-		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
+		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
 		}
 		PEFF_FORCEINLINE ConstIterator begin() const {
-			return beginConst();
+			return begin_const();
 		}
 		PEFF_FORCEINLINE ConstIterator end() const {
-			return endConst();
+			return end_const();
 		}
-		PEFF_FORCEINLINE ConstIterator beginReversed() const {
-			return beginConstReversed();
+		PEFF_FORCEINLINE ConstIterator begin_reversed() const {
+			return begin_const_reversed();
 		}
-		PEFF_FORCEINLINE ConstIterator endReversed() const {
-			return endConstReversed();
+		PEFF_FORCEINLINE ConstIterator end_reversed() const {
+			return end_const_reversed();
 		}
 
 		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
@@ -308,8 +298,8 @@ namespace peff {
 			return _set.size();
 		}
 
-		PEFF_FORCEINLINE bool shrinkBuckets() {
-			return _set.shrinkBuckets();
+		PEFF_FORCEINLINE bool shrink_buckets() {
+			return _set.shrink_buckets();
 		}
 	};
 

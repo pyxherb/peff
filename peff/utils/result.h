@@ -38,13 +38,13 @@ namespace peff {
 					break;
 				case ResultIndex::Value:
 					if (std::is_destructible_v<T>) {
-						peff::destroyAt<T>((T *)_data);
+						peff::destroy_at<T>((T *)_data);
 					}
 					_index = ResultIndex::_Moved;
 					break;
 				case ResultIndex::Error:
 					if (std::is_destructible_v<E>) {
-						peff::destroyAt<E>((E *)_data);
+						peff::destroy_at<E>((E *)_data);
 					}
 					_index = ResultIndex::_Moved;
 					break;
@@ -53,19 +53,19 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void setValue(T &&data) noexcept {
+		PEFF_FORCEINLINE void set_value(T &&data) noexcept {
 			reset();
-			peff::constructAt<T>(((T *)_data), std::move(data));
+			peff::construct_at<T>(((T *)_data), std::move(data));
 			_index = ResultIndex::Value;
 		}
 
-		PEFF_FORCEINLINE void setError(E &&data) noexcept {
+		PEFF_FORCEINLINE void set_error(E &&data) noexcept {
 			reset();
-			peff::constructAt<E>(((E *)_data), std::move(data));
+			peff::construct_at<E>(((E *)_data), std::move(data));
 			_index = ResultIndex::Error;
 		}
 
-		PEFF_FORCEINLINE void setNone(NullResult) noexcept {
+		PEFF_FORCEINLINE void set_none(NullResult) noexcept {
 			assert(_index != ResultIndex::_Moved);
 			reset();
 		}
@@ -75,48 +75,48 @@ namespace peff {
 			return _index;
 		}
 
-		PEFF_FORCEINLINE bool hasValue() const noexcept {
+		PEFF_FORCEINLINE bool has_value() const noexcept {
 			assert(_index != ResultIndex::_Moved);
 			return _index == ResultIndex::Value;
 		}
 
-		PEFF_FORCEINLINE bool hasError() const noexcept {
+		PEFF_FORCEINLINE bool has_error() const noexcept {
 			assert(_index != ResultIndex::_Moved);
 			return _index == ResultIndex::Error;
 		}
 
 		PEFF_FORCEINLINE explicit operator bool() const noexcept {
 			assert(_index != ResultIndex::_Moved);
-			return hasValue();
+			return has_value();
 		}
 
 		PEFF_FORCEINLINE T &value() & noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *((T *)_data);
 		}
 
 		PEFF_FORCEINLINE const T &value() const & noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *((const T *)_data);
 		}
 
 		PEFF_FORCEINLINE T value() && noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return std::move(*((T *)_data));
 		}
 
 		PEFF_FORCEINLINE E &error() & noexcept {
-			assert(hasError());
+			assert(has_error());
 			return *((E *)_data);
 		}
 
 		PEFF_FORCEINLINE const E &error() const & noexcept {
-			assert(hasError());
+			assert(has_error());
 			return *((const E *)_data);
 		}
 
 		PEFF_FORCEINLINE E error() && noexcept {
-			assert(hasError());
+			assert(has_error());
 			return std::move(*((E *)_data));
 		}
 
@@ -127,11 +127,11 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Result(T &&data) noexcept {
-			setValue(std::move(data));
+			set_value(std::move(data));
 		}
 
 		PEFF_FORCEINLINE Result(E &&data) noexcept {
-			setError(std::move(data));
+			set_error(std::move(data));
 		}
 
 		PEFF_FORCEINLINE Result(NullResult) noexcept {
@@ -143,11 +143,11 @@ namespace peff {
 					PEFF_UNREACHABLE();
 					break;
 				case ResultIndex::Value:
-					setValue(std::move(*((T *)rhs._data)));
+					set_value(std::move(*((T *)rhs._data)));
 					rhs._index = ResultIndex::_Moved;
 					break;
 				case ResultIndex::Error:
-					setError(std::move(*((E *)rhs._data)));
+					set_error(std::move(*((E *)rhs._data)));
 					rhs._index = ResultIndex::_Moved;
 					break;
 				default:
@@ -163,11 +163,11 @@ namespace peff {
 					PEFF_UNREACHABLE();
 					break;
 				case ResultIndex::Value:
-					setValue(std::move(*((T *)rhs._data)));
+					set_value(std::move(*((T *)rhs._data)));
 					rhs._index = ResultIndex::_Moved;
 					break;
 				case ResultIndex::Error:
-					setError(std::move(*((E *)rhs._data)));
+					set_error(std::move(*((E *)rhs._data)));
 					rhs._index = ResultIndex::_Moved;
 					break;
 				default:
@@ -180,14 +180,14 @@ namespace peff {
 		PEFF_FORCEINLINE Result<T, E> &operator=(T &&rhs) noexcept {
 			reset();
 
-			setValue(std::move(rhs));
+			set_value(std::move(rhs));
 			return *this;
 		}
 
 		PEFF_FORCEINLINE Result<T, E> &operator=(E &&rhs) noexcept {
 			reset();
 
-			setError(std::move(rhs));
+			set_error(std::move(rhs));
 			return *this;
 		}
 	};

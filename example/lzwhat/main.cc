@@ -16,410 +16,410 @@ enum class LZWhatDataType : uint8_t {
 	Replication
 };
 
-bool lzwhatEncodeVarInt64(peff::BitArray &bitArray, uint64_t data) {
-	size_t beginning = bitArray.bitSize();
+bool lzwhat_encode_varint64(peff::BitArray &bit_array, uint64_t data) {
+	size_t beginning = bit_array.bit_size();
 	if (data < (1llu << 7)) {
 		uint8_t b = 0b1;
 
-		if (!bitArray.resizeUninitialized(beginning + 1 + 7)) {
+		if (!bit_array.resize_uninit(beginning + 1 + 7)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 1);
+		bit_array.set_byte(beginning, b, 1);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 1, a, 7);
+		bit_array.set_byte(beginning + 1, a, 7);
 	} else if (data < (1llu << 14)) {
 		uint8_t b = 0b01;
 
-		if (!bitArray.resizeUninitialized(beginning + 2 + 14)) {
+		if (!bit_array.resize_uninit(beginning + 2 + 14)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 2);
+		bit_array.set_byte(beginning, b, 2);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 2, a, 7);
+		bit_array.set_byte(beginning + 2, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 2 + 7, a, 7);
+		bit_array.set_byte(beginning + 2 + 7, a, 7);
 	} else if (data < (1llu << 21)) {
 		uint8_t b = 0b001;
 
-		if (!bitArray.resizeUninitialized(beginning + 3 + 21)) {
+		if (!bit_array.resize_uninit(beginning + 3 + 21)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 3);
+		bit_array.set_byte(beginning, b, 3);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 3, a, 7);
+		bit_array.set_byte(beginning + 3, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 3 + 7, a, 7);
+		bit_array.set_byte(beginning + 3 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 3 + 14, a, 7);
+		bit_array.set_byte(beginning + 3 + 14, a, 7);
 	} else if (data < (1llu << 28)) {
 		uint8_t b = 0b0001;
 
-		if (!bitArray.resizeUninitialized(beginning + 4 + 28)) {
+		if (!bit_array.resize_uninit(beginning + 4 + 28)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 4);
+		bit_array.set_byte(beginning, b, 4);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 4, a, 7);
+		bit_array.set_byte(beginning + 4, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 4 + 7, a, 7);
+		bit_array.set_byte(beginning + 4 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 4 + 14, a, 7);
+		bit_array.set_byte(beginning + 4 + 14, a, 7);
 		a = (data >> 21) & 0b1111111;
-		bitArray.setByte(beginning + 4 + 21, a, 7);
+		bit_array.set_byte(beginning + 4 + 21, a, 7);
 	} else if (data < (1llu << 35)) {
 		uint8_t b = 0b00001;
 
-		if (!bitArray.resizeUninitialized(beginning + 5 + 35)) {
+		if (!bit_array.resize_uninit(beginning + 5 + 35)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 5);
+		bit_array.set_byte(beginning, b, 5);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 5, a, 7);
+		bit_array.set_byte(beginning + 5, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 5 + 7, a, 7);
+		bit_array.set_byte(beginning + 5 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 5 + 14, a, 7);
+		bit_array.set_byte(beginning + 5 + 14, a, 7);
 		a = (data >> 21) & 0b1111111;
-		bitArray.setByte(beginning + 5 + 21, a, 7);
+		bit_array.set_byte(beginning + 5 + 21, a, 7);
 		a = (data >> 28) & 0b1111111;
-		bitArray.setByte(beginning + 5 + 28, a, 7);
+		bit_array.set_byte(beginning + 5 + 28, a, 7);
 	} else if (data < (1llu << 42)) {
 		uint8_t b = 0b000001;
 
-		if (!bitArray.resizeUninitialized(beginning + 6 + 42)) {
+		if (!bit_array.resize_uninit(beginning + 6 + 42)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 6);
+		bit_array.set_byte(beginning, b, 6);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 6, a, 7);
+		bit_array.set_byte(beginning + 6, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 6 + 7, a, 7);
+		bit_array.set_byte(beginning + 6 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 6 + 14, a, 7);
+		bit_array.set_byte(beginning + 6 + 14, a, 7);
 		a = (data >> 21) & 0b1111111;
-		bitArray.setByte(beginning + 6 + 21, a, 7);
+		bit_array.set_byte(beginning + 6 + 21, a, 7);
 		a = (data >> 28) & 0b1111111;
-		bitArray.setByte(beginning + 6 + 28, a, 7);
+		bit_array.set_byte(beginning + 6 + 28, a, 7);
 		a = (data >> 35) & 0b1111111;
-		bitArray.setByte(beginning + 6 + 35, a, 7);
+		bit_array.set_byte(beginning + 6 + 35, a, 7);
 	} else if (data < (1llu << 49)) {
 		uint8_t b = 0b0000001;
 
-		if (!bitArray.resizeUninitialized(beginning + 7 + 49)) {
+		if (!bit_array.resize_uninit(beginning + 7 + 49)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 7);
+		bit_array.set_byte(beginning, b, 7);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 7, a, 7);
+		bit_array.set_byte(beginning + 7, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 7 + 7, a, 7);
+		bit_array.set_byte(beginning + 7 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 7 + 14, a, 7);
+		bit_array.set_byte(beginning + 7 + 14, a, 7);
 		a = (data >> 21) & 0b1111111;
-		bitArray.setByte(beginning + 7 + 21, a, 7);
+		bit_array.set_byte(beginning + 7 + 21, a, 7);
 		a = (data >> 28) & 0b1111111;
-		bitArray.setByte(beginning + 7 + 28, a, 7);
+		bit_array.set_byte(beginning + 7 + 28, a, 7);
 		a = (data >> 35) & 0b1111111;
-		bitArray.setByte(beginning + 7 + 35, a, 7);
+		bit_array.set_byte(beginning + 7 + 35, a, 7);
 		a = (data >> 42) & 0b1111111;
-		bitArray.setByte(beginning, a, 7);
+		bit_array.set_byte(beginning, a, 7);
 	} else if (data < (1llu << 56)) {
 		uint8_t b = 0b00000001;
 
-		if (!bitArray.resizeUninitialized(beginning + 8 + 56)) {
+		if (!bit_array.resize_uninit(beginning + 8 + 56)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 8);
+		bit_array.set_byte(beginning, b, 8);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 8, a, 7);
+		bit_array.set_byte(beginning + 8, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 7, a, 7);
+		bit_array.set_byte(beginning + 8 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 14, a, 7);
+		bit_array.set_byte(beginning + 8 + 14, a, 7);
 		a = (data >> 21) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 21, a, 7);
+		bit_array.set_byte(beginning + 8 + 21, a, 7);
 		a = (data >> 28) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 28, a, 7);
+		bit_array.set_byte(beginning + 8 + 28, a, 7);
 		a = (data >> 35) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 35, a, 7);
+		bit_array.set_byte(beginning + 8 + 35, a, 7);
 		a = (data >> 42) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 42, a, 7);
+		bit_array.set_byte(beginning + 8 + 42, a, 7);
 		a = (data >> 49) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 49, a, 7);
+		bit_array.set_byte(beginning + 8 + 49, a, 7);
 	} else {
 		uint8_t b = 0b00000000;
 
-		if (!bitArray.resizeUninitialized(beginning + 9 + 64)) {
+		if (!bit_array.resize_uninit(beginning + 9 + 64)) {
 			return false;
 		}
-		bitArray.setByte(beginning, b, 8);
+		bit_array.set_byte(beginning, b, 8);
 
 		uint8_t a;
 		a = data & 0b1111111;
-		bitArray.setByte(beginning + 8, a, 7);
+		bit_array.set_byte(beginning + 8, a, 7);
 		a = (data >> 7) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 7, a, 7);
+		bit_array.set_byte(beginning + 8 + 7, a, 7);
 		a = (data >> 14) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 14, a, 7);
+		bit_array.set_byte(beginning + 8 + 14, a, 7);
 		a = (data >> 21) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 21, a, 7);
+		bit_array.set_byte(beginning + 8 + 21, a, 7);
 		a = (data >> 28) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 28, a, 7);
+		bit_array.set_byte(beginning + 8 + 28, a, 7);
 		a = (data >> 35) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 35, a, 7);
+		bit_array.set_byte(beginning + 8 + 35, a, 7);
 		a = (data >> 42) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 42, a, 7);
+		bit_array.set_byte(beginning + 8 + 42, a, 7);
 		a = (data >> 49) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 49, a, 7);
+		bit_array.set_byte(beginning + 8 + 49, a, 7);
 		a = (data >> 56) & 0b1111111;
-		bitArray.setByte(beginning + 8 + 56, a, 8);
+		bit_array.set_byte(beginning + 8 + 56, a, 8);
 	}
 
 	return true;
 }
 
-bool lzwhatDecodeVarInt64(const peff::BitArray &bitArray, size_t &curIndex, uint64_t &dataOut) {
-	dataOut = 0;
+bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) {
+	data_out = 0;
 
-	auto readFirstBits = [](const peff::BitArray &bitArray, size_t &curIndex, size_t &dataOut) -> bool {
-		if (curIndex + 7 > bitArray.bitSize()) {
+	auto read_first_bits = [](const peff::BitArray &bit_array, size_t &cur_index, size_t &data_out) -> bool {
+		if (cur_index + 7 > bit_array.bit_size()) {
 			return false;
 		}
 		uint8_t a;
-		a = bitArray.getByte(curIndex, 7);
-		dataOut = a;
-		curIndex += 7;
+		a = bit_array.get_byte(cur_index, 7);
+		data_out = a;
+		cur_index += 7;
 		return true;
 	};
-	auto shiftAndRead = [](const peff::BitArray &bitArray, size_t &curIndex, size_t &dataOut) -> bool {
-		if (curIndex + 7 > bitArray.bitSize()) {
+	auto shift_and_read = [](const peff::BitArray &bit_array, size_t &cur_index, size_t &data_out) -> bool {
+		if (cur_index + 7 > bit_array.bit_size()) {
 			return false;
 		}
 		uint8_t a;
-		a = bitArray.getByte(curIndex, 7);
-		dataOut <<= 7;
-		dataOut |= a;
-		curIndex += 7;
+		a = bit_array.get_byte(cur_index, 7);
+		data_out <<= 7;
+		data_out |= a;
+		cur_index += 7;
 		return true;
 	};
-	auto readLastBits = [](const peff::BitArray &bitArray, size_t &curIndex, size_t &dataOut) -> bool {
-		if (curIndex + 8 > bitArray.bitSize()) {
+	auto read_last_bits = [](const peff::BitArray &bit_array, size_t &cur_index, size_t &data_out) -> bool {
+		if (cur_index + 8 > bit_array.bit_size()) {
 			return false;
 		}
 		uint8_t a;
-		a = bitArray.getByte(curIndex, 8);
-		dataOut <<= 7;
-		dataOut = a;
-		curIndex += 8;
+		a = bit_array.get_byte(cur_index, 8);
+		data_out <<= 7;
+		data_out = a;
+		cur_index += 8;
 		return true;
 	};
 
-	if (curIndex + 1 > bitArray.bitSize()) {
+	if (cur_index + 1 > bit_array.bit_size()) {
 		return false;
 	}
-	if (!bitArray.getBit(curIndex++)) {
-		if (curIndex + 1 > bitArray.bitSize()) {
+	if (!bit_array.get_bit(cur_index++)) {
+		if (cur_index + 1 > bit_array.bit_size()) {
 			return false;
 		}
-		if (!bitArray.getBit(curIndex++)) {
-			if (curIndex + 1 > bitArray.bitSize()) {
+		if (!bit_array.get_bit(cur_index++)) {
+			if (cur_index + 1 > bit_array.bit_size()) {
 				return false;
 			}
-			if (!bitArray.getBit(curIndex++)) {
-				if (curIndex + 1 > bitArray.bitSize()) {
+			if (!bit_array.get_bit(cur_index++)) {
+				if (cur_index + 1 > bit_array.bit_size()) {
 					return false;
 				}
-				if (!bitArray.getBit(curIndex++)) {
-					if (curIndex + 1 > bitArray.bitSize()) {
+				if (!bit_array.get_bit(cur_index++)) {
+					if (cur_index + 1 > bit_array.bit_size()) {
 						return false;
 					}
-					if (!bitArray.getBit(curIndex++)) {
-						if (curIndex + 1 > bitArray.bitSize()) {
+					if (!bit_array.get_bit(cur_index++)) {
+						if (cur_index + 1 > bit_array.bit_size()) {
 							return false;
 						}
-						if (!bitArray.getBit(curIndex++)) {
-							if (curIndex + 1 > bitArray.bitSize()) {
+						if (!bit_array.get_bit(cur_index++)) {
+							if (cur_index + 1 > bit_array.bit_size()) {
 								return false;
 							}
-							if (!bitArray.getBit(curIndex++)) {
-								if (curIndex + 1 > bitArray.bitSize()) {
+							if (!bit_array.get_bit(cur_index++)) {
+								if (cur_index + 1 > bit_array.bit_size()) {
 									return false;
 								}
-								if (!bitArray.getBit(curIndex++)) {
+								if (!bit_array.get_bit(cur_index++)) {
 									// 64-bit
-									if (!readFirstBits(bitArray, curIndex, dataOut))
+									if (!read_first_bits(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!readLastBits(bitArray, curIndex, dataOut))
+									if (!read_last_bits(bit_array, cur_index, data_out))
 										return false;
 								} else {
 									// 56-bit
-									if (!readFirstBits(bitArray, curIndex, dataOut))
+									if (!read_first_bits(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
-									if (!shiftAndRead(bitArray, curIndex, dataOut))
+									if (!shift_and_read(bit_array, cur_index, data_out))
 										return false;
 								}
 							} else {
 								// 49-bit
-								if (!readFirstBits(bitArray, curIndex, dataOut))
+								if (!read_first_bits(bit_array, cur_index, data_out))
 									return false;
-								if (!shiftAndRead(bitArray, curIndex, dataOut))
+								if (!shift_and_read(bit_array, cur_index, data_out))
 									return false;
-								if (!shiftAndRead(bitArray, curIndex, dataOut))
+								if (!shift_and_read(bit_array, cur_index, data_out))
 									return false;
-								if (!shiftAndRead(bitArray, curIndex, dataOut))
+								if (!shift_and_read(bit_array, cur_index, data_out))
 									return false;
-								if (!shiftAndRead(bitArray, curIndex, dataOut))
+								if (!shift_and_read(bit_array, cur_index, data_out))
 									return false;
-								if (!shiftAndRead(bitArray, curIndex, dataOut))
+								if (!shift_and_read(bit_array, cur_index, data_out))
 									return false;
-								if (!shiftAndRead(bitArray, curIndex, dataOut))
+								if (!shift_and_read(bit_array, cur_index, data_out))
 									return false;
 							}
 						} else {
 							// 42-bit
-							if (!readFirstBits(bitArray, curIndex, dataOut))
+							if (!read_first_bits(bit_array, cur_index, data_out))
 								return false;
-							if (!shiftAndRead(bitArray, curIndex, dataOut))
+							if (!shift_and_read(bit_array, cur_index, data_out))
 								return false;
-							if (!shiftAndRead(bitArray, curIndex, dataOut))
+							if (!shift_and_read(bit_array, cur_index, data_out))
 								return false;
-							if (!shiftAndRead(bitArray, curIndex, dataOut))
+							if (!shift_and_read(bit_array, cur_index, data_out))
 								return false;
-							if (!shiftAndRead(bitArray, curIndex, dataOut))
+							if (!shift_and_read(bit_array, cur_index, data_out))
 								return false;
-							if (!shiftAndRead(bitArray, curIndex, dataOut))
+							if (!shift_and_read(bit_array, cur_index, data_out))
 								return false;
 						}
 					} else {
 						// 35-bit
-						if (!readFirstBits(bitArray, curIndex, dataOut))
+						if (!read_first_bits(bit_array, cur_index, data_out))
 							return false;
-						if (!shiftAndRead(bitArray, curIndex, dataOut))
+						if (!shift_and_read(bit_array, cur_index, data_out))
 							return false;
-						if (!shiftAndRead(bitArray, curIndex, dataOut))
+						if (!shift_and_read(bit_array, cur_index, data_out))
 							return false;
-						if (!shiftAndRead(bitArray, curIndex, dataOut))
+						if (!shift_and_read(bit_array, cur_index, data_out))
 							return false;
-						if (!shiftAndRead(bitArray, curIndex, dataOut))
+						if (!shift_and_read(bit_array, cur_index, data_out))
 							return false;
 					}
 				} else {
 					// 28-bit
-					if (!readFirstBits(bitArray, curIndex, dataOut))
+					if (!read_first_bits(bit_array, cur_index, data_out))
 						return false;
-					if (!shiftAndRead(bitArray, curIndex, dataOut))
+					if (!shift_and_read(bit_array, cur_index, data_out))
 						return false;
-					if (!shiftAndRead(bitArray, curIndex, dataOut))
+					if (!shift_and_read(bit_array, cur_index, data_out))
 						return false;
-					if (!shiftAndRead(bitArray, curIndex, dataOut))
+					if (!shift_and_read(bit_array, cur_index, data_out))
 						return false;
 				}
 			} else {
 				// 21-bit
-				if (!readFirstBits(bitArray, curIndex, dataOut))
+				if (!read_first_bits(bit_array, cur_index, data_out))
 					return false;
-				if (!shiftAndRead(bitArray, curIndex, dataOut))
+				if (!shift_and_read(bit_array, cur_index, data_out))
 					return false;
-				if (!shiftAndRead(bitArray, curIndex, dataOut))
+				if (!shift_and_read(bit_array, cur_index, data_out))
 					return false;
 			}
 		} else {
 			// 14-bit
-			if (!readFirstBits(bitArray, curIndex, dataOut))
+			if (!read_first_bits(bit_array, cur_index, data_out))
 				return false;
-			if (!shiftAndRead(bitArray, curIndex, dataOut))
+			if (!shift_and_read(bit_array, cur_index, data_out))
 				return false;
 		}
 	} else {
 		// 7-bit
-		if (!readFirstBits(bitArray, curIndex, dataOut))
+		if (!read_first_bits(bit_array, cur_index, data_out))
 			return false;
 	}
 
 	return true;
 }
 
-bool lzwhatCompress(peff::BitArray &bitArray, const char *buf, size_t size, size_t dictSize, size_t encodeBufferSize) {
-	const char *const bufLimit = buf + size;
+bool lzwhat_compress(peff::BitArray &bit_array, const char *buf, size_t size, size_t dict_size, size_t encode_buffer_size) {
+	const char *const buf_limit = buf + size;
 
 	for (size_t i = 0; i < size; ++i) {
-		const char *searchBufPtr,
-			*searchEndPtr;
+		const char *search_buf_ptr,
+			*search_end_ptr;
 
-		if (i < dictSize) {
-			searchBufPtr = buf;
+		if (i < dict_size) {
+			search_buf_ptr = buf;
 		} else {
-			searchBufPtr = buf + i - dictSize;
+			search_buf_ptr = buf + i - dict_size;
 		}
-		searchEndPtr = buf + i;
+		search_end_ptr = buf + i;
 
-		const char *matchBufPtr = searchEndPtr,
-				   *matchEndPtr = matchBufPtr + encodeBufferSize;
-		if (matchEndPtr > bufLimit) {
-			matchEndPtr = bufLimit;
+		const char *match_buf_ptr = search_end_ptr,
+				   *match_end_ptr = match_buf_ptr + encode_buffer_size;
+		if (match_end_ptr > buf_limit) {
+			match_end_ptr = buf_limit;
 		}
-		size_t searchBufSize = searchEndPtr - searchBufPtr,
-			   matchBufSize = matchEndPtr - matchBufPtr;
+		size_t search_buf_size = search_end_ptr - search_buf_ptr,
+			   match_buf_size = match_end_ptr - match_buf_ptr;
 
-		for (size_t matchLen = searchBufSize < matchBufSize ? searchBufSize : matchBufSize; matchLen > 0; --matchLen) {
-			for (size_t offStart = 0; offStart < searchBufSize - matchLen; ++offStart) {
-				if (!memcmp(searchBufPtr + offStart, matchBufPtr, matchLen)) {
-					size_t disp = (searchEndPtr - (searchBufPtr + offStart));
-					size_t len = matchLen;
+		for (size_t match_len = search_buf_size < match_buf_size ? search_buf_size : match_buf_size; match_len > 0; --match_len) {
+			for (size_t off_start = 0; off_start < search_buf_size - match_len; ++off_start) {
+				if (!memcmp(search_buf_ptr + off_start, match_buf_ptr, match_len)) {
+					size_t disp = (search_end_ptr - (search_buf_ptr + off_start));
+					size_t len = match_len;
 					printf("(%zu, %zu)\n", disp, len);
-					if (!bitArray.pushBack(false))
+					if (!bit_array.push_back(false))
 						return false;
-					if (!lzwhatEncodeVarInt64(bitArray, disp)) {
-						return false;
-					}
-					if (!lzwhatEncodeVarInt64(bitArray, len)) {
+					if (!lzwhat_encode_varint64(bit_array, disp)) {
 						return false;
 					}
-					/* if (!bitArray.pushBackBytes((char *)&disp, sizeof(disp)))
+					if (!lzwhat_encode_varint64(bit_array, len)) {
 						return false;
-					if (!bitArray.pushBackBytes((char *)&len, sizeof(len)))
+					}
+					/* if (!bit_array.push_back_bytes((char *)&disp, sizeof(disp)))
+						return false;
+					if (!bit_array.push_back_bytes((char *)&len, sizeof(len)))
 						return false;*/
 					i += len - 1;
 					goto next;
@@ -427,91 +427,91 @@ bool lzwhatCompress(peff::BitArray &bitArray, const char *buf, size_t size, size
 			}
 		}
 
-		if (!bitArray.pushBack(true))
+		if (!bit_array.push_back(true))
 			return false;
-		if (!bitArray.pushBackByte(*(uint8_t *)matchBufPtr))
+		if (!bit_array.push_back_byte(*(uint8_t *)match_buf_ptr))
 			return false;
-		printf("'%c'\n", *(uint8_t *)matchBufPtr);
+		printf("'%c'\n", *(uint8_t *)match_buf_ptr);
 	next:;
 	}
 
 	return true;
 }
 
-bool lzwhatDecompress(const peff::BitArray &bitArray, peff::Alloc *allocator, size_t dictSize, peff::DynArray<char> &dataOut) {
+bool lzwhat_decompress(const peff::BitArray &bit_array, peff::Alloc *allocator, size_t dict_size, peff::DynArray<char> &data_out) {
 	size_t i = 0;
 
 	peff::DynArray<char> dict(allocator);
 
-	if (!dict.resize(dictSize)) {
+	if (!dict.resize(dict_size)) {
 		return false;
 	}
 
-	size_t curDictSize = 0, curDictIndex = 0;
+	size_t cur_dict_size = 0, cur_dict_index = 0;
 
-	auto calcDictIndex = [](size_t &curDictIndex, size_t delta, size_t dictSize) {
-		assert(delta < dictSize);
-		if (curDictIndex + delta >= dictSize) {
-			curDictIndex = (curDictIndex + delta) - dictSize;
+	auto calc_dict_index = [](size_t &cur_dict_index, size_t delta, size_t dict_size) {
+		assert(delta < dict_size);
+		if (cur_dict_index + delta >= dict_size) {
+			cur_dict_index = (cur_dict_index + delta) - dict_size;
 		} else {
-			curDictIndex += delta;
+			cur_dict_index += delta;
 		}
-		assert(curDictIndex < dictSize);
+		assert(cur_dict_index < dict_size);
 	};
-	auto copyToDict = [](char *dict, size_t dictSize, size_t curDictIndex, const char *in, size_t len) {
-		if (curDictIndex + len > dictSize) {
-			memcpy(dict + curDictIndex, in, dictSize - curDictIndex);
-			memcpy(dict, in + (dictSize - curDictIndex), curDictIndex + len - dictSize);
+	auto copy_to_dict = [](char *dict, size_t dict_size, size_t cur_dict_index, const char *in, size_t len) {
+		if (cur_dict_index + len > dict_size) {
+			memcpy(dict + cur_dict_index, in, dict_size - cur_dict_index);
+			memcpy(dict, in + (dict_size - cur_dict_index), cur_dict_index + len - dict_size);
 		} else {
-			memcpy(dict + curDictIndex, in, len);
-		}
-	};
-	auto copyFromDict = [](char *dict, size_t dictSize, size_t curDictIndex, char *out, size_t len) {
-		if (curDictIndex + len > dictSize) {
-			memcpy(out, dict + curDictIndex, dictSize - curDictIndex);
-			memcpy(out + (dictSize - curDictIndex), dict, curDictIndex + len - dictSize);
-		} else {
-			memcpy(out, dict + curDictIndex, len);
+			memcpy(dict + cur_dict_index, in, len);
 		}
 	};
+	auto copy_from_dict = [](char *dict, size_t dict_size, size_t cur_dict_index, char *out, size_t len) {
+		if (cur_dict_index + len > dict_size) {
+			memcpy(out, dict + cur_dict_index, dict_size - cur_dict_index);
+			memcpy(out + (dict_size - cur_dict_index), dict, cur_dict_index + len - dict_size);
+		} else {
+			memcpy(out, dict + cur_dict_index, len);
+		}
+	};
 
-#define INC_CUR_PTR(i, size, bitArray) \
-	if (((i) += (size)) > (bitArray).bitSize()) return false;
+#define INC_CUR_PTR(i, size, bit_array) \
+	if (((i) += (size)) > (bit_array).bit_size()) return false;
 
-	while (i < bitArray.bitSize()) {
-		bool b = bitArray.getBit(i);
-		INC_CUR_PTR(i, 1, bitArray);
+	while (i < bit_array.bit_size()) {
+		bool b = bit_array.get_bit(i);
+		INC_CUR_PTR(i, 1, bit_array);
 
 		if (b) {
-			uint8_t c = bitArray.getByte(i);
-			if (!dataOut.pushBack(+*(char *)&c)) {
+			uint8_t c = bit_array.get_byte(i);
+			if (!data_out.push_back(+*(char *)&c)) {
 				return false;
 			}
-			INC_CUR_PTR(i, 8, bitArray);
-			copyToDict(dict.data(), dictSize, curDictIndex, (char *)&c, 1);
-			calcDictIndex(curDictIndex, 1, dictSize);
+			INC_CUR_PTR(i, 8, bit_array);
+			copy_to_dict(dict.data(), dict_size, cur_dict_index, (char *)&c, 1);
+			calc_dict_index(cur_dict_index, 1, dict_size);
 		} else {
-			size_t start = dataOut.size();
+			size_t start = data_out.size();
 			size_t disp;
 			size_t len;
-			if (!lzwhatDecodeVarInt64(bitArray, i, disp)) {
+			if (!lzwhat_decode_varint64(bit_array, i, disp)) {
 				return false;
 			}
-			/* bitArray.getBytes((char *)&disp, sizeof(disp), i);*/
-			assert(disp <= dictSize);
-			/* bitArray.getBytes((char *)&len, sizeof(len), i);*/
-			if (!lzwhatDecodeVarInt64(bitArray, i, len)) {
+			/* bit_array.get_bytes((char *)&disp, sizeof(disp), i);*/
+			assert(disp <= dict_size);
+			/* bit_array.get_bytes((char *)&len, sizeof(len), i);*/
+			if (!lzwhat_decode_varint64(bit_array, i, len)) {
 				return false;
 			}
-			assert(len <= dictSize);
-			if (!dataOut.resizeUninitialized(dataOut.size() + len)) {
+			assert(len <= dict_size);
+			if (!data_out.resize_uninit(data_out.size() + len)) {
 				return false;
 			}
-			size_t leftLimit = curDictIndex;
-			calcDictIndex(leftLimit, dictSize - disp, dictSize);
-			copyFromDict(dict.data(), dictSize, leftLimit, dataOut.data() + start, len);
-			copyToDict(dict.data(), dictSize, curDictIndex, dataOut.data() + start, len);
-			calcDictIndex(curDictIndex, len, dictSize);
+			size_t left_limit = cur_dict_index;
+			calc_dict_index(left_limit, dict_size - disp, dict_size);
+			copy_from_dict(dict.data(), dict_size, left_limit, data_out.data() + start, len);
+			copy_to_dict(dict.data(), dict_size, cur_dict_index, data_out.data() + start, len);
+			calc_dict_index(cur_dict_index, len, dict_size);
 		}
 	}
 
@@ -521,15 +521,15 @@ bool lzwhatDecompress(const peff::BitArray &bitArray, peff::Alloc *allocator, si
 int main() {
 	const char s[] = "ABACBAABCBCCA";
 
-	peff::BitArray bitArray(peff::getDefaultAlloc());
+	peff::BitArray bit_array(peff::default_allocator());
 
-	if (!lzwhatCompress(bitArray, s, sizeof(s) - 1, 7, 4)) {
+	if (!lzwhat_compress(bit_array, s, sizeof(s) - 1, 7, 4)) {
 		std::terminate();
 	}
 
-	peff::DynArray<char> data(peff::getDefaultAlloc());
+	peff::DynArray<char> data(peff::default_allocator());
 
-	if (!lzwhatDecompress(bitArray, peff::getDefaultAlloc(), 7, data)) {
+	if (!lzwhat_decompress(bit_array, peff::default_allocator(), 7, data)) {
 		std::terminate();
 	}
 

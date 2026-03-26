@@ -45,7 +45,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.hasValue())
+				if (!node.has_value())
 					return false;
 
 				if (auto v = node.value(); v)
@@ -72,8 +72,8 @@ namespace peff {
 			return _tree.allocator();
 		}
 
-		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
-			_tree.replaceAllocator(rhs);
+		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+			_tree.replace_allocator(rhs);
 		}
 
 		PEFF_FORCEINLINE Comparator &comparator() {
@@ -92,7 +92,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.hasValue())
+				if (!node.has_value())
 					return NULL_OPTION;
 
 				assert(node.value());
@@ -103,7 +103,7 @@ namespace peff {
 
 				assert(node);
 
-				return node->treeKey;
+				return node->rb_value;
 			}
 		}
 
@@ -111,7 +111,7 @@ namespace peff {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.hasValue())
+				if (!node.has_value())
 					return NULL_OPTION;
 
 				assert(node.value());
@@ -122,13 +122,13 @@ namespace peff {
 
 				assert(node);
 
-				return node->treeKey;
+				return node->rb_value;
 			}
 		}
 
 		struct Iterator {
 			typename Tree::Iterator _iterator;
-			PEFF_FORCEINLINE Iterator(typename Tree::Iterator &&iteratorIn) : _iterator(iteratorIn) {
+			PEFF_FORCEINLINE Iterator(typename Tree::Iterator &&iterator_in) : _iterator(iterator_in) {
 			}
 			Iterator(const Iterator &rhs) = default;
 			Iterator(Iterator &&rhs) = default;
@@ -200,16 +200,16 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(_tree.end());
 		}
-		PEFF_FORCEINLINE Iterator beginReversed() {
-			return Iterator(_tree.beginReversed());
+		PEFF_FORCEINLINE Iterator begin_reversed() {
+			return Iterator(_tree.begin_reversed());
 		}
-		PEFF_FORCEINLINE Iterator endReversed() {
-			return Iterator(_tree.endReversed());
+		PEFF_FORCEINLINE Iterator end_reversed() {
+			return Iterator(_tree.end_reversed());
 		}
 
 		struct ConstIterator {
 			Iterator _iterator;
-			PEFF_FORCEINLINE ConstIterator(Iterator &&iteratorIn) : _iterator(iteratorIn) {
+			PEFF_FORCEINLINE ConstIterator(Iterator &&iterator_in) : _iterator(iterator_in) {
 			}
 			ConstIterator(const ConstIterator &rhs) = default;
 			ConstIterator(ConstIterator &&rhs) = default;
@@ -277,24 +277,24 @@ namespace peff {
 		PEFF_FORCEINLINE ConstIterator end() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
-		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator beginConstReversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->beginReversed());
+		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->begin_reversed());
 		}
-		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->endReversed());
+		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
 		}
 
 		PEFF_FORCEINLINE ContainsResultType contains(const T &key) const {
 			if constexpr (Fallible) {
 				auto node = _tree.get(key);
 
-				if (!node.hasValue())
+				if (!node.has_value())
 					return NULL_OPTION;
 
 				return node.value();
@@ -308,7 +308,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {
 			if constexpr (Fallible) {
-				if (auto node = _tree.get(key); node.hasValue()) {
+				if (auto node = _tree.get(key); node.has_value()) {
 					return Iterator(typename Tree::Iterator(node.value(), &_tree, IteratorDirection::Forward));
 				}
 				return _tree.end();
@@ -320,15 +320,15 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE Iterator findMaxLteq(const T &key) {
-			if (auto node = _tree.getMaxLteqNode(key); node) {
+		PEFF_FORCEINLINE Iterator find_max_lteq(const T &key) {
+			if (auto node = _tree.get_max_lteq(key); node) {
 				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
 			}
 			return _tree.end();
 		}
 
-		PEFF_FORCEINLINE ConstIterator findMaxLteq(const T &key) const {
-			return const_cast<ThisType *>(this)->findMaxLteq(key);
+		PEFF_FORCEINLINE ConstIterator find_max_lteq(const T &key) const {
+			return const_cast<ThisType *>(this)->find_max_lteq(key);
 		}
 
 		PEFF_FORCEINLINE void remove(const Iterator &iterator) {

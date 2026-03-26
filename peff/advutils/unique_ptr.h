@@ -63,24 +63,24 @@ namespace peff {
 		PEFF_FORCEINLINE T *get() const noexcept {
 			return _pair.first();
 		}
-		PEFF_FORCEINLINE T *&getRef() noexcept {
+		PEFF_FORCEINLINE T *&get_ref() noexcept {
 			reset();
 			return _pair.first();
 		}
-		PEFF_FORCEINLINE T *&getRefWithoutRelease() noexcept {
+		PEFF_FORCEINLINE T *&get_ref_without_release() noexcept {
 			return _pair.first();
 		}
-		PEFF_FORCEINLINE T *const &getRefWithoutRelease() const noexcept {
+		PEFF_FORCEINLINE T *const &get_ref_without_release() const noexcept {
 			return _pair.first();
 		}
-		PEFF_FORCEINLINE T **getAddressOf() noexcept {
+		PEFF_FORCEINLINE T **get_addr() noexcept {
 			reset();
 			return &_pair.first();
 		}
-		PEFF_FORCEINLINE T **getAddressOfWithoutRelease() noexcept {
+		PEFF_FORCEINLINE T **get_addr_without_release() noexcept {
 			return &_pair.first();
 		}
-		PEFF_FORCEINLINE T *const *getAddressOfWithoutRelease() const noexcept {
+		PEFF_FORCEINLINE T *const *get_addr_without_release() const noexcept {
 			return &_pair.first();
 		}
 		PEFF_FORCEINLINE T *operator->() const noexcept {

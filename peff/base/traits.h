@@ -19,15 +19,7 @@ namespace peff {
 	};
 
 	template <typename T>
-	struct IsCopyAssignable<T, std::void_t<decltype(std::declval<const T>().copyAssign(*(T *)nullptr))>> : std::true_type {
-	};
-
-	template <typename T, typename V = void>
-	struct IsDestructiveCopyAssignable : std::false_type {
-	};
-
-	template <typename T>
-	struct IsDestructiveCopyAssignable<T, std::void_t<decltype(std::declval<const T>().destructiveCopyAssign(*(T *)nullptr))>> : std::true_type {
+	struct IsCopyAssignable<T, std::void_t<decltype(std::declval<const T>().copy_assign(*(T *)nullptr))>> : std::true_type {
 	};
 }
 

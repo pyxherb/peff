@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 
 #if __cplusplus >= 202002L
 	#include <bit>
@@ -19,7 +20,7 @@
 
 namespace peff {
 	template <typename To, typename From>
-	PEFF_FORCEINLINE To bitCast(const From &from) noexcept {
+	PEFF_FORCEINLINE To bit_cast(const From &from) noexcept {
 #if __cplusplus >= 202002L
 		return std::bit_cast<To>(std::forward<const From &>(from));
 #else
@@ -33,7 +34,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(uint8_t value) {
+	PEFF_FORCEINLINE uint8_t count_leading_zero(uint8_t value) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#if defined(_MSC_VER)
 		if (!value)
@@ -60,7 +61,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(uint16_t value) {
+	PEFF_FORCEINLINE uint8_t count_leading_zero(uint16_t value) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		if (!value)
@@ -87,7 +88,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(uint32_t value) {
+	PEFF_FORCEINLINE uint8_t count_leading_zero(uint32_t value) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		if (!value)
@@ -114,7 +115,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(uint64_t value) {
+	PEFF_FORCEINLINE uint8_t count_leading_zero(uint64_t value) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		if (!value)
@@ -141,23 +142,23 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(int8_t value) {
-		return countLeadingZero((uint8_t)value);
+	PEFF_FORCEINLINE uint8_t count_leading_zero(int8_t value) {
+		return count_leading_zero((uint8_t)value);
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(int16_t value) {
-		return countLeadingZero((uint16_t)value);
+	PEFF_FORCEINLINE uint8_t count_leading_zero(int16_t value) {
+		return count_leading_zero((uint16_t)value);
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(int32_t value) {
-		return countLeadingZero((uint32_t)value);
+	PEFF_FORCEINLINE uint8_t count_leading_zero(int32_t value) {
+		return count_leading_zero((uint32_t)value);
 	}
 
-	PEFF_FORCEINLINE uint8_t countLeadingZero(int64_t value) {
-		return countLeadingZero((uint64_t)value);
+	PEFF_FORCEINLINE uint8_t count_leading_zero(int64_t value) {
+		return count_leading_zero((uint64_t)value);
 	}
 
-	PEFF_FORCEINLINE uint8_t rRot(uint8_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint8_t r_rot(uint8_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSVC
 		return _rotr16(value, shift);
@@ -170,7 +171,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint16_t rRot(uint16_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint16_t r_rot(uint16_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotr16(value, shift);
@@ -183,7 +184,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint32_t rRot(uint32_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint32_t r_rot(uint32_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotr(value, shift);
@@ -196,7 +197,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint64_t rRot(uint64_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint64_t r_rot(uint64_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotr64(value, shift);
@@ -209,23 +210,23 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE int8_t rRot(int8_t value, uint_fast8_t shift) {
-		return rRot((uint8_t)value, shift);
+	PEFF_FORCEINLINE int8_t r_rot(int8_t value, uint_fast8_t shift) {
+		return r_rot((uint8_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE int16_t rRot(int16_t value, uint_fast8_t shift) {
-		return rRot((uint16_t)value, shift);
+	PEFF_FORCEINLINE int16_t r_rot(int16_t value, uint_fast8_t shift) {
+		return r_rot((uint16_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE int32_t rRot(int32_t value, uint_fast8_t shift) {
-		return rRot((uint32_t)value, shift);
+	PEFF_FORCEINLINE int32_t r_rot(int32_t value, uint_fast8_t shift) {
+		return r_rot((uint32_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE int64_t rRot(int64_t value, uint_fast8_t shift) {
-		return rRot((uint64_t)value, shift);
+	PEFF_FORCEINLINE int64_t r_rot(int64_t value, uint_fast8_t shift) {
+		return r_rot((uint64_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE uint8_t lRot(uint8_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint8_t l_rot(uint8_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotl16(value, shift);
@@ -238,7 +239,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint16_t lRot(uint16_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint16_t l_rot(uint16_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotl16(value, shift);
@@ -251,7 +252,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint32_t lRot(uint32_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint32_t l_rot(uint32_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotl(value, shift);
@@ -264,7 +265,7 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE uint64_t lRot(uint64_t value, uint_fast8_t shift) {
+	PEFF_FORCEINLINE uint64_t l_rot(uint64_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
 		return _rotl64(value, shift);
@@ -277,20 +278,20 @@ namespace peff {
 #endif
 	}
 
-	PEFF_FORCEINLINE int8_t lRot(int8_t value, uint_fast8_t shift) {
-		return lRot((uint8_t)value, shift);
+	PEFF_FORCEINLINE int8_t l_rot(int8_t value, uint_fast8_t shift) {
+		return l_rot((uint8_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE int16_t lRot(int16_t value, uint_fast8_t shift) {
-		return lRot((uint16_t)value, shift);
+	PEFF_FORCEINLINE int16_t l_rot(int16_t value, uint_fast8_t shift) {
+		return l_rot((uint16_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE int32_t lRot(int32_t value, uint_fast8_t shift) {
-		return lRot((uint32_t)value, shift);
+	PEFF_FORCEINLINE int32_t l_rot(int32_t value, uint_fast8_t shift) {
+		return l_rot((uint32_t)value, shift);
 	}
 
-	PEFF_FORCEINLINE int64_t lRot(int64_t value, uint_fast8_t shift) {
-		return lRot((uint64_t)value, shift);
+	PEFF_FORCEINLINE int64_t l_rot(int64_t value, uint_fast8_t shift) {
+		return l_rot((uint64_t)value, shift);
 	}
 }
 

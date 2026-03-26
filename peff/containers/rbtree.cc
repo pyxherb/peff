@@ -2,7 +2,7 @@
 
 using namespace peff;
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_getMinNode(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_min_node(NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -11,7 +11,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_getMinNode(NodeBase *node
 	return node;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_getMaxNode(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_max_node(NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -20,7 +20,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_getMaxNode(NodeBase *node
 	return node;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_lRot(NodeBase *x) noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_l_rot(NodeBase *x) noexcept {
 	NodeBase* y = x->r;
 	assert(y);
 
@@ -41,7 +41,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_lRot(NodeBase *x) noexcept {
 	x->p = y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_rRot(NodeBase *x) noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_r_rot(NodeBase *x) noexcept {
 	NodeBase* y = x->l;
 	assert(y);
 
@@ -61,16 +61,16 @@ PEFF_CONTAINERS_API void RBTreeBase::_rRot(NodeBase *x) noexcept {
 	x->p = y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_insert_fix_up(NodeBase *node) noexcept {
 	NodeBase* p, * gp = node, * u;  // Parent, grandparent and uncle
 
-	while ((p = gp->p) && _isRed(p)) {
+	while ((p = gp->p) && _is_red(p)) {
 		gp = p->p;
 
 		if (p == gp->l) {
 			u = gp->r;
 
-			if (_isRed(u)) {
+			if (_is_red(u)) {
 				p->color = RBColor::Black;
 				u->color = RBColor::Black;
 				gp->color = RBColor::Red;
@@ -79,10 +79,10 @@ PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(NodeBase *node) noexcept {
 			}
 			else {
 				if (node == p->r) {
-					_lRot(p);
+					_l_rot(p);
 					std::swap(node, p);
 				}
-				_rRot(gp);
+				_r_rot(gp);
 				p->color = RBColor::Black;
 				gp->color = RBColor::Red;
 			}
@@ -90,7 +90,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(NodeBase *node) noexcept {
 		else {
 			u = gp->l;
 
-			if (_isRed(u)) {
+			if (_is_red(u)) {
 				p->color = RBColor::Black;
 				u->color = RBColor::Black;
 				gp->color = RBColor::Red;
@@ -99,10 +99,10 @@ PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(NodeBase *node) noexcept {
 			}
 			else {
 				if (node == p->l) {
-					_rRot(p);
+					_r_rot(p);
 					std::swap(node, p);
 				}
-				_lRot(gp);
+				_l_rot(gp);
 				p->color = RBColor::Black;
 				gp->color = RBColor::Red;
 			}
@@ -112,7 +112,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_insertFixUp(NodeBase *node) noexcept {
 	_root->color = RBColor::Black;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_removeFixUp(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_remove_fix_up(NodeBase *node) noexcept {
 	// From SGI STL's stl_tree, with some minor improvements.
 	NodeBase* y = node, * x, * p;
 
@@ -125,7 +125,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_removeFixUp(NodeBase *nod
 	}
 	else {
 		// The node has two children.
-		y = _getMinNode(y->r);
+		y = _get_min_node(y->r);
 		x = y->r;
 	}
 
@@ -168,67 +168,67 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_removeFixUp(NodeBase *nod
 			node->p->r = x;
 	}
 
-	if (_isBlack(y)) {
-		while (x != _root && _isBlack(x)) {
+	if (_is_black(y)) {
+		while (x != _root && _is_black(x)) {
 			if (x == p->l) {
 				auto w = p->r;
 
-				if (_isRed(w)) {
+				if (_is_red(w)) {
 					w->color = RBColor::Black;
 					p->color = RBColor::Red;
-					_lRot(p);
+					_l_rot(p);
 					w = p->r;
 				}
 
-				if (_isBlack(w->l) && _isBlack(w->r)) {
+				if (_is_black(w->l) && _is_black(w->r)) {
 					w->color = RBColor::Red;
 					x = p;
 					p = p->p;
 				}
 				else {
-					if (_isBlack(w->r)) {
+					if (_is_black(w->r)) {
 						if (w->l)
 							w->l->color = RBColor::Black;
 						w->color = RBColor::Red;
-						_rRot(w);
+						_r_rot(w);
 						w = p->r;
 					}
 					w->color = p->color;
 					p->color = RBColor::Black;
 					if (w->r)
 						w->r->color = RBColor::Black;
-					_lRot(p);
+					_l_rot(p);
 					break;
 				}
 			}
 			else {
 				auto w = p->l;
 
-				if (_isRed(w)) {
+				if (_is_red(w)) {
 					w->color = RBColor::Black;
 					p->color = RBColor::Red;
-					_rRot(p);
+					_r_rot(p);
 					w = p->l;
 				}
 
-				if (_isBlack(w->r) && _isBlack(w->l)) {
+				if (_is_black(w->r) && _is_black(w->l)) {
 					w->color = RBColor::Red;
 					x = p;
 					p = p->p;
 				}
 				else {
-					if (_isBlack(w->l)) {
+					if (_is_black(w->l)) {
 						if (w->r)
 							w->r->color = RBColor::Black;
 						w->color = RBColor::Red;
-						_lRot(w);
+						_l_rot(w);
 						w = p->l;
 					}
 					w->color = p->color;
 					p->color = RBColor::Black;
 					if (w->l)
 						w->l->color = RBColor::Black;
-					_rRot(p);
+					_r_rot(p);
 					break;
 				}
 			}
@@ -240,49 +240,49 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_removeFixUp(NodeBase *nod
 	return y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_verify(NodeBase *node, const size_t nBlack, size_t cntBlack) const noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_verify(NodeBase *node, const size_t num_black, size_t black_count) const noexcept {
 	if (!node) {
 		// We have reached a terminal node.
-		if (nBlack != cntBlack)
+		if (num_black != black_count)
 			// Inequal black node counts detected
 			std::terminate();
 		return;
 	}
 
-	if (_isRed(node) && _isRed(node->p))
+	if (_is_red(node) && _is_red(node->p))
 		// Connected red nodes detected
 		std::terminate();
 
-	if (_isBlack(node))
-		++cntBlack;
+	if (_is_black(node))
+		++black_count;
 
-	_verify(node->l, nBlack, cntBlack);
-	_verify(node->r, nBlack, cntBlack);
+	_verify(node->l, num_black, black_count);
+	_verify(node->r, num_black, black_count);
 }
 
 PEFF_CONTAINERS_API void RBTreeBase::_verify() const noexcept {
 	if (!_root)
 		return;
 
-	if (_isRed(_root))
+	if (_is_red(_root))
 		// Red root node detected
 		std::terminate();
 
-	size_t nBlack = 0;
+	size_t num_black = 0;
 	for (NodeBase* i = _root; i; i = i->l) {
-		if (_isBlack(i))
-			++nBlack;
+		if (_is_black(i))
+			++num_black;
 	}
 
-	_verify(_root, nBlack, 0);
+	_verify(_root, num_black, 0);
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_getNextNode(const NodeBase* node, const NodeBase* lastNode) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_get_next_node(const NodeBase* node, const NodeBase* last_node) noexcept {
 	assert(node);
 
-	if (node != lastNode) {
+	if (node != last_node) {
 		if (node->r) {
-			return _getMinNode(node->r);
+			return _get_min_node(node->r);
 		}
 		else {
 			while (node->p && (node == node->p->r))
@@ -294,12 +294,12 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_getNextNode(const NodeBas
 	return nullptr;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_getPrevNode(const NodeBase* node, const NodeBase* firstNode) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_get_prev_node(const NodeBase* node, const NodeBase* first_node) noexcept {
 	assert(node);
 
-	if (node != firstNode) {
+	if (node != first_node) {
 		if (node->l) {
-			return _getMaxNode(node->l);
+			return _get_max_node(node->l);
 		}
 		else {
 			while (node->p && (node == node->p->l))

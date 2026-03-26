@@ -15,7 +15,7 @@ namespace peff {
 	class Option final {
 	private:
 		alignas(T) char _data[sizeof(T)];
-		bool _hasValue = false;
+		bool _has_value = false;
 
 	public:
 		using value_type = T;
@@ -23,65 +23,65 @@ namespace peff {
 		static_assert(std::is_move_constructible_v<T>, "The type must be move constructible");
 
 		PEFF_FORCEINLINE void reset() noexcept {
-			if (_hasValue) {
+			if (_has_value) {
 				if (std::is_destructible_v<T>) {
-					peff::destroyAt<T>((T *)_data);
+					peff::destroy_at<T>((T *)_data);
 				}
 			}
-			_hasValue = false;
+			_has_value = false;
 		}
 
-		PEFF_FORCEINLINE void setValue(T &&data) noexcept {
+		PEFF_FORCEINLINE void set_value(T &&data) noexcept {
 			reset();
-			peff::constructAt<T>(((T *)_data), std::move(data));
-			_hasValue = true;
+			peff::construct_at<T>(((T *)_data), std::move(data));
+			_has_value = true;
 		}
 
-		PEFF_FORCEINLINE void setValue(NullOption) noexcept {
+		PEFF_FORCEINLINE void set_value(NullOption) noexcept {
 			reset();
 		}
 
-		PEFF_FORCEINLINE bool hasValue() const noexcept {
-			return _hasValue;
+		PEFF_FORCEINLINE bool has_value() const noexcept {
+			return _has_value;
 		}
 
 		PEFF_FORCEINLINE operator bool() const noexcept {
-			return _hasValue;
+			return _has_value;
 		}
 
 		PEFF_FORCEINLINE T &value() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *((T *)_data);
 		}
 
 		PEFF_FORCEINLINE const T &value() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *((const T *)_data);
 		}
 
 		PEFF_FORCEINLINE T move() noexcept {
-			assert(hasValue());
-			_hasValue = false;
+			assert(has_value());
+			_has_value = false;
 			return std::move(*((T *)_data));
 		}
 
 		PEFF_FORCEINLINE T &operator*() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return value();
 		}
 
 		PEFF_FORCEINLINE const T &operator*() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return value();
 		}
 
 		PEFF_FORCEINLINE std::remove_reference_t<T> *operator->() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return &value();
 		}
 
 		PEFF_FORCEINLINE std::remove_reference_t<const T> *operator->() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return &value();
 		}
 
@@ -93,25 +93,25 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Option(T &&data) noexcept {
-			setValue(std::move(data));
+			set_value(std::move(data));
 		}
 
 		PEFF_FORCEINLINE Option(NullOption) noexcept {
 		}
 
 		PEFF_FORCEINLINE Option(Option<T> &&rhs) noexcept {
-			if (rhs.hasValue()) {
-				setValue(std::move(*((T *)rhs._data)));
-				rhs._hasValue = false;
+			if (rhs.has_value()) {
+				set_value(std::move(*((T *)rhs._data)));
+				rhs._has_value = false;
 			}
 		}
 
 		PEFF_FORCEINLINE Option<T> &operator=(Option<T> &&rhs) noexcept {
 			reset();
 
-			if (rhs.hasValue()) {
-				setValue(std::move(*((T *)rhs._data)));
-				rhs._hasValue = false;
+			if (rhs.has_value()) {
+				set_value(std::move(*((T *)rhs._data)));
+				rhs._has_value = false;
 			}
 			return *this;
 		}
@@ -119,7 +119,7 @@ namespace peff {
 		PEFF_FORCEINLINE Option<T> &operator=(T &&rhs) noexcept {
 			reset();
 
-			setValue(std::move(rhs));
+			set_value(std::move(rhs));
 			return *this;
 		}
 	};
@@ -137,16 +137,16 @@ namespace peff {
 			_data = nullptr;
 		}
 
-		PEFF_FORCEINLINE void setValueRef(V &data) noexcept {
+		PEFF_FORCEINLINE void set_value_ref(V &data) noexcept {
 			reset();
 			_data = &data;
 		}
 
-		PEFF_FORCEINLINE void setValue(NullOption) noexcept {
+		PEFF_FORCEINLINE void set_value(NullOption) noexcept {
 			reset();
 		}
 
-		PEFF_FORCEINLINE bool hasValue() const noexcept {
+		PEFF_FORCEINLINE bool has_value() const noexcept {
 			return _data;
 		}
 
@@ -155,39 +155,39 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE V &value() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *_data;
 		}
 
 		PEFF_FORCEINLINE const V &value() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *((const V *)_data);
 		}
 
 		PEFF_FORCEINLINE V move() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			V v = std::move(*_data);
 			_data = nullptr;
 			return v;
 		}
 
 		PEFF_FORCEINLINE V &operator*() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return value();
 		}
 
 		PEFF_FORCEINLINE const V &operator*() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return value();
 		}
 
 		PEFF_FORCEINLINE V *operator->() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return &value();
 		}
 
 		PEFF_FORCEINLINE const V *operator->() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return &value();
 		}
 
@@ -199,15 +199,15 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Option(V &data) noexcept {
-			setValueRef(data);
+			set_value_ref(data);
 		}
 
 		PEFF_FORCEINLINE Option(NullOption) noexcept {
 		}
 
 		PEFF_FORCEINLINE Option(Option<T> &&rhs) noexcept {
-			if (rhs.hasValue()) {
-				setValueRef(**((std::remove_reference_t<T> **)rhs._data));
+			if (rhs.has_value()) {
+				set_value_ref(**((std::remove_reference_t<T> **)rhs._data));
 				rhs._data = nullptr;
 			}
 		}
@@ -215,8 +215,8 @@ namespace peff {
 		PEFF_FORCEINLINE Option<T> &operator=(Option<T> &&rhs) noexcept {
 			reset();
 
-			if (rhs.hasValue()) {
-				setValueRef(**((std::remove_reference_t<T> **)rhs._data));
+			if (rhs.has_value()) {
+				set_value_ref(**((std::remove_reference_t<T> **)rhs._data));
 				rhs._data = nullptr;
 			}
 			return *this;
@@ -224,7 +224,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE Option<T> &operator=(V &rhs) noexcept {
 			reset();
-			setValueRef(rhs);
+			set_value_ref(rhs);
 			return *this;
 		}
 	};
@@ -242,16 +242,16 @@ namespace peff {
 			_data = nullptr;
 		}
 
-		PEFF_FORCEINLINE void setValueRef(const V &data) noexcept {
+		PEFF_FORCEINLINE void set_value_ref(const V &data) noexcept {
 			reset();
 			_data = &data;
 		}
 
-		PEFF_FORCEINLINE void setValue(NullOption) noexcept {
+		PEFF_FORCEINLINE void set_value(NullOption) noexcept {
 			reset();
 		}
 
-		PEFF_FORCEINLINE bool hasValue() const noexcept {
+		PEFF_FORCEINLINE bool has_value() const noexcept {
 			return _data;
 		}
 
@@ -260,39 +260,39 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE V &value() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *_data;
 		}
 
 		PEFF_FORCEINLINE const V &value() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return *((const V *)_data);
 		}
 
 		PEFF_FORCEINLINE V move() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			V v = std::move(*_data);
 			_data = nullptr;
 			return v;
 		}
 
 		PEFF_FORCEINLINE V &operator*() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return value();
 		}
 
 		PEFF_FORCEINLINE const V &operator*() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return value();
 		}
 
 		PEFF_FORCEINLINE V *operator->() noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return &value();
 		}
 
 		PEFF_FORCEINLINE const V *operator->() const noexcept {
-			assert(hasValue());
+			assert(has_value());
 			return &value();
 		}
 
@@ -304,15 +304,15 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Option(const V &data) noexcept {
-			setValueRef(data);
+			set_value_ref(data);
 		}
 
 		PEFF_FORCEINLINE Option(NullOption) noexcept {
 		}
 
 		PEFF_FORCEINLINE Option(Option<T> &&rhs) noexcept {
-			if (rhs.hasValue()) {
-				setValueRef(**((std::remove_reference_t<T> **)rhs._data));
+			if (rhs.has_value()) {
+				set_value_ref(**((std::remove_reference_t<T> **)rhs._data));
 				rhs._data = nullptr;
 			}
 		}
@@ -320,8 +320,8 @@ namespace peff {
 		PEFF_FORCEINLINE Option<T> &operator=(Option<T> &&rhs) noexcept {
 			reset();
 
-			if (rhs.hasValue()) {
-				setValueRef(**((std::remove_reference_t<T> **)rhs._data));
+			if (rhs.has_value()) {
+				set_value_ref(**((std::remove_reference_t<T> **)rhs._data));
 				rhs._data = nullptr;
 			}
 			return *this;
@@ -329,7 +329,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE Option<T> &operator=(const V &rhs) noexcept {
 			reset();
-			setValueRef(rhs);
+			set_value_ref(rhs);
 			return *this;
 		}
 	};
@@ -338,53 +338,53 @@ namespace peff {
 	class OptionArray final {
 	private:
 		alignas(T) char _data[sizeof(T) * length];
-		bool _hasValue[length] = { false };
+		bool _has_value[length] = { false };
 
 	public:
 		using value_type = T;
 
 		PEFF_FORCEINLINE void reset(size_t index) noexcept {
-			if (_hasValue[index]) {
+			if (_has_value[index]) {
 				if (std::is_destructible_v<T>) {
-					peff::destroyAt<T>((T *)(&_data[index * sizeof(T)]));
+					peff::destroy_at<T>((T *)(&_data[index * sizeof(T)]));
 				}
 			}
-			_hasValue[index] = false;
+			_has_value[index] = false;
 		}
 
-		PEFF_FORCEINLINE void setValue(size_t index, T &&data) noexcept {
+		PEFF_FORCEINLINE void set_value(size_t index, T &&data) noexcept {
 			assert(index < length);
 			reset(index);
-			peff::constructAt<T>(((T *)(&_data[index * sizeof(T)])), std::move(data));
-			_hasValue[index] = true;
+			peff::construct_at<T>(((T *)(&_data[index * sizeof(T)])), std::move(data));
+			_has_value[index] = true;
 		}
 
-		PEFF_FORCEINLINE void setValue(size_t index, NullOption) noexcept {
+		PEFF_FORCEINLINE void set_value(size_t index, NullOption) noexcept {
 			assert(index < length);
 			reset(index);
 		}
 
-		PEFF_FORCEINLINE bool hasValue(size_t index) const noexcept {
+		PEFF_FORCEINLINE bool has_value(size_t index) const noexcept {
 			assert(index < length);
-			return _hasValue[index];
+			return _has_value[index];
 		}
 
 		PEFF_FORCEINLINE T &value(size_t index) noexcept {
 			assert(index < length);
-			assert(hasValue(index));
+			assert(has_value(index));
 			return *((T *)(&_data[index * sizeof(T)]));
 		}
 
 		PEFF_FORCEINLINE const T &value(size_t index) const noexcept {
 			assert(index < length);
-			assert(hasValue(index));
+			assert(has_value(index));
 			return *((const T *)(&_data[index * sizeof(T)]));
 		}
 
 		PEFF_FORCEINLINE T move(size_t index) noexcept {
 			assert(index < length);
-			assert(hasValue(index));
-			_hasValue[index] = false;
+			assert(has_value(index));
+			_has_value[index] = false;
 			return std::move(*((T *)(&_data[index * sizeof(T)])));
 		}
 
@@ -398,9 +398,9 @@ namespace peff {
 
 		PEFF_FORCEINLINE OptionArray(OptionArray<T, length> &&rhs) noexcept {
 			for (size_t i = 0; i < length; ++i) {
-				if (rhs.hasValue(i)) {
-					setValue(i, std::move(*((T *)&rhs._data[i * sizeof(T)])));
-					rhs._hasValue[i] = false;
+				if (rhs.has_value(i)) {
+					set_value(i, std::move(*((T *)&rhs._data[i * sizeof(T)])));
+					rhs._has_value[i] = false;
 				}
 			}
 		}
@@ -410,9 +410,9 @@ namespace peff {
 				return *this;
 			for (size_t i = 0; i < length; ++i) {
 				reset(i);
-				if (rhs.hasValue(i)) {
-					setValue(i, std::move(*((T *)&rhs._data[i * sizeof(T)])));
-					rhs._hasValue[i] = false;
+				if (rhs.has_value(i)) {
+					set_value(i, std::move(*((T *)&rhs._data[i * sizeof(T)])));
+					rhs._has_value[i] = false;
 				}
 			}
 			return *this;

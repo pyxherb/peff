@@ -25,7 +25,7 @@ namespace peff {
 
 		using NodeHandle = Node *;
 
-		static PEFF_FORCEINLINE NodeHandle nullNodeHandle() {
+		static PEFF_FORCEINLINE NodeHandle null_node_handle() {
 			return nullptr;
 		}
 
@@ -36,21 +36,21 @@ namespace peff {
 		size_t _length = 0;
 		RcObjectPtr<Alloc> _allocator;
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *_allocNode(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE Node *_alloc_node(T &&data) {
 			Node *node = (Node *)_allocator->alloc(sizeof(Node), alignof(Node));
 			if (!node)
 				return nullptr;
 
-			ScopeGuard scopeGuard([this, node]() noexcept {
+			ScopeGuard scope_guard([this, node]() noexcept {
 				_allocator->release(node, sizeof(Node), alignof(Node));
 			});
-			constructAt<Node>(node, std::move(data));
-			scopeGuard.release();
+			construct_at<Node>(node, std::move(data));
+			scope_guard.release();
 
 			return node;
 		}
 
-		PEFF_FORCEINLINE void _deleteNode(Node *node) {
+		PEFF_FORCEINLINE void _delete_node(Node *node) {
 			std::destroy_at<Node>(node);
 
 			_allocator->release(node, sizeof(Node), alignof(Node));
@@ -122,7 +122,7 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();
-			constructAt<List>(this, std::move(other));
+			construct_at<List>(this, std::move(other));
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
@@ -130,106 +130,106 @@ namespace peff {
 			for (Node *i = _first; i != nullptr;) {
 				Node *next = i->next;
 
-				_deleteNode(i);
+				_delete_node(i);
 
 				i = next;
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertFront(NodeHandle node, NodeHandle newNode) {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insert_front(NodeHandle node, NodeHandle new_node) {
 			assert(node);
 
-			_prepend(node, newNode);
+			_prepend(node, new_node);
 
-			return newNode;
+			return new_node;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insertBack(NodeHandle node, NodeHandle newNode) {
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insert_back(NodeHandle node, NodeHandle new_node) {
 			assert(node);
 
-			_append(node, newNode);
+			_append(node, new_node);
 
-			return newNode;
+			return new_node;
 		}
 
-		PEFF_FORCEINLINE void pushFront(NodeHandle node) noexcept {
+		PEFF_FORCEINLINE void push_front(NodeHandle node) noexcept {
 			_prepend(_first, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushFront(T &&data) {
-			Node *newNode = _allocNode(std::move(data));
-			if (!newNode)
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle push_front(T &&data) {
+			Node *new_node = _alloc_node(std::move(data));
+			if (!new_node)
 				return nullptr;
-			_prepend(_first, newNode);
-			return newNode;
+			_prepend(_first, new_node);
+			return new_node;
 		}
 
-		PEFF_FORCEINLINE void pushBack(NodeHandle node) noexcept {
+		PEFF_FORCEINLINE void push_back(NodeHandle node) noexcept {
 			_append(_last, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle pushBack(T &&data) {
-			Node *newNode = _allocNode(std::move(data));
-			if (!newNode)
+		[[nodiscard]] PEFF_FORCEINLINE NodeHandle push_back(T &&data) {
+			Node *new_node = _alloc_node(std::move(data));
+			if (!new_node)
 				return nullptr;
-			_append(_last, newNode);
-			return newNode;
+			_append(_last, new_node);
+			return new_node;
 		}
 
-		PEFF_FORCEINLINE void popFront() {
+		PEFF_FORCEINLINE void pop_front() {
 			remove(_first);
 		}
 
-		PEFF_FORCEINLINE void popBack() {
+		PEFF_FORCEINLINE void pop_back() {
 			remove(_last);
 		}
 
 		PEFF_FORCEINLINE void remove(NodeHandle node) {
 			_remove(node);
-			_deleteNode(node);
+			_delete_node(node);
 		}
 
 		PEFF_FORCEINLINE void detach(NodeHandle node) {
 			_remove(node);
 		}
 
-		PEFF_FORCEINLINE static Node *next(NodeHandle curNode, size_t index) {
+		PEFF_FORCEINLINE static Node *next(NodeHandle cur_node, size_t index) {
 			while (index) {
-				assert(curNode);
-				curNode = curNode->next;
+				assert(cur_node);
+				cur_node = cur_node->next;
 				--index;
 			}
 
-			return curNode;
+			return cur_node;
 		}
 
-		PEFF_FORCEINLINE static Node *prev(NodeHandle curNode, size_t index) {
+		PEFF_FORCEINLINE static Node *prev(NodeHandle cur_node, size_t index) {
 			while (index) {
-				assert(curNode);
-				curNode = curNode->prev;
+				assert(cur_node);
+				cur_node = cur_node->prev;
 				--index;
 			}
 
-			return curNode;
+			return cur_node;
 		}
 
-		PEFF_FORCEINLINE void deleteNode(NodeHandle node) {
-			_deleteNode(node);
+		PEFF_FORCEINLINE void delete_node(NodeHandle node) {
+			_delete_node(node);
 		}
 
-		PEFF_FORCEINLINE NodeHandle firstNode() {
+		PEFF_FORCEINLINE NodeHandle first_node() {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE const NodeHandle firstNode() const {
+		PEFF_FORCEINLINE const NodeHandle first_node() const {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE NodeHandle lastNode() {
+		PEFF_FORCEINLINE NodeHandle last_node() {
 			return _last;
 		}
 
-		PEFF_FORCEINLINE const NodeHandle lastNode() const {
+		PEFF_FORCEINLINE const NodeHandle last_node() const {
 			return _last;
 		}
 
@@ -251,11 +251,11 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			for (Node *i = _first; i;) {
-				Node *nextNode = i->next;
+				Node *next_node = i->next;
 
-				_deleteNode(i);
+				_delete_node(i);
 
-				i = nextNode;
+				i = next_node;
 			}
 			_length = 0;
 			_first = nullptr;
@@ -406,10 +406,10 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(nullptr, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE Iterator beginReversed() {
+		PEFF_FORCEINLINE Iterator begin_reversed() {
 			return Iterator(_last, this, IteratorDirection::Reversed);
 		}
-		PEFF_FORCEINLINE Iterator endReversed() {
+		PEFF_FORCEINLINE Iterator end_reversed() {
 			return Iterator(nullptr, this, IteratorDirection::Reversed);
 		}
 
@@ -439,13 +439,13 @@ namespace peff {
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				constructAt<ConstIterator>(this, rhs);
+				construct_at<ConstIterator>(this, rhs);
 				return *this;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(ConstIterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				constructAt<ConstIterator>(this, std::move(rhs));
+				construct_at<ConstIterator>(this, std::move(rhs));
 				return *this;
 			}
 
@@ -567,32 +567,32 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator beginConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
 			return ConstIterator((Node *)_first, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE ConstIterator endConst() const noexcept {
+		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE ConstIterator beginConstReversed() const noexcept {
+		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
 			return ConstIterator((Node *)_last, this, IteratorDirection::Reversed);
 		}
-		PEFF_FORCEINLINE ConstIterator endConstReversed() const noexcept {
+		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Reversed);
 		}
 
 		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
-			return beginConst();
+			return begin_const();
 		}
 		PEFF_FORCEINLINE ConstIterator end() const noexcept {
-			return endConst();
+			return end_const();
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
 			return _allocator.get();
 		}
 
-		PEFF_FORCEINLINE void replaceAllocator(Alloc *rhs) noexcept {
-			verifyReplaceable(_allocator.get(), rhs);
+		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+			verify_replaceable(_allocator.get(), rhs);
 
 			_allocator = rhs;
 		}

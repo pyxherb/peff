@@ -15,7 +15,7 @@ namespace peff {
 	public:
 		Uninit() noexcept = default;
 		PEFF_FORCEINLINE explicit Uninit(T &&data) noexcept {
-			peff::constructAt<T>((T *)_buf, std::move(data));
+			peff::construct_at<T>((T *)_buf, std::move(data));
 		}
 		Uninit(const Uninit<T> &) = delete;
 		PEFF_FORCEINLINE ~Uninit() {
@@ -50,11 +50,11 @@ namespace peff {
 		PEFF_FORCEINLINE const T *data() const {
 			return (T *)_buf;
 		}
-		PEFF_FORCEINLINE void moveFrom(T &&src) {
-			constructAt((T *)_buf, std::move(src));
+		PEFF_FORCEINLINE void move_from(T &&src) {
+			construct_at((T *)_buf, std::move(src));
 		}
 		PEFF_FORCEINLINE Uninit<T> &operator=(T &&rhs) noexcept {
-			constructAt((T *)_buf, std::move(rhs));
+			construct_at((T *)_buf, std::move(rhs));
 			return *this;
 		}
 	};
@@ -70,17 +70,17 @@ namespace peff {
 	};
 
 	template <typename T>
-	PEFF_FORCEINLINE void moveAssignOrMoveConstruct(T &lhs, T &&rhs) noexcept {
+	PEFF_FORCEINLINE void move_assign_or_move_construct(T &lhs, T &&rhs) noexcept {
 		if constexpr (std::is_move_assignable_v<T>) {
 			lhs = std::move(rhs);
 		} else {
 			static_assert(std::is_move_constructible_v<T>, "The type must at least be move-constructible");
 			std::destroy_at<T>(&lhs);
-			peff::constructAt<T>(&lhs, std::move(lhs));
+			peff::construct_at<T>(&lhs, std::move(lhs));
 		}
 	}
 
-	PEFF_BASE_API Endian testNativeEndian();
+	PEFF_BASE_API Endian test_native_endian();
 }
 
 #endif

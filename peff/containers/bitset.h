@@ -17,56 +17,56 @@ namespace peff {
 	private:
 		uint8_t _buffer[BYTE_SIZE] = { 0 };
 
-		PEFF_FORCEINLINE void _setBit(size_t bitIndex) {
-			_buffer[(bitIndex >> 3)] |= (1 << (bitIndex & 7));
+		PEFF_FORCEINLINE void _set_bit(size_t bit_index) {
+			_buffer[(bit_index >> 3)] |= (1 << (bit_index & 7));
 		}
 
-		PEFF_FORCEINLINE void _clearBit(size_t bitIndex) {
-			_buffer[(bitIndex >> 3)] &= ~(1 << (bitIndex & 7));
+		PEFF_FORCEINLINE void _clear_bit(size_t bit_index) {
+			_buffer[(bit_index >> 3)] &= ~(1 << (bit_index & 7));
 		}
 
-		PEFF_FORCEINLINE void _setByte(size_t bitIndex, uint8_t b, uint8_t nBits) {
-			size_t index = (bitIndex >> 3), inBitIndex = (bitIndex & 7);
+		PEFF_FORCEINLINE void _set_byte(size_t bit_index, uint8_t b, uint8_t num_bits) {
+			size_t index = (bit_index >> 3), bit_index_in_byte = (bit_index & 7);
 
-			if ((bitIndex + (nBits - 1)) >> 3 == index) {
+			if ((bit_index + (num_bits - 1)) >> 3 == index) {
 				// Does not across the byte boundary and inside a single byte.
 				// Such as 000|111|00
-				uint8_t mask = ~(((1 << nBits) - 1) << inBitIndex);
+				uint8_t mask = ~(((1 << num_bits) - 1) << bit_index_in_byte);
 				_buffer[index] &= mask;
-				_buffer[index] |= b << inBitIndex;
+				_buffer[index] |= b << bit_index_in_byte;
 			} else {
 				// Acrosses the byte boundary.
 				// Such as 000|10010 110|00000
-				uint8_t mask = 0xff >> (8 - inBitIndex);
+				uint8_t mask = 0xff >> (8 - bit_index_in_byte);
 				_buffer[index] &= mask;
-				_buffer[index] |= b << inBitIndex;
+				_buffer[index] |= b << bit_index_in_byte;
 
-				uint8_t bitsRemaining = nBits - (8 - inBitIndex);
-				mask = 0xff << bitsRemaining;
+				uint8_t bits_remaining = num_bits - (8 - bit_index_in_byte);
+				mask = 0xff << bits_remaining;
 				_buffer[index + 1] &= mask;
-				_buffer[index + 1] |= b >> (8 - inBitIndex);
+				_buffer[index + 1] |= b >> (8 - bit_index_in_byte);
 			}
 
 			// Used for verifying if the set byte works correctly
-			uint8_t test = _getByte(bitIndex, nBits);
-			if (nBits < 8) {
-				test &= (0xff >> (8 - nBits));
-				b &= (0xff >> (8 - nBits));
+			uint8_t test = _get_byte(bit_index, num_bits);
+			if (num_bits < 8) {
+				test &= (0xff >> (8 - num_bits));
+				b &= (0xff >> (8 - num_bits));
 			}
 			assert(test == b);
 		}
 
-		PEFF_FORCEINLINE uint8_t _getByte(size_t bitIndex, uint8_t nBits) const {
-			if (bitIndex & 7) {
-				size_t byteIndex = bitIndex >> 3, bitOffset = bitIndex & 7;
-				if (((bitIndex + (nBits - 1)) >> 3) > byteIndex) {
-					uint8_t l = _buffer[byteIndex] >> (bitOffset), h = _buffer[byteIndex + 1] << (8 - bitOffset);
-					return (l | h) & (0xff >> (8 - nBits));
+		PEFF_FORCEINLINE uint8_t _get_byte(size_t bit_index, uint8_t num_bits) const {
+			if (bit_index & 7) {
+				size_t index_in_byte = bit_index >> 3, bit_offset = bit_index & 7;
+				if (((bit_index + (num_bits - 1)) >> 3) > index_in_byte) {
+					uint8_t l = _buffer[index_in_byte] >> (bit_offset), h = _buffer[index_in_byte + 1] << (8 - bit_offset);
+					return (l | h) & (0xff >> (8 - num_bits));
 				} else {
-					return (_buffer[byteIndex] >> (bitOffset)) & (0xff >> (8 - nBits));
+					return (_buffer[index_in_byte] >> (bit_offset)) & (0xff >> (8 - num_bits));
 				}
 			}
-			return _buffer[bitIndex >> 3] & (0xff >> (8 - nBits));
+			return _buffer[bit_index >> 3] & (0xff >> (8 - num_bits));
 		}
 
 	public:
@@ -78,7 +78,7 @@ namespace peff {
 			return BYTE_SIZE;
 		}
 
-		PEFF_FORCEINLINE size_t bitSize() const {
+		PEFF_FORCEINLINE size_t bit_size() const {
 			return N;
 		}
 
@@ -86,105 +86,105 @@ namespace peff {
 			return _buffer;
 		}
 
-		PEFF_FORCEINLINE void setBit(size_t bitIndex) {
-			assert(bitIndex < N);
-			_setBit(bitIndex);
+		PEFF_FORCEINLINE void set_bit(size_t bit_index) {
+			assert(bit_index < N);
+			_set_bit(bit_index);
 		}
 
-		PEFF_FORCEINLINE void clearBit(size_t bitIndex) {
-			assert(bitIndex < N);
-			_clearBit(bitIndex);
+		PEFF_FORCEINLINE void clear_bit(size_t bit_index) {
+			assert(bit_index < N);
+			_clear_bit(bit_index);
 		}
 
-		PEFF_FORCEINLINE bool getBit(size_t bitIndex) const {
-			assert(bitIndex < N);
-			return (_buffer[(bitIndex >> 3)] >> (bitIndex & 7)) & 1;
+		PEFF_FORCEINLINE bool get_bit(size_t bit_index) const {
+			assert(bit_index < N);
+			return (_buffer[(bit_index >> 3)] >> (bit_index & 7)) & 1;
 		}
 
-		PEFF_FORCEINLINE void fillSet(size_t bitIndex, size_t nBits) {
-			assert(bitIndex < N);
-			assert(bitIndex + nBits <= N);
+		PEFF_FORCEINLINE void fill_set(size_t bit_index, size_t num_bits) {
+			assert(bit_index < N);
+			assert(bit_index + num_bits <= N);
 
-			size_t idxEnd = bitIndex + nBits;
+			size_t idx_end = bit_index + num_bits;
 
-			size_t idxStartFillByte = (bitIndex + 7) >> 3;
-			size_t idxEndFillByte = idxEnd >> 3;
-			size_t szFillByte = idxEndFillByte - idxStartFillByte;
+			size_t idx_start_fill_byte = (bit_index + 7) >> 3;
+			size_t idx_end_fill_byte = idx_end >> 3;
+			size_t sz_fill_byte = idx_end_fill_byte - idx_start_fill_byte;
 
-			if (bitIndex & 7) {
-				uint8_t startBits = 0xff << (bitIndex & 7);
-				_buffer[bitIndex >> 3] |= startBits;
+			if (bit_index & 7) {
+				uint8_t start_bits = 0xff << (bit_index & 7);
+				_buffer[bit_index >> 3] |= start_bits;
 			}
 
-			if (szFillByte)
-				memset(_buffer + idxStartFillByte, 0xff, szFillByte);
+			if (sz_fill_byte)
+				memset(_buffer + idx_start_fill_byte, 0xff, sz_fill_byte);
 
-			if (idxEnd & 7) {
-				uint8_t endBits = 0xff >> (7 - (bitIndex & 7));
-				_buffer[idxEnd >> 3] |= endBits;
-			}
-		}
-
-		PEFF_FORCEINLINE void fillClear(size_t bitIndex, size_t nBits) {
-			assert(bitIndex < N);
-			assert(bitIndex + nBits < N);
-
-			size_t idxEnd = bitIndex + nBits;
-
-			size_t idxStartFillByte = (bitIndex + 7) >> 3;
-			size_t idxEndFillByte = idxEnd >> 3;
-			size_t szFillByte = idxEndFillByte - idxStartFillByte;
-
-			if (bitIndex & 7) {
-				uint8_t startBits = 0xff >> (7 - (bitIndex & 7));
-				_buffer[bitIndex >> 3] &= startBits;
-			}
-
-			if (szFillByte)
-				memset(_buffer + idxStartFillByte, 0x00, szFillByte);
-
-			if (idxEnd & 7) {
-				uint8_t endBits = 0xff << (bitIndex & 7);
-				_buffer[idxEnd >> 3] &= endBits;
+			if (idx_end & 7) {
+				uint8_t end_bits = 0xff >> (7 - (bit_index & 7));
+				_buffer[idx_end >> 3] |= end_bits;
 			}
 		}
 
-		PEFF_FORCEINLINE void setByte(size_t bitIndex, uint8_t b) {
-			assert(bitIndex + 8 <= N);
+		PEFF_FORCEINLINE void fill_clear(size_t bit_index, size_t num_bits) {
+			assert(bit_index < N);
+			assert(bit_index + num_bits < N);
 
-			_setByte(bitIndex, b, 8);
+			size_t idx_end = bit_index + num_bits;
+
+			size_t idx_start_fill_byte = (bit_index + 7) >> 3;
+			size_t idx_end_fill_byte = idx_end >> 3;
+			size_t sz_fill_byte = idx_end_fill_byte - idx_start_fill_byte;
+
+			if (bit_index & 7) {
+				uint8_t start_bits = 0xff >> (7 - (bit_index & 7));
+				_buffer[bit_index >> 3] &= start_bits;
+			}
+
+			if (sz_fill_byte)
+				memset(_buffer + idx_start_fill_byte, 0x00, sz_fill_byte);
+
+			if (idx_end & 7) {
+				uint8_t end_bits = 0xff << (bit_index & 7);
+				_buffer[idx_end >> 3] &= end_bits;
+			}
 		}
 
-		PEFF_FORCEINLINE void setByte(size_t bitIndex, uint8_t b, uint8_t nBits) {
-			assert(bitIndex + nBits <= N);
+		PEFF_FORCEINLINE void set_byte(size_t bit_index, uint8_t b) {
+			assert(bit_index + 8 <= N);
 
-			_setByte(bitIndex, b, nBits);
+			_set_byte(bit_index, b, 8);
 		}
 
-		PEFF_FORCEINLINE uint8_t getByte(size_t bitIndex) const {
-			assert(bitIndex + 8 <= N);
+		PEFF_FORCEINLINE void set_byte(size_t bit_index, uint8_t b, uint8_t num_bits) {
+			assert(bit_index + num_bits <= N);
 
-			return _getByte(bitIndex, 8);
+			_set_byte(bit_index, b, num_bits);
 		}
 
-		PEFF_FORCEINLINE uint8_t getByte(size_t bitIndex, uint8_t nBits) const {
-			assert(nBits);
-			assert(nBits <= 8);
-			assert(bitIndex + nBits <= N);
+		PEFF_FORCEINLINE uint8_t get_byte(size_t bit_index) const {
+			assert(bit_index + 8 <= N);
 
-			return _getByte(bitIndex, nBits);
+			return _get_byte(bit_index, 8);
 		}
 
-		PEFF_FORCEINLINE void getBytes(char *buf, size_t len, size_t bitIndex) const {
-			assert(bitIndex + 8 * len <= N);
+		PEFF_FORCEINLINE uint8_t get_byte(size_t bit_index, uint8_t num_bits) const {
+			assert(num_bits);
+			assert(num_bits <= 8);
+			assert(bit_index + num_bits <= N);
 
-			if (!((bitIndex) & 7)) {
-				memcpy(buf, _buffer + bitIndex / 8, len);
+			return _get_byte(bit_index, num_bits);
+		}
+
+		PEFF_FORCEINLINE void get_bytes(char *buf, size_t len, size_t bit_index) const {
+			assert(bit_index + 8 * len <= N);
+
+			if (!((bit_index) & 7)) {
+				memcpy(buf, _buffer + bit_index / 8, len);
 			} else {
-				size_t curIndex = bitIndex;
+				size_t cur_index = bit_index;
 				for (size_t i = 0; i < len; ++i) {
-					buf[i] = _getByte(curIndex, 8);
-					curIndex += 8;
+					buf[i] = _get_byte(cur_index, 8);
+					cur_index += 8;
 				}
 			}
 		}

@@ -197,7 +197,7 @@ bool lzwhat_encode_varint64(peff::BitArray &bit_array, uint64_t data) {
 bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) {
 	data_out = 0;
 
-	auto read_first_bits = [](const peff::BitArray &bit_array, size_t &cur_index, size_t &data_out) -> bool {
+	auto read_first_bits = [](const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) -> bool {
 		if (cur_index + 7 > bit_array.bit_size()) {
 			return false;
 		}
@@ -207,7 +207,7 @@ bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, 
 		cur_index += 7;
 		return true;
 	};
-	auto shift_and_read = [](const peff::BitArray &bit_array, size_t &cur_index, size_t &data_out) -> bool {
+	auto shift_and_read = [](const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) -> bool {
 		if (cur_index + 7 > bit_array.bit_size()) {
 			return false;
 		}
@@ -218,7 +218,7 @@ bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, 
 		cur_index += 7;
 		return true;
 	};
-	auto read_last_bits = [](const peff::BitArray &bit_array, size_t &cur_index, size_t &data_out) -> bool {
+	auto read_last_bits = [](const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) -> bool {
 		if (cur_index + 8 > bit_array.bit_size()) {
 			return false;
 		}
@@ -492,8 +492,8 @@ bool lzwhat_decompress(const peff::BitArray &bit_array, peff::Alloc *allocator, 
 			calc_dict_index(cur_dict_index, 1, dict_size);
 		} else {
 			size_t start = data_out.size();
-			size_t disp;
-			size_t len;
+			uint64_t disp;
+			uint64_t len;
 			if (!lzwhat_decode_varint64(bit_array, i, disp)) {
 				return false;
 			}

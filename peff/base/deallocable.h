@@ -21,7 +21,7 @@ namespace peff {
 #endif
 
 	template <typename T>
-	PEFF_REQUIRES_CONCEPT(DeallocableConcept<T>)
+	PEFF_REQUIRES_CONCEPT(DeallocableTrait<T>)
 	struct DeallocableDeleter {
 		PEFF_FORCEINLINE void operator()(T *ptr) const noexcept {
 			if (ptr)

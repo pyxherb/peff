@@ -407,7 +407,7 @@ namespace peff {
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				construct_at<Iterator>(this, std::move(rhs));
+				peff::construct_at<Iterator>(this, std::move(rhs));
 				return *this;
 			}
 

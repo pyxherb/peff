@@ -44,7 +44,7 @@ namespace peff {
 			ScopeGuard scope_guard([this, node]() noexcept {
 				_allocator->release(node, sizeof(Node), alignof(Node));
 			});
-			construct_at<Node>(node, std::move(data));
+			peff::construct_at<Node>(node, std::move(data));
 			scope_guard.release();
 
 			return node;
@@ -122,7 +122,7 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();
-			construct_at<List>(this, std::move(other));
+			peff::construct_at<List>(this, std::move(other));
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;
@@ -439,13 +439,13 @@ namespace peff {
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				construct_at<ConstIterator>(this, rhs);
+				peff::construct_at<ConstIterator>(this, rhs);
 				return *this;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(ConstIterator &&rhs) noexcept {
 				if (direction != rhs.direction)
 					throw std::logic_error("Incompatible iterator direction");
-				construct_at<ConstIterator>(this, std::move(rhs));
+				peff::construct_at<ConstIterator>(this, std::move(rhs));
 				return *this;
 			}
 

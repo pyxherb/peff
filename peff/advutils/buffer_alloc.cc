@@ -76,7 +76,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::alloc(size_t size, size_t alignment) noexce
 
 succeeded:
 	char *ptr = buffer + off, *alloc_desc_raw_ptr = ptr + desc_off;
-	construct_at<AllocDesc>((AllocDesc *)alloc_desc_raw_ptr, ptr);
+	peff::construct_at<AllocDesc>((AllocDesc *)alloc_desc_raw_ptr, ptr);
 
 	AllocDesc *alloc_desc_ptr = (AllocDesc *)alloc_desc_raw_ptr;
 
@@ -149,7 +149,7 @@ succeeded:
 
 	memmove(p, ptr, size);
 
-	construct_at<AllocDesc>((AllocDesc *)alloc_desc_raw_ptr, p);
+	peff::construct_at<AllocDesc>((AllocDesc *)alloc_desc_raw_ptr, p);
 
 	AllocDesc *alloc_desc_ptr = (AllocDesc *)alloc_desc_raw_ptr;
 
@@ -193,7 +193,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::realloc_in_place(void *ptr, size_t size, si
 	}
 
 	std::destroy_at<AllocDesc>((AllocDesc*)old_desc);
-	construct_at<AllocDesc>((AllocDesc *)((char*)ptr) + desc_off, ptr);
+	peff::construct_at<AllocDesc>((AllocDesc *)((char*)ptr) + desc_off, ptr);
 
 	AllocDesc *alloc_desc_ptr = (AllocDesc *)((char*)ptr) + desc_off;
 

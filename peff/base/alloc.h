@@ -1,7 +1,7 @@
-#ifndef _PEFF_BASE_ALLOCATOR_H_
-#define _PEFF_BASE_ALLOCATOR_H_
+#ifndef _PEFF_BASE_ALLOC_H_
+#define _PEFF_BASE_ALLOC_H_
 
-#include "traits.h"
+#include "assert.h"
 #include "rcobj.h"
 #include "scope_guard.h"
 #include "uuid.h"
@@ -97,14 +97,14 @@ namespace peff {
 	PEFF_FORCEINLINE void verify_allocator(const Alloc *x, const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
-			assert(("Incompatible allocators", x->type_identity() == y->type_identity()));
+			PEFF_ASSERT(x->type_identity() == y->type_identity(), "Incompatible allocators");
 		}
 	}
 
 	PEFF_FORCEINLINE void verify_replaceable(const Alloc *x, const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
-			assert(("Incompatible allocators", x->is_replaceable(y)));
+			PEFF_ASSERT(x->is_replaceable(y), "Incompatible allocators");
 		}
 	}
 
@@ -156,7 +156,7 @@ namespace peff {
 			allocator_holder->release(ptr, sizeof(T), alignment);
 		});
 
-		construct_at<T>((T *)ptr, std::forward<Args>(args)...);
+		peff::construct_at<T>((T *)ptr, std::forward<Args>(args)...);
 
 		release_ptr_guard.release();
 

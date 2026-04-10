@@ -74,11 +74,11 @@ namespace peff {
 			} else {
 				if (new_data + length < old_data) {
 					for (size_t i = 0; i < length; ++i) {
-						construct_at<T>(&new_data[i], std::move(old_data[i]));
+						peff::construct_at<T>(&new_data[i], std::move(old_data[i]));
 					}
 				} else {
 					for (size_t i = length; i > 0; --i) {
-						construct_at<T>(&new_data[i - 1], std::move(old_data[i - 1]));
+						peff::construct_at<T>(&new_data[i - 1], std::move(old_data[i - 1]));
 					}
 				}
 			}
@@ -87,7 +87,7 @@ namespace peff {
 		PEFF_FORCEINLINE void _construct_data(T *new_data, size_t length) {
 			if constexpr (!std::is_trivially_constructible_v<T>) {
 				for (size_t i = 0; i < length; ++i) {
-					construct_at<T>(&new_data[i]);
+					peff::construct_at<T>(&new_data[i]);
 				}
 			}
 		}
@@ -125,7 +125,7 @@ namespace peff {
 						i < length;
 						++i) {
 						idx_last_constructed_object = i;
-						construct_at<T>(&new_data[i]);
+						peff::construct_at<T>(&new_data[i]);
 					}
 
 					scope_guard.release();
@@ -654,7 +654,7 @@ namespace peff {
 			if (!gap)
 				return false;
 
-			construct_at<T>(gap, std::move(data));
+			peff::construct_at<T>(gap, std::move(data));
 
 			return true;
 		}
@@ -697,7 +697,7 @@ namespace peff {
 			_move_data(_data, _data + 1, len);
 			if (!_shrink_capacity(len, len)) {
 				_move_data(_data + 1, _data, len);
-				construct_at(&_data[0], std::move(front_data));
+				peff::construct_at(&_data[0], std::move(front_data));
 				return false;
 			}
 			return true;

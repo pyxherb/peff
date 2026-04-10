@@ -5,7 +5,6 @@
 #include <cstring>
 #include <cstdint>
 #include <type_traits>
-#include <utility>
 
 #if __cplusplus >= 202002L
 	#include <bit>
@@ -47,6 +46,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U8 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U8 1
 #endif
 #if _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U8
 		if (!value)
@@ -74,6 +75,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U16 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U16 1
 #endif
 #if _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U16
 		if (!value)
@@ -101,6 +104,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U32 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U32 1
 #endif
 #if _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U32
 		if (!value)
@@ -128,6 +133,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U64 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U64 1
 #endif
 #if _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U64
 		if (!value)
@@ -165,6 +172,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U8 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_RROT_U8 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U8
 		return shift ? ((value >> shift) | (value << (8 - shift))) : value;
@@ -178,6 +187,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U16 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_RROT_U16 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U16
 		return shift ? ((value >> shift) | (value << (16 - shift))) : value;
@@ -191,6 +202,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U32 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_RROT_U32 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U32
 		return shift ? ((value >> shift) | (value << (32 - shift))) : value;
@@ -204,6 +217,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U64 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_RROT_U64 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U64
 		return shift ? ((value >> shift) | (value << (64 - shift))) : value;
@@ -233,6 +248,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_LROT_U8 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_LROT_U8 1
 #endif
 #if _PEFF_USE_DEFAULT_LROT_U8
 		return shift ? ((value << shift) | (value >> (8 - shift))) : value;
@@ -246,6 +263,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_LROT_U16 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_LROT_U16 1
 #endif
 #if _PEFF_USE_DEFAULT_LROT_U16
 		return shift ? ((value << shift) | (value >> (16 - shift))) : value;
@@ -259,6 +278,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U32 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_RROT_U32 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U32
 		return shift ? ((value << shift) | (value >> (32 - shift))) : value;
@@ -272,6 +293,8 @@ namespace peff {
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U64 1
 	#endif
+#else
+	#define _PEFF_USE_DEFAULT_RROT_U64 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U64
 		return shift ? ((value << shift) | (value >> (32 - shift))) : value;

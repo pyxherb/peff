@@ -98,7 +98,7 @@ namespace peff {
 			destroy_and_release<Node>(_allocator.get(), node, alignof(Node));
 		}
 
-		PEFF_FORCEINLINE void _delete_nodeTree(Node *node) {
+		PEFF_FORCEINLINE void _delete_node_tree(Node *node) {
 			Node *cur_node = (Node *)_get_min_node(node);
 			Node *parent = (Node *)node->p;
 			bool walked_root_node = false;
@@ -357,7 +357,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE ~RBTreeImpl() {
 			if (_root)
-				_delete_nodeTree((Node *)_root);
+				_delete_node_tree((Node *)_root);
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) noexcept {
@@ -501,7 +501,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			if (_root) {
-				_delete_nodeTree((Node *)_root);
+				_delete_node_tree((Node *)_root);
 				_root = nullptr;
 				_num_nodes = 0;
 			}

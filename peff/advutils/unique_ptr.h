@@ -26,6 +26,7 @@ namespace peff {
 		PEFF_FORCEINLINE void reset() noexcept {
 			if (T *ptr = _pair.first(); ptr)
 				_pair.second()(ptr);
+			_pair.first() = nullptr;
 		}
 
 		PEFF_FORCEINLINE T *release() noexcept {

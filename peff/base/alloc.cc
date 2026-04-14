@@ -24,12 +24,15 @@ PEFF_BASE_API void StdAlloc::on_ref_zero() noexcept {
 
 PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #ifdef _MSC_VER
-	if (alignment <= 1)
-		return malloc(size);
 	return _aligned_malloc(size, alignment);
 #else
 	#if __ANDROID__
 	return memalign(size, alignment);
+	#elif __APPLE__
+	void *ptr;
+	if (posix_memalign(&ptr, std::max(sizeof(void*), alignment), size))
+		return nullptr;
+	return ptr;
 	#else
 	size_t size_diff = size % alignment;
 	if (size_diff) {
@@ -57,6 +60,9 @@ PEFF_BASE_API void *StdAlloc::realloc(void *ptr, size_t size, size_t alignment, 
 
 	#if __ANDROID__
 		if (!(p = memalign(new_alignment, new_size)))
+			return nullptr;
+	#elif __APPLE__
+		if (posix_memalign(&p, std::max(sizeof(void*), new_alignment), new_size))
 			return nullptr;
 	#else
 		if (!(p = aligned_alloc(new_alignment, new_size)))

@@ -53,7 +53,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void _move_data(T *new_data, T *old_data, size_t length) noexcept {
-			if constexpr (std::is_trivially_move_assignable_v<T>) {
+			if constexpr (std::is_trivially_copy_assignable_v<T>) {
 				memmove(new_data, old_data, sizeof(T) * length);
 			} else {
 				if (new_data + length <= old_data) {
@@ -382,7 +382,7 @@ namespace peff {
 
 			T *gap_start = &_data[index];
 
-			if (std::is_trivially_move_assignable_v<T>) {
+			if (std::is_trivially_copy_assignable_v<T>) {
 				if (index < old_length) {
 					memmove(&_data[index + length], gap_start, sizeof(T) * (old_length - index));
 				}

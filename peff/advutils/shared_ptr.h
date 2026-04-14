@@ -8,6 +8,7 @@
 
 namespace peff {
 	struct SharedPtrControlBlock {
+		// FIXME: weak reference seems to be buggy in cyclic references occur.
 		std::atomic_size_t weak_ref_num = 0, strong_ref_num = 0;
 
 		PEFF_FORCEINLINE SharedPtrControlBlock() {}
@@ -23,10 +24,8 @@ namespace peff {
 
 		PEFF_FORCEINLINE void dec_strong_ref() noexcept {
 			if (!--strong_ref_num) {
-				if (weak_ref_num) {
-					on_strong_ref_zero();
-				} else {
-					on_strong_ref_zero();
+				on_strong_ref_zero();
+				if (!weak_ref_num) {
 					on_ref_zero();
 				}
 			}
@@ -62,7 +61,7 @@ namespace peff {
 	class WeakPtr;
 
 	template <typename T>
-	class SharedPtr {
+	class SharedPtr final {
 	public:
 		struct DefaultSharedPtrControlBlock : public SharedPtrControlBlock {
 			T *ptr;
@@ -125,16 +124,16 @@ namespace peff {
 				control_block->inc_strong_ref();
 			}
 		}
-		PEFF_FORCEINLINE SharedPtr(SharedPtr<T> &&rhs) noexcept : control_block(rhs.control_block), ptr(rhs.ptr) {
+		/*PEFF_FORCEINLINE SharedPtr(SharedPtr<T> &&rhs) noexcept : control_block(rhs.control_block), ptr(rhs.ptr) {
 			rhs.control_block = nullptr;
-		}
+			rhs.ptr = nullptr;
+		}*/
 
 		PEFF_FORCEINLINE SharedPtr<T> &operator=(const SharedPtr<T> &rhs) noexcept {
 			if (this == &rhs)
 				return *this;
 			reset();
-			control_block = rhs.control_block;
-			if (control_block) {
+			if ((control_block = rhs.control_block)) {
 				control_block->inc_strong_ref();
 			}
 			ptr = rhs.ptr;
@@ -182,6 +181,14 @@ namespace peff {
 
 		PEFF_FORCEINLINE operator bool() const noexcept {
 			return (bool)ptr;
+		}
+
+		PEFF_FORCEINLINE size_t strong_ref_num() const noexcept {
+			return control_block->strong_ref_num;
+		}
+
+		PEFF_FORCEINLINE size_t weak_ref_num() const noexcept {
+			return control_block->weak_ref_num;
 		}
 
 		template <typename T1>
@@ -233,8 +240,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE WeakPtr<T> &operator=(const WeakPtr<T> &rhs) noexcept {
 			reset();
-			control_block = rhs.control_block;
-			if (control_block) {
+			if ((control_block = rhs.control_block)) {
 				control_block->inc_weak_ref();
 			}
 			ptr = rhs.ptr;

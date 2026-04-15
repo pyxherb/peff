@@ -10,6 +10,7 @@ namespace peff {
 	struct SharedPtrControlBlock {
 		// FIXME: weak reference seems to be buggy in cyclic references occur.
 		std::atomic_size_t weak_ref_num = 0, strong_ref_num = 0;
+		bool destructed = false;
 
 		PEFF_FORCEINLINE SharedPtrControlBlock() {}
 		inline virtual ~SharedPtrControlBlock() {}
@@ -24,9 +25,13 @@ namespace peff {
 
 		PEFF_FORCEINLINE void dec_strong_ref() noexcept {
 			if (!--strong_ref_num) {
-				on_strong_ref_zero();
+				assert(!destructed);
+				destructed = true;
 				if (!weak_ref_num) {
+					on_strong_ref_zero();
 					on_ref_zero();
+				} else {
+					on_strong_ref_zero();
 				}
 			}
 		}
@@ -34,6 +39,10 @@ namespace peff {
 		PEFF_FORCEINLINE void dec_weak_ref() noexcept {
 			if (!--weak_ref_num) {
 				if (!strong_ref_num) {
+					if (!destructed) {
+						destructed = true;
+						on_strong_ref_zero();
+					}
 					on_ref_zero();
 				}
 			}
@@ -116,7 +125,8 @@ namespace peff {
 			}
 		}
 		PEFF_FORCEINLINE ~SharedPtr() {
-			reset();
+			if (control_block)
+				control_block->dec_strong_ref();
 		}
 
 		PEFF_FORCEINLINE SharedPtr(const SharedPtr<T> &rhs) noexcept : control_block(rhs.control_block), ptr(rhs.ptr) {
@@ -124,10 +134,10 @@ namespace peff {
 				control_block->inc_strong_ref();
 			}
 		}
-		/*PEFF_FORCEINLINE SharedPtr(SharedPtr<T> &&rhs) noexcept : control_block(rhs.control_block), ptr(rhs.ptr) {
+		PEFF_FORCEINLINE SharedPtr(SharedPtr<T> &&rhs) noexcept : control_block(rhs.control_block), ptr(rhs.ptr) {
 			rhs.control_block = nullptr;
 			rhs.ptr = nullptr;
-		}*/
+		}
 
 		PEFF_FORCEINLINE SharedPtr<T> &operator=(const SharedPtr<T> &rhs) noexcept {
 			if (this == &rhs)
@@ -193,6 +203,7 @@ namespace peff {
 
 		template <typename T1>
 		PEFF_FORCEINLINE SharedPtr<T1> cast_to() const noexcept {
+			static_assert(std::is_convertible_v<T *, T1 *> || std::is_base_of_v<T, T1>, "The conversion is not viable");
 			if ((!control_block) || (!ptr))
 				return {};
 			return SharedPtr<T1>(control_block, static_cast<T1 *>(ptr));
@@ -225,7 +236,8 @@ namespace peff {
 			}
 		}
 		PEFF_FORCEINLINE ~WeakPtr() {
-			reset();
+			if (control_block)
+				control_block->dec_weak_ref();
 		}
 
 		PEFF_FORCEINLINE WeakPtr(const WeakPtr<T> &rhs) noexcept : control_block(rhs.control_block), ptr(rhs.ptr) {

@@ -4,7 +4,7 @@
 #include "panic.h"
 
 #if PEFF_ENABLE_ASSERTION
-	#define PEFF_ASSERT(x, message) if ((x) == false) peff::panic(message);
+	#define PEFF_ASSERT(x, message) if (!(x)) peff::panic(message);
 #else
 	#define PEFF_ASSERT(x, message)
 #endif

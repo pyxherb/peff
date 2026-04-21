@@ -122,7 +122,8 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE NodeQueryResultType _get(const T &key) const {
+		template <typename U>
+		PEFF_FORCEINLINE NodeQueryResultType _get(const U &key) const {
 			Node *i = (Node *)_root;
 
 			if constexpr (Fallible) {
@@ -130,12 +131,15 @@ namespace peff {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(i->rb_value, key);
 
-						if (result.value() > 0)
-							i = (Node *)i->r;
-						else if (result.value() < 0)
-							i = (Node *)i->l;
-						else
-							return i;
+						if (result) {
+							if (result.value() > 0)
+								i = (Node *)i->r;
+							else if (result.value() < 0)
+								i = (Node *)i->l;
+							else
+								return i;
+						} else
+							return NULL_OPTION;
 					} else {
 						Option<bool> result;
 
@@ -199,12 +203,15 @@ namespace peff {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(static_cast<Node *>(*i)->rb_value, key);
 
-						if (result.value() > 0)
-							i = (NodeBase **)&static_cast<Node *>(*i)->r;
-						else if (result.value() < 0)
-							i = (NodeBase **)&static_cast<Node *>(*i)->l;
-						else
-							return i;
+						if (result) {
+							if (result.value() > 0)
+								i = (NodeBase **)&static_cast<Node *>(*i)->r;
+							else if (result.value() < 0)
+								i = (NodeBase **)&static_cast<Node *>(*i)->l;
+							else
+								return i;
+						} else
+							return nullptr;
 					} else {
 						Option<bool> result;
 
@@ -381,7 +388,8 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE NodeQueryResultType get_max_lteq(const T &data) {
+		template <typename U>
+		PEFF_FORCEINLINE NodeQueryResultType _get_max_lteq(const U &data) {
 			Node *cur_node = (Node *)_root, *max_node = NULL;
 
 			if constexpr (Fallible) {
@@ -452,8 +460,31 @@ namespace peff {
 			return max_node;
 		}
 
+		PEFF_FORCEINLINE NodeQueryResultType get_max_lteq(const T &data) {
+			return _get_max_lteq<T>(data);
+		}
+
+		template <typename U>
+		PEFF_FORCEINLINE NodeQueryResultType get_max_lteq_alt(const U &data) {
+			return _get_max_lteq<U>(data);
+		}
+
 		PEFF_FORCEINLINE NodeQueryResultType get(const T &key) const {
-			return _get(key);
+			return _get<T>(key);
+		}
+
+		template <typename U>
+		PEFF_FORCEINLINE NodeQueryResultType get_alt(const U &key) const {
+			if constexpr (IsThreeway) {
+				static_assert(std::is_invocable_v<Comparator, const T &, const U &>, "The query type is not comparable with the key");
+			} else {
+				static_assert(
+					(std::is_invocable_v<Comparator, const T &, const U &> &&
+						std::is_invocable_v<Comparator, const U &, const T &>) ||
+						(std::is_convertible_v<U, T>),
+					"The query type is not comparable with the key");
+			}
+			return _get<U>(key);
 		}
 
 		/// @brief Insert a node into the tree.
@@ -463,7 +494,7 @@ namespace peff {
 			NodeBase *parent = nullptr;
 			NodeBase **slot = _get_slot(node->rb_value, parent);
 
-			assert (slot);
+			assert(slot);
 
 			return _insert(static_cast<Node *>(parent), node);
 		}
@@ -488,15 +519,17 @@ namespace peff {
 			return node;
 		}
 
-		PEFF_FORCEINLINE void remove(Node *node, bool delete_node = true) {
+		PEFF_FORCEINLINE peff::Option<T> remove(Node *node, bool delete_node = true) {
 			Node *y = _remove(node);
-			if (delete_node)
+			if (delete_node) {
+				T data = std::move(y->rb_value);
 				_delete_single_node((Node *)y);
-			else {
-				y->l = nullptr;
-				y->r = nullptr;
-				y->p = nullptr;
+				return data;
 			}
+			y->l = nullptr;
+			y->r = nullptr;
+			y->p = nullptr;
+			return {};
 		}
 
 		PEFF_FORCEINLINE void clear() {
@@ -815,9 +848,9 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
 		}
 
-		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
-			assert(("Cannot remove the end iterator", iterator.node));
-			remove(iterator.node);
+		PEFF_FORCEINLINE peff::Option<T> remove(const Iterator &iterator) {
+			PEFF_ASSERT(iterator.node, "Cannot remove the end iterator");
+			return remove(iterator.node);
 		}
 	};
 

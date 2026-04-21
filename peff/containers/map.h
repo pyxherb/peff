@@ -18,7 +18,7 @@ namespace peff {
 
 			PEFF_FORCEINLINE Pair() : key_constructed(false), value_constructed(false), for_query(true) {}
 			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool for_query) : key(std::move(key)), value(std::move(value)), for_query(for_query), key_constructed(true), value_constructed(true) {}
-			PEFF_FORCEINLINE Pair(Pair &&rhs) noexcept: for_query(false) {
+			PEFF_FORCEINLINE Pair(Pair &&rhs) noexcept : for_query(false) {
 				if (rhs.key_constructed) {
 					key = std::move(rhs.key.get());
 					rhs.key_constructed = false;
@@ -55,6 +55,18 @@ namespace peff {
 						&r = rhs.for_query ? *((const QueryPair &)rhs).query_key : rhs.key.get();
 				return inner_cmp(l, r);
 			}
+
+			template <typename U>
+			PEFF_FORCEINLINE decltype(std::declval<Lt>()(std::declval<K>(), std::declval<U>())) operator()(const Pair &lhs, const U &rhs) const {
+				const K &l = lhs.for_query ? *((const QueryPair &)lhs).query_key : lhs.key.get();
+				return inner_cmp(l, rhs);
+			}
+
+			template <typename U>
+			PEFF_FORCEINLINE decltype(std::declval<Lt>()(std::declval<U>(), std::declval<K>())) operator()(const U &lhs, const Pair &rhs) const {
+				const K &r = rhs.for_query ? *((const QueryPair &)rhs).query_key : rhs.key.get();
+				return inner_cmp(lhs, r);
+			}
 		};
 
 		using SetType = std::conditional_t<Fallible, FallibleSet<Pair, PairComparator, IsThreeway>, Set<Pair, PairComparator, IsThreeway>>;
@@ -89,8 +101,18 @@ namespace peff {
 			return _set.remove(QueryPair(&key));
 		}
 
+		template <typename U>
+		PEFF_FORCEINLINE RemoveResultType remove_alt(const U &key) {
+			return _set.template remove_alt<U>(key);
+		}
+
 		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
 			return _set.contains(QueryPair(&key));
+		}
+
+		template <typename U>
+		PEFF_FORCEINLINE ContainsResultType contains_alt(const U &key) const {
+			return _set.template contains_alt<U>(key);
 		}
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
@@ -106,6 +128,20 @@ namespace peff {
 			}
 		}
 
+		template <typename U>
+		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) {
+			if constexpr (Fallible) {
+				auto v = _set.template at_alt<U>(key);
+
+				if (!v.has_value())
+					return NULL_OPTION;
+
+				return v.value().value.get();
+			} else {
+				return _set.template at_alt<U>(key).value.get();
+			}
+		}
+
 		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
 			if constexpr (Fallible) {
 				auto v = _set.at(QueryPair(&key));
@@ -116,6 +152,20 @@ namespace peff {
 				return v.value().value.get();
 			} else {
 				return _set.at(QueryPair(&key)).value.get();
+			}
+		}
+
+		template <typename U>
+		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) const {
+			if constexpr (Fallible) {
+				auto v = _set.template at_alt<U>(key);
+
+				if (!v.has_value())
+					return NULL_OPTION;
+
+				return v.value().value.get();
+			} else {
+				return _set.template at_alt<U>(key).value.get();
 			}
 		}
 
@@ -300,20 +350,51 @@ namespace peff {
 			return const_cast<ThisType *>(this)->find(key);
 		}
 
+		template <typename U>
+		PEFF_FORCEINLINE ConstIterator find_alt(const U &key) const {
+			return const_cast<ThisType *>(this)->template find_alt<U>(key);
+		}
+
 		PEFF_FORCEINLINE Iterator find(const K &key) {
 			return Iterator(_set.find(QueryPair(&key)));
+		}
+
+		template <typename U>
+		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
+			return Iterator(_set.template find_alt<U>(key));
 		}
 
 		PEFF_FORCEINLINE ConstIterator find_max_lteq(const K &key) const {
 			return const_cast<ThisType *>(this)->find_max_lteq(key);
 		}
 
+		template <typename U>
+		PEFF_FORCEINLINE ConstIterator find_max_lteq_alt(const U &key) const {
+			return const_cast<ThisType *>(this)->find_max_lteq_alt<U>(key);
+		}
+
 		PEFF_FORCEINLINE Iterator find_max_lteq(const K &key) {
 			return Iterator(_set.find_max_lteq(QueryPair(&key)));
 		}
 
-		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
-			_set.remove(iterator._iterator);
+		template <typename U>
+		PEFF_FORCEINLINE Iterator find_max_lteq_alt(const U &key) {
+			return Iterator(_set.template find_max_lteq_alt<U>(key));
+		}
+
+		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove(const Iterator &iterator) {
+			peff::Option<Pair> pair = _set.remove(iterator._iterator);
+			if (pair.has_value()) {
+				assert(((*pair).key_constructed && (*pair).value_constructed) ||
+					   ((!(*pair).key_constructed) && (!(*pair).key_constructed)));
+				if((*pair).key_constructed) {
+					(*pair).key_constructed = false;
+					(*pair).value_constructed = false;
+					return std::pair<K, V>{ std::move((*pair).key.get()), std::move((*pair).value.get()) };
+				}
+				return {};
+			}
+			return {};
 		}
 	};
 

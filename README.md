@@ -6,7 +6,7 @@ PEFF is a exception-free common library for C++ projects.
 
 ### CMake
 
-To build PEFF with CMake, use commands like following (we use `bash` as an example):
+To build PEFF with CMake by yourself, use commands like following (we use `bash` as an example):
 
 ```bash
 cmake -S . -B build

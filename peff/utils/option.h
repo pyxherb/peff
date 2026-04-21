@@ -92,6 +92,11 @@ namespace peff {
 			reset();
 		}
 
+		PEFF_FORCEINLINE Option(const T &data) noexcept {
+			T copied_data = data;
+			set_value(std::move(copied_data));
+		}
+
 		PEFF_FORCEINLINE Option(T &&data) noexcept {
 			set_value(std::move(data));
 		}
@@ -113,6 +118,14 @@ namespace peff {
 				set_value(std::move(*((T *)rhs._data)));
 				rhs._has_value = false;
 			}
+			return *this;
+		}
+
+		PEFF_FORCEINLINE Option<T> &operator=(const T &rhs) noexcept {
+			reset();
+
+			T copied_data = rhs;
+			set_value(std::move(copied_data));
 			return *this;
 		}
 

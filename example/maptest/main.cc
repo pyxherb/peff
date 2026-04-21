@@ -206,6 +206,7 @@ int main() {
 	}
 	{
 		peff::Map<int, peff::String> map(&peff::g_std_allocator);
+		peff::Map<peff::String, int, std::less<std::string_view>> map2(&peff::g_std_allocator);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -217,13 +218,26 @@ int main() {
 					throw std::bad_alloc();
 				memcpy(s.data(), std_string.data(), std_string.size());
 			}
+			peff::String s2(&peff::g_std_allocator);
+			if (!s2.build(s))
+				throw std::bad_alloc();
 
 			std::string_view sv = (std::string_view)s;
 			std::cout << "Dumping string: " << sv << std::endl;
 
 			printf("Inserting: %d\n", j);
-			if (!map.insert(std::move(j), std::move(s)))
+			if (!map.insert(+j, std::move(s)))
 				throw std::bad_alloc();
+			if (!map2.insert(std::move(s2), +j))
+				throw std::bad_alloc();
+			auto f = map2.find_alt(sv);
+			bool b = map2.contains_alt(sv);
+			// map2.remove_alt(sv);
+			assert(b);
+		}
+
+		for(auto i : map2) {
+			printf("%s = %d\n", i.first.data(), i.second);
 		}
 	}
 
@@ -301,7 +315,7 @@ int main() {
 	}
 
 	size_t buffer_size = peff::BufferAlloc::calc_alloc_size(sizeof(peff::Map<size_t, size_t>::NodeType), alignof(std::max_align_t)) *
-					  32,
+						 32,
 		   alignment = alignof(std::max_align_t);
 
 	char *b = (char *)peff::g_std_allocator.alloc(buffer_size, alignment);
@@ -429,12 +443,11 @@ int main() {
 		printf("Inserting: %d\n", j);
 		peff::String s(&peff::g_std_allocator);
 
-		if(!s.build(std::to_string(j)))
+		if (!s.build(std::to_string(j)))
 			throw std::bad_alloc();
 		if (!hm.insert(+j, std::move(s)))
 			throw std::bad_alloc();
 	}
-
 
 	for (int i = 0; i < 16; i++) {
 		int j = i & 1 ? i : 32 - i;

@@ -267,20 +267,26 @@ namespace peff {
 			return memcmp(_array.data(), rhs.data(), size());
 		}
 
-		PEFF_FORCEINLINE bool operator>(const String &rhs) const {
+		PEFF_FORCEINLINE bool operator>(const std::string_view &rhs) const {
 			if (size() > rhs.size())
 				return true;
 			if (size() < rhs.size())
 				return false;
 			return memcmp(_array.data(), rhs.data(), size()) > 0;
 		}
+		PEFF_FORCEINLINE bool operator>(const String &rhs) const {
+			return *this > (std::string_view)rhs;
+		}
 
-		PEFF_FORCEINLINE bool operator<(const String &rhs) const {
+		PEFF_FORCEINLINE bool operator<(const std::string_view &rhs) const {
 			if (size() < rhs.size())
 				return true;
 			if (size() > rhs.size())
 				return false;
 			return memcmp(_array.data(), rhs.data(), size()) < 0;
+		}
+		PEFF_FORCEINLINE bool operator<(const String &rhs) const {
+			return *this < (std::string_view)rhs;
 		}
 	};
 

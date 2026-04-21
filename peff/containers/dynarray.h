@@ -6,6 +6,10 @@
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
 
+#if __cplusplus >= 202002L
+	#include <span>
+#endif
+
 namespace peff {
 	/// @brief The dynamic array type.
 	/// @tparam T Type of the elements.
@@ -382,7 +386,7 @@ namespace peff {
 
 			T *gap_start = &_data[index];
 
-			if (std::is_trivially_copy_assignable_v<T>) {
+			if (std::is_trivially_copyable_v<T>) {
 				if (index < old_length) {
 					memmove(&_data[index + length], gap_start, sizeof(T) * (old_length - index));
 				}
@@ -598,6 +602,35 @@ namespace peff {
 			return true;
 		}
 
+#if __cplusplus >= 202002L
+		[[nodiscard]] PEFF_FORCEINLINE bool build(const std::span<T> &rhs) {
+			clear();
+
+			if (!resize_uninit(rhs.size())) {
+				return false;
+			}
+
+			size_t i = 0;
+
+			peff::ScopeGuard destruct_guard([this, &i]() noexcept {
+				if constexpr (!std::is_trivially_destructible_v<T>) {
+					for (size_t j = 0; j < i; ++j) {
+						std::destroy_at<T>(&_data[j]);
+					}
+				}
+			});
+
+			for (const auto &item : rhs) {
+				peff::construct_at<T>(&_data[i], item);
+				++i;
+			}
+
+			destruct_guard.release();
+
+			return true;
+		}
+#endif
+
 		[[nodiscard]] PEFF_FORCEINLINE bool build_and_shrink(const ThisType &rhs) {
 			if (!build(rhs))
 				return false;
@@ -750,6 +783,15 @@ namespace peff {
 		PEFF_FORCEINLINE ConstIterator end_const() const {
 			return _data + _length;
 		}
+
+#if __cplusplus >= 202002L
+		PEFF_FORCEINLINE std::span<T> to_std_span() const {
+			return std::span<T>(_data, _length);
+		}
+		PEFF_FORCEINLINE operator std::span<T>() const {
+			return to_std_span();
+		}
+#endif
 	};
 }
 

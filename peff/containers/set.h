@@ -42,8 +42,13 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE RemoveResultType remove(const T &key) {
+			return remove_alt<T>(key);
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE RemoveResultType remove_alt(const U &key) {
 			if constexpr (Fallible) {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
 					return false;
@@ -53,7 +58,7 @@ namespace peff {
 
 				return true;
 			} else {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				if (node)
 					_tree.remove(node);
@@ -89,8 +94,13 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const T &key) {
+			return at_alt<T>(key);
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) {
 			if constexpr (Fallible) {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
 					return NULL_OPTION;
@@ -99,7 +109,7 @@ namespace peff {
 
 				return node.value()->value;
 			} else {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				assert(node);
 
@@ -108,8 +118,13 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstElementQueryResultType at(const T &key) const {
+			return at_alt<T>(key);
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ConstElementQueryResultType at_alt(const U &key) const {
 			if constexpr (Fallible) {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
 					return NULL_OPTION;
@@ -118,7 +133,7 @@ namespace peff {
 
 				return node.value()->value;
 			} else {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				assert(node);
 
@@ -291,29 +306,42 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ContainsResultType contains(const T &key) const {
+			return contains_alt<T>(key);
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ContainsResultType contains_alt(const U &key) const {
 			if constexpr (Fallible) {
-				auto node = _tree.get(key);
+				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
 					return NULL_OPTION;
 
 				return node.value();
 			} else {
-				return _tree.get(key);
+				return _tree.template get_alt<U>(key);
 			}
 		}
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
 			return const_cast<ThisType *>(this)->find(key);
 		}
+		template<typename U>
+		PEFF_FORCEINLINE ConstIterator find_alt(const U &key) const {
+			return const_cast<ThisType *>(this)->find_alt<U>(key);
+		}
 
 		PEFF_FORCEINLINE Iterator find(const T &key) {
+			return find_alt<T>(key);
+		}
+		template<typename U>
+		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
 			if constexpr (Fallible) {
-				if (auto node = _tree.get(key); node.has_value()) {
+				if (auto node = _tree.template get_alt<U>(key); node.has_value()) {
 					return Iterator(typename Tree::Iterator(node.value(), &_tree, IteratorDirection::Forward));
 				}
 				return _tree.end();
 			} else {
-				if (auto node = _tree.get(key); node) {
+				if (auto node = _tree.template get_alt<U>(key); node) {
 					return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
 				}
 				return _tree.end();
@@ -321,7 +349,12 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Iterator find_max_lteq(const T &key) {
-			if (auto node = _tree.get_max_lteq(key); node) {
+			return find_max_lteq_alt<T>(key);
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE Iterator find_max_lteq_alt(const U &key) {
+			if (auto node = _tree.template get_max_lteq_alt<U>(key); node) {
 				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
 			}
 			return _tree.end();
@@ -331,8 +364,13 @@ namespace peff {
 			return const_cast<ThisType *>(this)->find_max_lteq(key);
 		}
 
-		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
-			_tree.remove(iterator._iterator);
+		template<typename U>
+		PEFF_FORCEINLINE ConstIterator find_max_lteq_alt(const U &key) const {
+			return const_cast<ThisType *>(this)->find_max_lteq_alt(key);
+		}
+
+		PEFF_FORCEINLINE peff::Option<T> remove(const Iterator &iterator) {
+			return _tree.remove(iterator._iterator);
 		}
 	};
 

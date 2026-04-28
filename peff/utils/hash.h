@@ -4,7 +4,7 @@
 #include "basedefs.h"
 #include <string_view>
 #include <peff/base/alloc.h>
-#include <optional>
+#include <peff/base/uuid.h>
 
 namespace peff {
 	template <typename T>
@@ -91,8 +91,8 @@ namespace peff {
 
 	PEFF_UTILS_API uint32_t djb_hash32(const char *data, size_t size);
 	PEFF_UTILS_API uint64_t djb_hash64(const char *data, size_t size);
-	PEFF_UTILS_API uint32_t city_hash32(const char *s, size_t len); // FIXME: Fix hash inequality bug.
-	PEFF_UTILS_API uint64_t city_hash64(const char *s, size_t len); // FIXME: Fix hash inequality bug.
+	PEFF_UTILS_API uint32_t city_hash32(const char *s, size_t len);	 // FIXME: Fix hash inequality bug.
+	PEFF_UTILS_API uint64_t city_hash64(const char *s, size_t len);	 // FIXME: Fix hash inequality bug.
 
 	template <>
 	struct Hasher<std::string_view> {
@@ -101,6 +101,17 @@ namespace peff {
 				return city_hash32(x.data(), x.size());
 			} else {
 				return city_hash64(x.data(), x.size());
+			}
+		}
+	};
+
+	template <>
+	struct Hasher<peff::UUID> {
+		PEFF_FORCEINLINE std::conditional_t<sizeof(size_t) <= sizeof(uint32_t), uint32_t, uint64_t> operator()(const peff::UUID &x) const {
+			if constexpr (sizeof(size_t) <= sizeof(uint32_t)) {
+				return city_hash32((const char *)&x, sizeof(x));
+			} else {
+				return city_hash64((const char *)&x, sizeof(x));
 			}
 		}
 	};

@@ -39,12 +39,14 @@ namespace peff {
 			}
 		};
 
+		/// @brief Extended pair used for query by key only.
 		struct QueryPair : public Pair {
 			const K *query_key;
 
 			PEFF_FORCEINLINE QueryPair(const K *query_key) : Pair(), query_key(query_key) {}
 		};
 
+		/// @brief Wrapped comparator for comparing pairs by key.
 		struct PairComparator {
 			Lt inner_cmp;
 

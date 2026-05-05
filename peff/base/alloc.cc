@@ -49,11 +49,7 @@ PEFF_BASE_API void *StdAlloc::realloc_in_place(void *ptr, size_t size, size_t al
 
 PEFF_BASE_API void *StdAlloc::realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
 #ifdef _MSC_VER
-	if (alignment > 1) {
-		return _aligned_realloc(ptr, new_size, new_alignment);
-	} else {
-		return ::realloc(ptr, new_size);
-	}
+	return _aligned_realloc(ptr, new_size, new_alignment);
 #else
 	if (alignment > 1) {
 		void *p;
@@ -81,11 +77,7 @@ PEFF_BASE_API void *StdAlloc::realloc(void *ptr, size_t size, size_t alignment, 
 
 PEFF_BASE_API void StdAlloc::release(void *ptr, size_t size, size_t alignment) noexcept {
 #ifdef _MSC_VER
-	if (alignment > 1) {
-		_aligned_free(ptr);
-	} else {
-		free(ptr);
-	}
+	_aligned_free(ptr);
 #else
 	free(ptr);
 #endif

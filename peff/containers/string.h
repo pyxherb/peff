@@ -227,6 +227,9 @@ namespace peff {
 			return _array.shrink_to_fit();
 		}
 
+		PEFF_CONTAINERS_API void to_upper() noexcept;
+		PEFF_CONTAINERS_API void to_lower() noexcept;
+
 		PEFF_FORCEINLINE Iterator begin() {
 			return _array.begin();
 		}

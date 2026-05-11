@@ -65,7 +65,7 @@ namespace peff {
 		bool Fallible,
 		bool IsThreeway>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
-	class RBTreeImpl : protected RBTreeBase {
+	class RBTreeImpl final : protected RBTreeBase {
 	public:
 		static_assert(std::is_move_constructible_v<T>, "The key must be move-constructible");
 		struct Node : public RBTreeBase::NodeBase {
@@ -78,7 +78,7 @@ namespace peff {
 		using NodeType = Node;
 		using ComparatorType = Comparator;
 
-	protected:
+	private:
 		using NodeQueryResultType = typename std::conditional<Fallible, Option<Node *>, Node *>::type;
 
 		using ThisType = RBTreeImpl<T, Comparator, Fallible, IsThreeway>;
@@ -132,9 +132,9 @@ namespace peff {
 						auto &&result = _comparator(i->rb_value, key);
 
 						if (result) {
-							if (result.value() > 0)
+							if (result.value() < 0)
 								i = (Node *)i->r;
-							else if (result.value() < 0)
+							else if (result.value() > 0)
 								i = (Node *)i->l;
 							else
 								return i;
@@ -172,9 +172,9 @@ namespace peff {
 				while (i) {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(i->rb_value, key);
-						if (result > 0)
+						if (result < 0)
 							i = (Node *)i->r;
-						else if (result < 0)
+						else if (result > 0)
 							i = (Node *)i->l;
 						else
 							return i;
@@ -204,9 +204,9 @@ namespace peff {
 						auto &&result = _comparator(static_cast<Node *>(*i)->rb_value, key);
 
 						if (result) {
-							if (result.value() > 0)
+							if (result.value() < 0)
 								i = (NodeBase **)&static_cast<Node *>(*i)->r;
-							else if (result.value() < 0)
+							else if (result.value() > 0)
 								i = (NodeBase **)&static_cast<Node *>(*i)->l;
 							else
 								return i;
@@ -247,9 +247,9 @@ namespace peff {
 
 						auto &&result = _comparator(static_cast<Node *>(*i)->rb_value, key);
 
-						if (result > 0) {
+						if (result < 0) {
 							i = (NodeBase **)&((*i)->r);
-						} else if (result < 0) {
+						} else if (result > 0) {
 							i = (NodeBase **)&((*i)->l);
 						} else
 							return nullptr;
@@ -271,6 +271,78 @@ namespace peff {
 			return i;
 		}
 
+		template <typename U>
+		PEFF_FORCEINLINE NodeQueryResultType _get_max_lteq(const U &data) {
+			Node *cur_node = (Node *)_root, *max_node = NULL;
+
+			if constexpr (Fallible) {
+				while (cur_node) {
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator(cur_node->rb_value, data);
+
+						if (result.value() < 0) {
+							max_node = cur_node;
+							cur_node = (Node *)cur_node->r;
+						} else if (result.value() > 0)
+							cur_node = (Node *)cur_node->l;
+						else
+							return cur_node;
+					} else {
+						Option<bool> result;
+
+						if ((result = _comparator(cur_node->rb_value, data)).has_value()) {
+							if (result.value()) {
+#ifndef NDEBUG
+								if ((result = _comparator(data, cur_node->rb_value)).has_value()) {
+									assert(!result.value());
+									cur_node = (Node *)cur_node->r;
+								} else {
+									return NULL_OPTION;
+								}
+#else
+								max_node = cur_node;
+								cur_node = (Node *)cur_node->r;
+#endif
+							} else if ((result = _comparator(data, cur_node->rb_value)).has_value()) {
+								if (result.value()) {
+									cur_node = (Node *)cur_node->l;
+								} else
+									return cur_node;
+							} else {
+								return NULL_OPTION;
+							}
+						} else {
+							return NULL_OPTION;
+						}
+					}
+				}
+			} else {
+				while (cur_node) {
+					if constexpr (IsThreeway) {
+						auto &&result = _comparator(cur_node->rb_value, data);
+						if (result < 0) {
+							max_node = cur_node;
+							cur_node = (Node *)cur_node->r;
+						} else if (result > 0)
+							cur_node = (Node *)cur_node->l;
+						else
+							return cur_node;
+					} else {
+						if (_comparator(cur_node->rb_value, data)) {
+							assert(!_comparator(data, cur_node->rb_value));
+							max_node = cur_node;
+							cur_node = (Node *)cur_node->r;
+						} else if (_comparator(data, cur_node->rb_value)) {
+							cur_node = (Node *)cur_node->l;
+						} else
+							return cur_node;
+					}
+				}
+			}
+
+			return max_node;
+		}
+
 		PEFF_FORCEINLINE bool _insert(Node *parent, Node *node) {
 			assert(!node->l);
 			assert(!node->r);
@@ -284,9 +356,9 @@ namespace peff {
 			if constexpr (Fallible) {
 				if constexpr (IsThreeway) {
 					if (auto &&result = _comparator(node->rb_value, parent->rb_value); result.has_value()) {
-						if (result.value() > 0)
+						if (result.value() < 0)
 							parent->l = node;
-						else if (result.value() < 0)
+						else if (result.value() > 0)
 							parent->r = node;
 						else
 							assert(false);
@@ -307,9 +379,9 @@ namespace peff {
 			} else {
 				if (IsThreeway) {
 					auto &&result = _comparator(node->rb_value, parent->rb_value);
-					if (result > 0)
+					if (result < 0)
 						parent->l = node;
-					else if (result < 0)
+					else if (result > 0)
 						parent->r = node;
 					else
 						assert(false);
@@ -386,78 +458,6 @@ namespace peff {
 			other._allocator = nullptr;
 
 			return *this;
-		}
-
-		template <typename U>
-		PEFF_FORCEINLINE NodeQueryResultType _get_max_lteq(const U &data) {
-			Node *cur_node = (Node *)_root, *max_node = NULL;
-
-			if constexpr (Fallible) {
-				while (cur_node) {
-					if constexpr (IsThreeway) {
-						auto &&result = _comparator(cur_node->rb_value, data);
-
-						if (result.value() > 0) {
-							max_node = cur_node;
-							cur_node = (Node *)cur_node->r;
-						} else if (result.value() < 0)
-							cur_node = (Node *)cur_node->l;
-						else
-							return cur_node;
-					} else {
-						Option<bool> result;
-
-						if ((result = _comparator(cur_node->rb_value, data)).has_value()) {
-							if (result.value()) {
-#ifndef NDEBUG
-								if ((result = _comparator(data, cur_node->rb_value)).has_value()) {
-									assert(!result.value());
-									cur_node = (Node *)cur_node->r;
-								} else {
-									return NULL_OPTION;
-								}
-#else
-								max_node = cur_node;
-								cur_node = (Node *)cur_node->r;
-#endif
-							} else if ((result = _comparator(data, cur_node->rb_value)).has_value()) {
-								if (result.value()) {
-									cur_node = (Node *)cur_node->l;
-								} else
-									return cur_node;
-							} else {
-								return NULL_OPTION;
-							}
-						} else {
-							return NULL_OPTION;
-						}
-					}
-				}
-			} else {
-				while (cur_node) {
-					if constexpr (IsThreeway) {
-						auto &&result = _comparator(cur_node->rb_value, data);
-						if (result > 0) {
-							max_node = cur_node;
-							cur_node = (Node *)cur_node->r;
-						} else if (result < 0)
-							cur_node = (Node *)cur_node->l;
-						else
-							return cur_node;
-					} else {
-						if (_comparator(cur_node->rb_value, data)) {
-							assert(!_comparator(data, cur_node->rb_value));
-							max_node = cur_node;
-							cur_node = (Node *)cur_node->r;
-						} else if (_comparator(data, cur_node->rb_value)) {
-							cur_node = (Node *)cur_node->l;
-						} else
-							return cur_node;
-					}
-				}
-			}
-
-			return max_node;
 		}
 
 		PEFF_FORCEINLINE NodeQueryResultType get_max_lteq(const T &data) {

@@ -209,7 +209,7 @@ namespace peff {
 							else if (result.value() > 0)
 								i = (NodeBase **)&static_cast<Node *>(*i)->l;
 							else
-								return i;
+								return nullptr;
 						} else
 							return nullptr;
 					} else {
@@ -299,10 +299,9 @@ namespace peff {
 								} else {
 									return NULL_OPTION;
 								}
-#else
+#endif
 								max_node = cur_node;
 								cur_node = (Node *)cur_node->r;
-#endif
 							} else if ((result = _comparator(data, cur_node->rb_value)).has_value()) {
 								if (result.value()) {
 									cur_node = (Node *)cur_node->l;

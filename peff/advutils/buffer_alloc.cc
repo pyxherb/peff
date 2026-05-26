@@ -163,7 +163,7 @@ succeeded:
 	return p;
 }
 
-PEFF_ADVUTILS_API void *BufferAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+PEFF_ADVUTILS_API void *BufferAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	AllocDesc *old_desc = (AllocDesc *)alloc_descs.get(ptr);
 	assert(old_desc);
 
@@ -172,16 +172,13 @@ PEFF_ADVUTILS_API void *BufferAlloc::realloc_in_place(void *ptr, size_t size, si
 
 	size_t desc_off;
 
-	size_t actual_size = calc_alloc_size(new_size, new_alignment, &desc_off);
+	size_t actual_size = calc_alloc_size(new_size, alignment, &desc_off);
 
 	peff::ScopeGuard sg([this, old_desc]() noexcept {
 		bool restoration_result = alloc_descs.insert(old_desc);
 		assert(restoration_result);
 	});
 	alloc_descs.remove(old_desc, false);
-
-	if (new_alignment < alignment)
-		return nullptr;
 
 	{
 		AllocDesc *top_desc = (AllocDesc *)alloc_descs.get_max_lteq(((char *)ptr) + actual_size);
@@ -198,7 +195,7 @@ PEFF_ADVUTILS_API void *BufferAlloc::realloc_in_place(void *ptr, size_t size, si
 	AllocDesc *alloc_desc_ptr = (AllocDesc *)((char*)ptr) + desc_off;
 
 	alloc_desc_ptr->size = new_size;
-	alloc_desc_ptr->alignment = new_alignment;
+	alloc_desc_ptr->alignment = alignment;
 	alloc_desc_ptr->desc_base = alloc_desc_ptr;
 
 	bool result = alloc_descs.insert(alloc_desc_ptr);
@@ -337,7 +334,7 @@ PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc(void *ptr, size_t size, s
 	return p;
 }
 
-PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	size_t off_marker = _calc_marker_pos(size, alignof(uintptr_t));
 	Alloc **marker_ptr = ((Alloc **)((char *)ptr + off_marker));
 	Alloc *marker = *marker_ptr;
@@ -347,7 +344,7 @@ PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc_in_place(void *ptr, size_
 	if (marker == buffer_alloc.get()) {
 		size_t new_off_marker = _calc_marker_pos(new_size, alignof(size_t));
 
-		if ((p = buffer_alloc->realloc_in_place(ptr, size + off_marker + sizeof(uintptr_t), alignment, new_size + new_off_marker + sizeof(uintptr_t), new_alignment))) {
+		if ((p = buffer_alloc->realloc_in_place(ptr, size + off_marker + sizeof(uintptr_t), alignment, new_size + new_off_marker + sizeof(uintptr_t)))) {
 			memmove(p, ptr, size);
 			;
 
@@ -358,7 +355,7 @@ PEFF_ADVUTILS_API void *UpstreamedBufferAlloc::realloc_in_place(void *ptr, size_
 		}
 	}
 
-	if (!(p = upstream->alloc(new_size + off_marker + sizeof(uintptr_t), new_alignment))) {
+	if (!(p = upstream->alloc(new_size + off_marker + sizeof(uintptr_t), alignment))) {
 		return nullptr;
 	}
 

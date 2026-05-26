@@ -43,7 +43,7 @@ PEFF_BASE_API void *StdAlloc::alloc(size_t size, size_t alignment) noexcept {
 #endif
 }
 
-PEFF_BASE_API void *StdAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+PEFF_BASE_API void *StdAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	return nullptr;
 }
 
@@ -120,7 +120,7 @@ PEFF_BASE_API void *VoidAlloc::realloc(void *ptr, size_t size, size_t alignment,
 	std::terminate();
 }
 
-PEFF_BASE_API void *VoidAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+PEFF_BASE_API void *VoidAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	std::terminate();
 }
 
@@ -161,7 +161,7 @@ PEFF_BASE_API void *NullAlloc::realloc(void *ptr, size_t size, size_t alignment,
 	return nullptr;
 }
 
-PEFF_BASE_API void *NullAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept {
+PEFF_BASE_API void *NullAlloc::realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept {
 	return nullptr;
 }
 

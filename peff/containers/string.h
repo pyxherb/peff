@@ -165,6 +165,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {
+			assert(data != this->data());
 			const size_t old_size = size();
 			if (!resize(old_size + length))
 				return false;
@@ -173,6 +174,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data) {
+			assert(data != this->data());
 			const size_t old_size = size();
 			const size_t data_length = strlen(data);
 			if (!resize(old_size + data_length))
@@ -191,6 +193,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const String &data) {
+			assert(&data != this);
 			const size_t old_size = size();
 			if (!resize(old_size + data.size()))
 				return false;
@@ -199,6 +202,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(const std::string_view &data) {
+			assert(data.data() != this->data());
 			const size_t old_size = size();
 			if (!resize(old_size + data.size()))
 				return false;
@@ -208,6 +212,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool build(const std::string_view &src) {
+			assert(src.data() != this->data());
 			if (!resize(src.size()))
 				return false;
 			memcpy(_array.data(), src.data(), src.size());
@@ -216,6 +221,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool build_and_shrink(const std::string_view &src) {
+			assert(src.data() != this->data());
 			if (!resize_and_shrink(src.size()))
 				return false;
 			memcpy(_array.data(), src.data(), src.size());

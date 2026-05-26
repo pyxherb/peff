@@ -18,7 +18,7 @@ namespace peff {
 
 		virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
 		virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept = 0;
-		virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept = 0;
+		virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept = 0;
 		virtual void release(void *ptr, size_t size, size_t alignment) noexcept = 0;
 
 		virtual bool is_replaceable(const Alloc *rhs) const noexcept = 0;
@@ -38,7 +38,7 @@ namespace peff {
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
 		PEFF_BASE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual bool is_replaceable(const Alloc *rhs) const noexcept override;
@@ -62,7 +62,7 @@ namespace peff {
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_BASE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual bool is_replaceable(const Alloc *rhs) const noexcept override;
@@ -84,7 +84,7 @@ namespace peff {
 
 		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
 		PEFF_BASE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
 		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual bool is_replaceable(const Alloc *rhs) const noexcept override;

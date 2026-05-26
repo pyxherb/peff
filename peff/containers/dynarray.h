@@ -196,7 +196,7 @@ namespace peff {
 						if ((new_data = (T *)_allocator->realloc_in_place(
 								 _data,
 								 sizeof(T) * _capacity, alignof(T),
-								 new_capacity_total_size, alignof(T)))) {
+								 new_capacity_total_size))) {
 							_expand_to<construct>(new_data, length);
 						} else {
 							if (!(new_data = (T *)_allocator->alloc(new_capacity_total_size, alignof(T))))

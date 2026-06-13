@@ -376,7 +376,7 @@ namespace peff {
 					}
 				}
 			} else {
-				if (IsThreeway) {
+				if constexpr (IsThreeway) {
 					auto &&result = _comparator(node->rb_value, parent->rb_value);
 					if (result < 0)
 						parent->l = node;

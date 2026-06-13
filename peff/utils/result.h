@@ -102,6 +102,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE T value() && noexcept {
 			assert(has_value());
+			_index = ResultIndex::_Moved;
 			return std::move(*((T *)_data));
 		}
 
@@ -117,6 +118,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE E error() && noexcept {
 			assert(has_error());
+			_index = ResultIndex::_Moved;
 			return std::move(*((E *)_data));
 		}
 

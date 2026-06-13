@@ -464,5 +464,17 @@ int main() {
 		// map.dump(std::cout);
 	}
 
+	peff::Option<bool> op;
+
+	op = true;
+
+	op.value();
+
+	assert(op.has_value());
+
+	std::move(op).value();
+
+	assert(!op.has_value());
+
 	return 0;
 }

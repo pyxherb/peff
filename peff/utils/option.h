@@ -49,14 +49,20 @@ namespace peff {
 			return _has_value;
 		}
 
-		PEFF_FORCEINLINE T &value() noexcept {
+		PEFF_FORCEINLINE T &value() & noexcept {
 			assert(has_value());
 			return *((T *)_data);
 		}
 
-		PEFF_FORCEINLINE const T &value() const noexcept {
+		PEFF_FORCEINLINE const T &value() const & noexcept {
 			assert(has_value());
 			return *((const T *)_data);
+		}
+
+		PEFF_FORCEINLINE T value() && noexcept {
+			assert(has_value());
+			_has_value = false;
+			return std::move(*((T *)_data));
 		}
 
 		PEFF_FORCEINLINE T move() noexcept {
@@ -65,13 +71,15 @@ namespace peff {
 			return std::move(*((T *)_data));
 		}
 
-		PEFF_FORCEINLINE T &operator*() noexcept {
-			assert(has_value());
+		PEFF_FORCEINLINE const T &operator*() const & noexcept {
 			return value();
 		}
 
-		PEFF_FORCEINLINE const T &operator*() const noexcept {
-			assert(has_value());
+		PEFF_FORCEINLINE T &operator*() & noexcept {
+			return value();
+		}
+
+		PEFF_FORCEINLINE T operator*() && noexcept {
 			return value();
 		}
 
@@ -382,16 +390,23 @@ namespace peff {
 			return _has_value[index];
 		}
 
-		PEFF_FORCEINLINE T &value(size_t index) noexcept {
+		PEFF_FORCEINLINE T &value(size_t index) & noexcept {
 			assert(index < length);
 			assert(has_value(index));
 			return *((T *)(&_data[index * sizeof(T)]));
 		}
 
-		PEFF_FORCEINLINE const T &value(size_t index) const noexcept {
+		PEFF_FORCEINLINE const T &value(size_t index) const & noexcept {
 			assert(index < length);
 			assert(has_value(index));
 			return *((const T *)(&_data[index * sizeof(T)]));
+		}
+
+		PEFF_FORCEINLINE T value(size_t index) && noexcept {
+			assert(index < length);
+			assert(has_value(index));
+			_has_value = false;
+			return std::move(*((T *)(&_data[index * sizeof(T)])));
 		}
 
 		PEFF_FORCEINLINE T move(size_t index) noexcept {

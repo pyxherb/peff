@@ -38,7 +38,7 @@ namespace peff {
 	#if defined(_MSC_VER)
 		if (!value)
 			return 8;
-		return _lzcnt_u32((uint32_t)value) - (sizeof(uint32_t) - sizeof(uint8_t)) * 8;
+		return (uint8_t)_lzcnt_u32((uint32_t)value) - (sizeof(uint32_t) - sizeof(uint8_t)) * 8;
 	#elif defined(__GNUC__) || defined(__clang__)
 		if (!value)
 			return 8;
@@ -67,7 +67,7 @@ namespace peff {
 	#ifdef _MSC_VER
 		if (!value)
 			return 16;
-		return _lzcnt_u32((uint32_t)value) - (sizeof(uint32_t) - sizeof(uint16_t)) * 8;
+		return (uint8_t)_lzcnt_u32((uint32_t)value) - (sizeof(uint32_t) - sizeof(uint16_t)) * 8;
 	#elif defined(__GNUC__) || defined(__clang__)
 		if (!value)
 			return 16;
@@ -96,7 +96,7 @@ namespace peff {
 	#ifdef _MSC_VER
 		if (!value)
 			return 32;
-		return _lzcnt_u32((uint32_t)value);
+		return (uint8_t)_lzcnt_u32((uint32_t)value);
 	#elif defined(__GNUC__) || defined(__clang__)
 		if (!value)
 			return 32;
@@ -125,7 +125,7 @@ namespace peff {
 	#ifdef _MSC_VER
 		if (!value)
 			return 64;
-		return _lzcnt_u64((uint32_t)value);
+		return (uint8_t)_lzcnt_u64((uint32_t)value);
 	#elif defined(__GNUC__) || defined(__clang__)
 		if (!value)
 			return 64;
@@ -167,8 +167,8 @@ namespace peff {
 
 	PEFF_FORCEINLINE uint8_t r_rot(uint8_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
-	#ifdef _MSVC
-		return _rotr16(value, shift);
+	#ifdef _MSC_VER
+		return _rotr8(value, shift);
 	#else
 		#define _PEFF_USE_DEFAULT_RROT_U8 1
 	#endif
@@ -244,7 +244,7 @@ namespace peff {
 	PEFF_FORCEINLINE uint8_t l_rot(uint8_t value, uint_fast8_t shift) {
 #if (defined(_M_IX86) || defined(_M_X64) || __i386__ || __x86_64__)
 	#ifdef _MSC_VER
-		return _rotl16(value, shift);
+		return _rotl8(value, shift);
 	#else
 		#define _PEFF_USE_DEFAULT_LROT_U8 1
 	#endif

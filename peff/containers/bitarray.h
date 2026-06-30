@@ -1,7 +1,7 @@
 #ifndef _PEFF_CONTAINERS_BITARRAY_H_
 #define _PEFF_CONTAINERS_BITARRAY_H_
 
-#include "basedefs.h"
+#include "dynarray.h"
 #include <peff/base/alloc.h>
 #include <cstdint>
 #include <cstddef>
@@ -11,49 +11,8 @@
 namespace peff {
 	class BitArray {
 	private:
+		peff::DynArray<uint8_t> _buffer;
 		size_t _num_bits = 0;
-		size_t _capacity = 0;
-		uint8_t *_buffer = nullptr;
-		peff::RcObjectPtr<Alloc> _allocator;
-
-		PEFF_FORCEINLINE bool _auto_resize_capacity(size_t num_bits) {
-			if (num_bits < (_capacity >> 1)) {
-				if (!reserve(num_bits)) {
-					return false;
-				}
-			} else if (num_bits > _capacity) {
-				if (!reserve(num_bits)) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		PEFF_FORCEINLINE bool _resize_or_expand_uninit(size_t num_bits) {
-			if (num_bits > _capacity) {
-				if (!reserve(num_bits)) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		PEFF_FORCEINLINE bool _resize_or_expand(size_t num_bits, bool init_value) {
-			if (num_bits > _capacity) {
-				if (!reserve(num_bits)) {
-					return false;
-				}
-			} else {
-				if (num_bits > _num_bits) {
-					if (init_value) {
-						fill_set(_num_bits, num_bits - _num_bits);
-					} else {
-						fill_clear(_num_bits, num_bits - _num_bits);
-					}
-				}
-			}
-			return true;
-		}
 
 		PEFF_FORCEINLINE void _set_bit(size_t bit_index) {
 			_buffer[(bit_index >> 3)] |= (1 << (bit_index & 7));
@@ -108,11 +67,9 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE BitArray(Alloc *allocator) : _allocator(allocator) {
+		PEFF_FORCEINLINE BitArray(Alloc *allocator) : _buffer(allocator) {
 		}
 		PEFF_FORCEINLINE ~BitArray() {
-			if (_buffer)
-				_allocator->release(_buffer, size(), 1);
 		}
 
 		PEFF_FORCEINLINE size_t size() const {
@@ -123,72 +80,44 @@ namespace peff {
 			return _num_bits;
 		}
 
-		PEFF_FORCEINLINE bool reserve(size_t num_bits) {
-			if (num_bits) {
-				const size_t num_bytes = (num_bits + 7) >> 3;
-
-				uint8_t *new_buffer = (uint8_t *)_allocator->alloc(num_bytes, 1);
-				if (!new_buffer)
-					return false;
-
-				if (_buffer) {
-					if (num_bytes > size()) {
-						memcpy((void *)new_buffer, (void *)_buffer, size());
-					} else {
-						memcpy((void *)new_buffer, (void *)_buffer, num_bytes);
-					}
-				}
-				if (_buffer)
-					_allocator->release(_buffer, size(), 1);
-
-				_buffer = new_buffer;
-			} else {
-				if (_buffer)
-					_allocator->release(_buffer, size(), 1);
-			}
-			_capacity = ((num_bits + 7) >> 3) << 3;
-
-			return true;
-		}
-
 		PEFF_FORCEINLINE bool resize_uninit(size_t num_bits) {
-			if (!_auto_resize_capacity(num_bits))
+			if (!_buffer.resize_uninit((num_bits + 7) / 8))
 				return false;
 			_num_bits = num_bits;
 			return true;
 		}
 
 		PEFF_FORCEINLINE bool push_back(bool bit) {
-			if (!_resize_or_expand_uninit(_num_bits + 1)) {
+			size_t old_num_bits = _num_bits;
+			if (!resize_uninit(_num_bits + 1)) {
 				return false;
 			}
 			if (bit) {
-				_set_bit(_num_bits);
+				_set_bit(old_num_bits);
 			} else {
-				_clear_bit(_num_bits);
+				_clear_bit(old_num_bits);
 			}
-			++_num_bits;
 
 			return true;
 		}
 
 		PEFF_FORCEINLINE bool push_back_byte(uint8_t b) {
-			if (!_resize_or_expand_uninit(_num_bits + 8)) {
+			size_t old_num_bits = _num_bits;
+			if (!resize_uninit(_num_bits + 8)) {
 				return false;
 			}
-			_set_byte(_num_bits, b, 8);
-			_num_bits += 8;
+			_set_byte(old_num_bits, b, 8);
 
 			return true;
 		}
 
 		PEFF_FORCEINLINE bool push_back_bytes(char *data, size_t len) {
-			if (!_resize_or_expand_uninit(_num_bits + len * 8)) {
+			size_t old_num_bits = _num_bits;
+			if (!resize_uninit(_num_bits + len * 8)) {
 				return false;
 			}
 			for (size_t i = 0; i < len; ++i) {
-				_set_byte(_num_bits, data[i], 8);
-				_num_bits += 8;
+				_set_byte(old_num_bits + i, data[i], 8);
 			}
 			return true;
 		}
@@ -202,16 +131,15 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool pop_back_and_resize_capacity() {
-			if (!_auto_resize_capacity(_num_bits - 1)) {
+			if (!resize_uninit(_num_bits - 1)) {
 				return false;
 			}
-			--_num_bits;
 
 			return true;
 		}
 
 		PEFF_FORCEINLINE bool pop_back_byte_and_resize_capacity() {
-			if (!_auto_resize_capacity(_num_bits - 8)) {
+			if (!resize_uninit(_num_bits - 8)) {
 				return false;
 			}
 			_num_bits -= 8;
@@ -219,8 +147,12 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE uint8_t *data() const {
-			return _buffer;
+		PEFF_FORCEINLINE const uint8_t *data() const {
+			return _buffer.data();
+		}
+
+		PEFF_FORCEINLINE uint8_t *data() {
+			return _buffer.data();
 		}
 
 		PEFF_FORCEINLINE void set_bit(size_t bit_index) {
@@ -254,7 +186,7 @@ namespace peff {
 			}
 
 			if (sz_fill_byte)
-				memset(_buffer + idx_start_fill_byte, 0xff, sz_fill_byte);
+				memset(_buffer.data() + idx_start_fill_byte, 0xff, sz_fill_byte);
 
 			if (idx_end & 7) {
 				uint8_t end_bits = 0xff >> (7 - (bit_index & 7));
@@ -278,7 +210,7 @@ namespace peff {
 			}
 
 			if (sz_fill_byte)
-				memset(_buffer + idx_start_fill_byte, 0x00, sz_fill_byte);
+				memset(_buffer.data() + idx_start_fill_byte, 0x00, sz_fill_byte);
 
 			if (idx_end & 7) {
 				uint8_t end_bits = 0xff << (bit_index & 7);
@@ -316,7 +248,7 @@ namespace peff {
 			assert(bit_index + 8 * len <= _num_bits);
 
 			if (!((bit_index) & 7)) {
-				memcpy(buf, _buffer + bit_index / 8, len);
+				memcpy(buf, _buffer.data() + bit_index / 8, len);
 			} else {
 				size_t cur_index = bit_index;
 				for (size_t i = 0; i < len; ++i) {
@@ -327,13 +259,11 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {
-			return _allocator.get();
+			return _buffer.allocator();
 		}
 
 		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) {
-			verify_replaceable(_allocator.get(), rhs);
-
-			_allocator = rhs;
+			_buffer.replace_allocator(rhs);
 		}
 	};
 }

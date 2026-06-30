@@ -104,10 +104,11 @@ namespace peff {
 			}
 		}
 
-		template <bool construct>
+		template <bool construct, typename... Args>
 		PEFF_FORCEINLINE void _expand_to(
 			T *new_data,
-			size_t length) {
+			size_t length,
+			Args &&...args) {
 			assert(length > _length);
 
 			if constexpr (construct) {
@@ -129,7 +130,7 @@ namespace peff {
 						i < length;
 						++i) {
 						idx_last_constructed_object = i;
-						peff::construct_at<T>(&new_data[i]);
+						peff::construct_at<T, Args...>(&new_data[i], std::forward<Args>(args)...);
 					}
 
 					scope_guard.release();
@@ -386,7 +387,7 @@ namespace peff {
 
 			T *gap_start = &_data[index];
 
-			if (std::is_trivially_copyable_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				if (index < old_length) {
 					memmove(&_data[index + length], gap_start, sizeof(T) * (old_length - index));
 				}
@@ -537,6 +538,23 @@ namespace peff {
 			return true;
 		}
 
+		template <typename... Args>
+		[[nodiscard]] PEFF_FORCEINLINE bool resize_construct(size_t length, Args &&...args) {
+			if (length > _length) {
+				if (length > _capacity) {
+					if (!_auto_grow_capacity<false>(length))
+						return false;
+				} else {
+					_expand_to<false, Args...>(_data, length, std::forward<Args>(args)...);
+					_length = length;
+				}
+			} else if (length < _length) {
+				_shrink(_data, length);
+				_length = length;
+			}
+			return true;
+		}
+
 		///
 		/// @brief Shrink the capacity to the dynamic array's length.
 		///
@@ -661,6 +679,16 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE const T &at(size_t index) const {
+			assert(index < _length);
+			return _data[index];
+		}
+
+		PEFF_FORCEINLINE T &operator[](size_t index) {
+			assert(index < _length);
+			return _data[index];
+		}
+
+		PEFF_FORCEINLINE const T &operator[](size_t index) const {
 			assert(index < _length);
 			return _data[index];
 		}

@@ -528,7 +528,7 @@ namespace peff {
 			y->l = nullptr;
 			y->r = nullptr;
 			y->p = nullptr;
-			return {};
+			return peff::NULL_OPTION;
 		}
 
 		PEFF_FORCEINLINE void clear() {

@@ -12,8 +12,10 @@
 #include <peff/containers/binary_heap.h>
 #include <peff/advutils/shared_ptr.h>
 #include <peff/advutils/buffer_alloc.h>
+#include <peff/containers/btree.h>
 #include <iostream>
 #include <string>
+#include <random>
 
 struct SomethingUncopyable {
 	peff::String s;
@@ -94,14 +96,54 @@ struct B {
 template <typename T>
 struct FallibleComparator {
 	peff::Option<bool> operator()(const T &lhs, const T &rhs) const {
-		return {};
+		return peff::NULL_OPTION;
 	}
 };
 
 template <typename T>
 struct FallibleHasher {
 	peff::Option<size_t> operator()(const T &lhs) const {
-		return {};
+		return peff::NULL_OPTION;
+	}
+};
+
+class RandomFailAlloc : public peff::Alloc {
+public:
+	std::mt19937_64 rng;
+	size_t count = 0;
+
+	RandomFailAlloc(): rng(time(NULL)) {
+
+	}
+	virtual ~RandomFailAlloc() {
+	}
+
+	virtual size_t inc_ref(size_t global_ref_count) noexcept override { return 0;  }
+	virtual size_t dec_ref(size_t global_ref_count) noexcept override { return 0; }
+
+	virtual void *alloc(size_t size, size_t alignment) noexcept override {
+		++count;
+		auto num = rng();
+		if (((num % 2) == 0) && (count >= 3))
+			return nullptr;
+		return peff::default_allocator()->alloc(size, alignment);
+	}
+	virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override {
+		return peff::default_allocator()->realloc(ptr, size, alignment, new_size, new_alignment);
+	}
+	virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override {
+		return peff::default_allocator()->realloc_in_place(ptr, size, alignment, new_size);
+	}
+	virtual void release(void *ptr, size_t size, size_t alignment) noexcept override {
+		return peff::default_allocator()->release(ptr, size, alignment);
+	}
+
+	virtual bool is_replaceable(const peff::Alloc *rhs) const noexcept override {
+		return false;
+	}
+
+	virtual peff::UUID type_identity() const noexcept override {
+		return PEFF_UUID(0, 0, 0, 0, 0);
 	}
 };
 
@@ -436,32 +478,72 @@ int main() {
 	else
 		puts("Little endian");
 
-	peff::HashMap<int, peff::String> hm(&peff::g_std_allocator);
+	{
+		peff::HashMap<int, peff::String> hm(&peff::g_std_allocator);
 
-	for (int i = 0; i < 16; i++) {
-		int j = i & 1 ? i : 32 - i;
-		printf("Inserting: %d\n", j);
-		peff::String s(&peff::g_std_allocator);
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
+			printf("Inserting: %d\n", j);
+			peff::String s(&peff::g_std_allocator);
 
-		if (!s.build(std::to_string(j)))
-			throw std::bad_alloc();
-		if (!hm.insert(+j, std::move(s)))
-			throw std::bad_alloc();
-	}
-
-	for (int i = 0; i < 16; i++) {
-		int j = i & 1 ? i : 32 - i;
-		printf("Removing: %d\n", j);
-
-		hm.remove(j);
-
-		auto k = hm.begin();
-		while (k != hm.end()) {
-			printf("%d: %s\n", k.key(), k.value().data());
-			++k;
+			if (!s.build(std::to_string(j)))
+				throw std::bad_alloc();
+			if (!hm.insert(+j, std::move(s)))
+				throw std::bad_alloc();
 		}
 
-		// map.dump(std::cout);
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
+			printf("Removing: %d\n", j);
+
+			hm.remove(j);
+
+			auto k = hm.begin();
+			while (k != hm.end()) {
+				printf("%d: %s\n", k.key(), k.value().data());
+				++k;
+			}
+
+			// map.dump(std::cout);
+		}
+	}
+
+	RandomFailAlloc rf_alloc;
+	{
+		peff::BTree<int, std::less<int>, false, 4> hm(&rf_alloc);
+
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
+			printf("Inserting: %d\n", j);
+
+			if (j == 20)
+				puts("");
+
+			if (!hm.insert(+j)) {
+				puts("Random fail");
+			}
+
+			auto k = hm.begin();
+			while (k != hm.end()) {
+				printf("%d\n", *k);
+				++k;
+			}
+		}
+
+		for (int i = 0; i < 16; i++) {
+			int j = i & 1 ? i : 32 - i;
+			printf("Removing: %d\n", j);
+
+			hm.remove(j);
+
+			auto k = hm.begin();
+			while (k != hm.end()) {
+				printf("%d\n", *k);
+				++k;
+			}
+
+			// map.dump(std::cout);
+		}
 	}
 
 	peff::Option<bool> op;

@@ -93,7 +93,7 @@ namespace peff {
 			return &value();
 		}
 
-		PEFF_FORCEINLINE Option() noexcept {
+		PEFF_FORCEINLINE explicit Option() noexcept {
 		}
 
 		PEFF_FORCEINLINE ~Option() {
@@ -212,7 +212,7 @@ namespace peff {
 			return &value();
 		}
 
-		PEFF_FORCEINLINE Option() noexcept {
+		PEFF_FORCEINLINE explicit Option() noexcept {
 		}
 
 		PEFF_FORCEINLINE ~Option() {
@@ -317,7 +317,7 @@ namespace peff {
 			return &value();
 		}
 
-		PEFF_FORCEINLINE Option() noexcept {
+		PEFF_FORCEINLINE explicit Option() noexcept {
 		}
 
 		PEFF_FORCEINLINE ~Option() {

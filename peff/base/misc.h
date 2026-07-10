@@ -81,6 +81,52 @@ namespace peff {
 	}
 
 	PEFF_BASE_API Endian test_native_endian();
+
+	template <typename T>
+	PEFF_FORCEINLINE constexpr T ceil_align_to(T data, T alignment) {
+		static_assert(std::is_unsigned_v<T>, "ceil_align_to only applies to unsigned types");
+		kd_assert(alignment);
+		if ((alignment & (alignment - 1)) == 0)
+			return (data + (alignment - 1)) & ~(alignment - 1);
+		return data + ((alignment - data % alignment) % alignment);
+	}
+
+	template <typename T, T alignment>
+	PEFF_FORCEINLINE constexpr T ceil_align_to(T data) {
+		static_assert(std::is_unsigned_v<T>, "ceil_align_to only applies to unsigned types");
+		static_assert(alignment != 0, "alignment must not be 0");
+		if constexpr ((alignment & (alignment - 1)) == 0) {
+			return (data + (alignment - 1)) & ~(alignment - 1);
+		}
+		return data + ((alignment - data % alignment) % alignment);
+	}
+
+	template <typename T>
+	PEFF_FORCEINLINE constexpr size_t ceil_align_to_type(size_t data) {
+		return (data + (alignof(T) - 1)) & ~(alignof(T) - 1);
+	}
+
+	template <typename T>
+	PEFF_FORCEINLINE constexpr T floor_align_to(T data, T alignment) {
+		static_assert(std::is_unsigned_v<T>, "floor_align_to only applies to unsigned types");
+		kd_assert(alignment);
+		return data - data % alignment;
+	}
+
+	template <typename T, T alignment>
+	PEFF_FORCEINLINE constexpr T floor_align_to(T data) {
+		static_assert(std::is_unsigned_v<T>, "floor_align_to only applies to unsigned types");
+		static_assert(alignment != 0, "alignment must not be 0");
+		if constexpr ((alignment & (alignment - 1)) == 0) {
+			return data & ~(alignment - 1);
+		}
+		return data - data % alignment;
+	}
+
+	template <typename T>
+	PEFF_FORCEINLINE constexpr size_t floor_align_to_type(size_t data) {
+		return data & ~(alignof(T) - 1);
+	}
 }
 
 #endif

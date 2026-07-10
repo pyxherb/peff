@@ -3,10 +3,10 @@
 
 #include "panic.h"
 
-#if PEFF_ENABLE_ASSERTION
+//#if PEFF_ENABLE_ASSERTION
 	#define PEFF_ASSERT(x, message) if (!(x)) peff::panic(message);
-#else
-	#define PEFF_ASSERT(x, message)
-#endif
+//#else
+	//#define PEFF_ASSERT(x, message)
+//#endif
 
 #endif

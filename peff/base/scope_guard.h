@@ -6,8 +6,8 @@
 #include <type_traits>
 
 namespace peff {
-	/// @brief An RAII-based scope guard for executing codes automatically when leaving the scope.
-	/// @tparam T For lambda expression, will be deduced by the compiler automatically.
+	/// @brief An RAII-based scope guard for executing codes automatically when leaving the scope. This guard is cancellable with the @c release() method.
+	/// @tparam T For lambda expression, which should be inferred by the compiler automatically.
 	/// @note The callback is required to be noexcept.
 	template <typename T>
 	struct ScopeGuard {
@@ -30,6 +30,9 @@ namespace peff {
 		}
 	};
 
+	/// @brief An RAII-based scope guard that will call the guard function automatically at the end of the scope. This guard will always be triggered and cannot be cancelled.
+	/// @tparam T For the guard function, which should be inferred by the compiler automatically.
+	/// @note The callback is required to be noexcept.
 	template <typename T>
 	struct Deferred {
 		T callback;

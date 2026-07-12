@@ -174,7 +174,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE std::pair<Node *, size_t> _find(const T &key, Node *node) {
+		inline std::pair<Node *, size_t> _find(const T &key, Node *node) const noexcept {
 		recurse:
 			size_t i = 0;
 			while ((i < node->num_keys) && (this->_gt(key, node->key(i))))
@@ -183,8 +183,10 @@ namespace peff {
 				return { node, i };
 			} else if (node->is_leaf())
 				return { nullptr, 0 };
-			else
+			else {
+				node = node->child_node(i);
 				goto recurse;
+			}
 		}
 
 		PEFF_FORCEINLINE static Node *_min_node(Node *node) noexcept {
@@ -451,7 +453,7 @@ namespace peff {
 			return ptr;
 		}
 
-		void remove(const T &key) {
+		inline void remove(const T &key) {
 			Node *node = _root;
 		recurse:
 			if (!node)
@@ -530,6 +532,24 @@ namespace peff {
 			}
 			node = child;
 			goto recurse;
+		}
+
+		PEFF_FORCEINLINE T* find(const T &key) noexcept {
+			if (!_root)
+				return nullptr;
+			auto result = _find(key, _root);
+			if(!result.first)
+				return nullptr;
+			return &result.first->key(result.second);
+		}
+
+		PEFF_FORCEINLINE const T *find(const T &key) const noexcept {
+			if (!_root)
+				return nullptr;
+			auto result = _find(key, _root);
+			if (!result.first)
+				return nullptr;
+			return &result.first->key(result.second);
 		}
 
 		class Iterator {

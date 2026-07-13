@@ -112,13 +112,12 @@ public:
 	std::mt19937_64 rng;
 	size_t count = 0;
 
-	RandomFailAlloc(): rng(time(NULL)) {
-
+	RandomFailAlloc() : rng(time(NULL)) {
 	}
 	virtual ~RandomFailAlloc() {
 	}
 
-	virtual size_t inc_ref(size_t global_ref_count) noexcept override { return 0;  }
+	virtual size_t inc_ref(size_t global_ref_count) noexcept override { return 0; }
 	virtual size_t dec_ref(size_t global_ref_count) noexcept override { return 0; }
 
 	virtual void *alloc(size_t size, size_t alignment) noexcept override {
@@ -278,7 +277,7 @@ int main() {
 			assert(b);
 		}
 
-		for(auto i : map2) {
+		for (auto i : map2) {
 			printf("%s = %d\n", i.first.data(), i.second);
 		}
 	}
@@ -533,6 +532,9 @@ int main() {
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
 			printf("Removing: %d\n", j);
+
+			auto result = hm.find(j);
+			printf("%s: %d\n", result ? "Found" : "Not found", j);
 
 			hm.remove(j);
 

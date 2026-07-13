@@ -93,7 +93,7 @@ namespace peff {
 			return &value();
 		}
 
-		PEFF_FORCEINLINE explicit Option() noexcept {
+		PEFF_FORCEINLINE explicit Option() noexcept : _data({}) {
 		}
 
 		PEFF_FORCEINLINE ~Option() {
@@ -150,9 +150,10 @@ namespace peff {
 	private:
 		using V = std::remove_reference_t<T>;
 		V *_data = nullptr;
+		using ThisType = Option<T &>;
 
 	public:
-		using value_type = T;
+		using value_type = T &;
 
 		PEFF_FORCEINLINE void reset() noexcept {
 			_data = nullptr;
@@ -226,14 +227,14 @@ namespace peff {
 		PEFF_FORCEINLINE Option(NullOption) noexcept {
 		}
 
-		PEFF_FORCEINLINE Option(Option<T> &&rhs) noexcept {
+		PEFF_FORCEINLINE Option(ThisType &&rhs) noexcept {
 			if (rhs.has_value()) {
 				set_value_ref(**((std::remove_reference_t<T> **)rhs._data));
 				rhs._data = nullptr;
 			}
 		}
 
-		PEFF_FORCEINLINE Option<T> &operator=(Option<T> &&rhs) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(Option<T> &&rhs) noexcept {
 			reset();
 
 			if (rhs.has_value()) {
@@ -243,7 +244,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE Option<T> &operator=(V &rhs) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(V &rhs) noexcept {
 			reset();
 			set_value_ref(rhs);
 			return *this;
@@ -253,17 +254,18 @@ namespace peff {
 	template <typename T>
 	class Option<const T &> final {
 	private:
-		using V = std::remove_reference_t<T>;
-		const V *_data = nullptr;
+		using V = const std::remove_reference_t<T>;
+		using ThisType = Option<const T &>;
+		V *_data = nullptr;
 
 	public:
-		using value_type = T;
+		using value_type = const T &;
 
 		PEFF_FORCEINLINE void reset() noexcept {
 			_data = nullptr;
 		}
 
-		PEFF_FORCEINLINE void set_value_ref(const V &data) noexcept {
+		PEFF_FORCEINLINE void set_value_ref(V &data) noexcept {
 			reset();
 			_data = &data;
 		}
@@ -285,9 +287,9 @@ namespace peff {
 			return *_data;
 		}
 
-		PEFF_FORCEINLINE const V &value() const noexcept {
+		PEFF_FORCEINLINE V &value() const noexcept {
 			assert(has_value());
-			return *((const V *)_data);
+			return *((V *)_data);
 		}
 
 		PEFF_FORCEINLINE V move() noexcept {
@@ -302,7 +304,7 @@ namespace peff {
 			return value();
 		}
 
-		PEFF_FORCEINLINE const V &operator*() const noexcept {
+		PEFF_FORCEINLINE V &operator*() const noexcept {
 			assert(has_value());
 			return value();
 		}
@@ -312,7 +314,7 @@ namespace peff {
 			return &value();
 		}
 
-		PEFF_FORCEINLINE const V *operator->() const noexcept {
+		PEFF_FORCEINLINE V *operator->() const noexcept {
 			assert(has_value());
 			return &value();
 		}
@@ -324,21 +326,21 @@ namespace peff {
 			reset();
 		}
 
-		PEFF_FORCEINLINE Option(const V &data) noexcept {
+		PEFF_FORCEINLINE Option(V &data) noexcept {
 			set_value_ref(data);
 		}
 
 		PEFF_FORCEINLINE Option(NullOption) noexcept {
 		}
 
-		PEFF_FORCEINLINE Option(Option<T> &&rhs) noexcept {
+		PEFF_FORCEINLINE Option(ThisType &&rhs) noexcept {
 			if (rhs.has_value()) {
 				set_value_ref(**((std::remove_reference_t<T> **)rhs._data));
 				rhs._data = nullptr;
 			}
 		}
 
-		PEFF_FORCEINLINE Option<T> &operator=(Option<T> &&rhs) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
 			reset();
 
 			if (rhs.has_value()) {
@@ -348,7 +350,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE Option<T> &operator=(const V &rhs) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(V &rhs) noexcept {
 			reset();
 			set_value_ref(rhs);
 			return *this;

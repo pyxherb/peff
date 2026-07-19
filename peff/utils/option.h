@@ -83,12 +83,12 @@ namespace peff {
 			return value();
 		}
 
-		PEFF_FORCEINLINE std::remove_reference_t<T> *operator->() noexcept {
+		PEFF_FORCEINLINE T *operator->() noexcept {
 			assert(has_value());
 			return &value();
 		}
 
-		PEFF_FORCEINLINE std::remove_reference_t<const T> *operator->() const noexcept {
+		PEFF_FORCEINLINE const T *operator->() const noexcept {
 			assert(has_value());
 			return &value();
 		}

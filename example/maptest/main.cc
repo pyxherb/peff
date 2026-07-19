@@ -433,8 +433,9 @@ int main() {
 		alloc.release(old_p3, 1023 * 3, sizeof(std::max_align_t));
 	}
 
+	puts("Radix tree begin");
 	{
-		peff::RadixTree<uint32_t, int> test(peff::default_allocator());
+		peff::RadixTree<uint32_t, int, 16> test(peff::default_allocator());
 
 		for (uint32_t i = 0; i < 100; ++i) {
 			if (!test.insert(i, i))
@@ -444,7 +445,18 @@ int main() {
 		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
 			printf("Value: %d\n", *i);
 		}
+
+		for (uint32_t i = 0; i < 100; ++i) {
+			test.remove(i);
+
+			for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+				printf("%d ", *i);
+			}
+
+			puts("");
+		}
 	}
+	puts("Radix tree end");
 
 	{
 		peff::BinaryHeapArray<uint32_t> test(peff::default_allocator());

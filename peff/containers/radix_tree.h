@@ -13,22 +13,27 @@
 #include <stdexcept>
 
 namespace peff {
-	template <typename K, typename V>
+	template <typename K, typename V, size_t R = sizeof(K) * 2>
 	class RadixTree final {
 	public:
 		static_assert(std::is_integral_v<K>, "The key must be integral type");
-		using ThisType = RadixTree<K, V>;
+		using ThisType = RadixTree<K, V, R>;
 
 		constexpr static uintmax_t HEIGHT_MAX = std::numeric_limits<K>::digits;
 		using Height = typename ::peff::AutoSizeUInteger<HEIGHT_MAX>::type;
 
+		constexpr static size_t N = static_cast<size_t>(1) << R;
+		constexpr static K MASK = N - 1;
+
+		constexpr static size_t MAX_STEPS = (HEIGHT_MAX + R - 1) / R;
+
 		struct Node {
 			Node *p = nullptr;
-			Node *children[2] = {};
-			OptionArray<V, 2> radix_value;
+			Node *children[N] = {};
+			OptionArray<V, N> radix_value;
 			Height height = 0;
-			uint8_t num_used_children = 0;
-			uint8_t offset = 0;
+			size_t num_used_children = 0;
+			size_t offset = 0;
 
 			PEFF_FORCEINLINE Node() {
 			}
@@ -94,11 +99,10 @@ namespace peff {
 
 		[[nodiscard]] inline bool _grow_node(K index, V &&data) {
 			Node *node = _root;
-			Height height = _height, shift;
-			K offset;
+			Height height = _height;
 
 			size_t i = 0;
-			BitSet<sizeof(K) * 8 - 1> insertion_flags;
+			BitSet<MAX_STEPS> insertion_flags;
 
 			peff::ScopeGuard sg([this, &insertion_flags, &i, &node]() noexcept {
 				while (i && node) {
@@ -118,15 +122,15 @@ namespace peff {
 				}
 			});
 
-			while (height-- > 1) {
-				shift = height;
-				offset = (index >> shift) & 1;
+			while (height > R) {
+				Height shift = height - R;
+				K offset = (index >> shift) & MASK;
 
 				if ((!node->children[offset]) && (!node->radix_value.has_value(offset))) {
 					Node *new_node = _alloc_single_node();
 					if (!new_node)
 						return false;
-					new_node->height = height;
+					new_node->height = height - R;
 					++node->num_used_children;
 					new_node->offset = offset;
 					new_node->p = node;
@@ -139,14 +143,14 @@ namespace peff {
 					node = node->children[offset];
 				}
 				++i;
+				height -= R;
 			}
 
 			sg.release();
 
 			Node *leaf = node;
-			offset = index & 1;
+			K offset = index & MASK;
 			if (leaf->children[offset] || leaf->radix_value.has_value(offset))
-				// The key exists.
 				std::terminate();
 			leaf->radix_value.set_value(offset, std::move(data));
 			return true;
@@ -169,7 +173,7 @@ namespace peff {
 			});
 
 			while (_height < height) {
-				++_height;
+				_height += R;
 
 				Node *new_node = _alloc_single_node();
 				if (!new_node)
@@ -195,9 +199,15 @@ namespace peff {
 			return true;
 		}
 
+		static PEFF_FORCEINLINE Height _required_height(K index) {
+			if (index == 0)
+				return R;
+			Height bits = (Height)(sizeof(K) * 8 - count_leading_zero(index));
+			return ((bits + R - 1) / R) * R;
+		}
+
 		[[nodiscard]] inline bool _insert(K index, V &&data) {
-			Node **node_ptr = &_root;
-			Height height = index ? (Height)((sizeof(K) * 8 - 1 - count_leading_zero(index)) + 1) : 1;
+			Height required_height = _required_height(index);
 
 			if (!_root) {
 				Node *node = _alloc_single_node();
@@ -206,8 +216,8 @@ namespace peff {
 				peff::ScopeGuard delete_node_guard([this, node]() noexcept {
 					_delete_single_node(node);
 				});
-				node->height = height;
-				_height = height;
+				node->height = required_height;
+				_height = required_height;
 
 				Height original_height = _height;
 				Node *original_root = _root;
@@ -225,8 +235,8 @@ namespace peff {
 				return true;
 			}
 
-			if (height > _height)
-				return _grow_height_then_grow_node(index, height, std::move(data));
+			if (required_height > _height)
+				return _grow_height_then_grow_node(index, required_height, std::move(data));
 
 			return _grow_node(index, std::move(data));
 		}
@@ -236,27 +246,37 @@ namespace peff {
 				std::terminate();
 			Node *node = _root;
 			Height height = _height;
-			Height shift = height - 1;
-			K offset;
-
-			while (height) {
-				offset = ((index >> shift) & 1);
+			while (height > R) {
+				Height shift = height - R;
+				K offset = (index >> shift) & MASK;
 				if (!node->children[offset]) {
 					if (!node->radix_value.has_value(offset))
 						std::terminate();
 					return node->radix_value.value(offset);
 				}
 				node = node->children[offset];
-				--shift;
-				--height;
+				height -= R;
 			}
+			K offset = index & MASK;
+			if (!node->radix_value.has_value(offset))
+				std::terminate();
+			return node->radix_value.value(offset);
 		}
 
 		[[nodiscard]] static inline Node *_get_min_node(Node *node) {
 			assert(node);
 
-			while (node->children[0] || node->children[1]) {
-				node = node->children[0] ? node->children[0] : node->children[1];
+			while (true) {
+				bool has_child = false;
+				for (size_t i = 0; i < N; ++i) {
+					if (node->children[i]) {
+						node = node->children[i];
+						has_child = true;
+						break;
+					}
+				}
+				if (!has_child)
+					break;
 			}
 
 			return node;
@@ -265,8 +285,17 @@ namespace peff {
 		[[nodiscard]] static inline Node *_get_max_node(Node *node) {
 			assert(node);
 
-			while (node->children[0] || node->children[1]) {
-				node = node->children[1] ? node->children[1] : node->children[0];
+			while (true) {
+				bool has_child = false;
+				for (size_t i = N; i-- > 0;) {
+					if (node->children[i]) {
+						node = node->children[i];
+						has_child = true;
+						break;
+					}
+				}
+				if (!has_child)
+					break;
 			}
 
 			return node;
@@ -277,108 +306,77 @@ namespace peff {
 				return nullptr;
 
 			Node *node = _root;
-			Height shift = _height - 1;
-			K offset;
-
-			while (node && (node->height > 1)) {
-				offset = (index >> shift) & 1;
+			Height height = _height;
+			while (node && height > R) {
+				Height shift = height - R;
+				K offset = (index >> shift) & MASK;
 				if (node->children[offset]) {
 					node = node->children[offset];
-					--shift;
+					height -= R;
 				} else {
-					if ((offset + 1 < 2) && node->children[offset + 1])
-						return _get_min_node(node->children[offset + 1]);
+					for (K i = offset + 1; i < N; ++i) {
+						if (node->children[i])
+							return _get_min_node(node->children[i]);
+					}
 					break;
 				}
 			}
 
-			if (node && node->height == 1) {
-				offset = index & 1;
-				if (node->children[offset])
-					return node->children[offset];
-				if (offset + 1 < 2 && node->children[offset + 1])
-					return node->children[offset + 1];
-			}
+			if (node && height == R) {
+				K offset = index & MASK;
+				for (K i = offset; i < N; ++i) {
+					if (node->radix_value.has_value(i))
+						return node;
+				}
 
-			while (node && node->p) {
-				K off = node->offset;
-				node = node->p;
-				if (off + 1 < 2 && node->children[off + 1]) {
-					return _get_min_node(node->children[off + 1]);
+				while (node && node->p) {
+					K off = node->offset;
+					node = node->p;
+					for (K i = off + 1; i < N; ++i) {
+						if (node->children[i])
+							return _get_min_node(node->children[i]);
+					}
 				}
 			}
 
 			return nullptr;
 		}
 
-		[[nodiscard]] Node *delete_tree(K index) {
-			Node *node = _root;
-			Height height = _height;
-			Height shift = height - 1;
-			K offset;
-
-			if (height < ((sizeof(K) * 8 - 1 - count_leading_zero(index)) + 1))
-				return nullptr;
-
-			while (height > 1) {
-				if (!node)
-					return nullptr;
-				offset = (index >> shift) & 1;
-				node = (Node *)node->children[offset];
-				--shift;
-				--height;
-			}
-
-			if (!node)
-				return nullptr;
-
-			offset = index & 1;
-			Node *item = node->children[offset];
-			if (!item)
-				return nullptr;
-
-			node->children[offset] = nullptr;
-			--node->num_used_children;
-
-			while ((!node->num_used_children) && (node != _root)) {
-				Node *p = node->p;
-				K off = node->offset;
-				_delete_single_node(node);
-				p->children[off] = nullptr;
-				--p->num_used_children;
-				node = p;
-			}
-
-			if (_root && (!_root->num_used_children)) {
-				_delete_single_node(node);
-				_root = nullptr;
-				_height = 0;
-			}
-
-			return item;
-		}
-
 	public:
 		PEFF_FORCEINLINE RadixTree(peff::Alloc *allocator) : _allocator(allocator), _height(0), _num_nodes(0), _root(nullptr) {}
 		PEFF_FORCEINLINE ~RadixTree() {
-			Node *cur_node = (Node *)_get_min_node(_root);
-			Node *parent = (Node *)_root->p;
+			if (!_root)
+				return;
+			Node *cur_node = _get_min_node(_root);
+			Node *parent = _root->p;
 			bool walked_root_node = false;
 
 			while (cur_node != parent) {
-				if (cur_node->children[1]) {
-					cur_node = (Node *)_get_min_node(cur_node->children[1]);
-				} else {
+				bool has_unvisited = false;
+				for (size_t i = 0; i < N; ++i) {
+					if (cur_node->children[i]) {
+						cur_node = _get_min_node(cur_node->children[i]);
+						has_unvisited = true;
+						break;
+					}
+				}
+				if (!has_unvisited) {
 					Node *node_to_delete = cur_node;
-
-					while (cur_node->p && (cur_node == cur_node->p->children[1])) {
+					while (cur_node->p &&
+						   (cur_node == cur_node->p->children[N - 1] ||
+							   [&]() {
+								   Node *p = cur_node->p;
+								   for (size_t i = cur_node->offset + 1; i < N; ++i) {
+									   if (p->children[i]) return false;
+								   }
+								   return true;
+							   }())) {
 						node_to_delete = cur_node;
-						cur_node = (Node *)cur_node->p;
+						cur_node = cur_node->p;
 						_delete_single_node(node_to_delete);
 					}
-
 					node_to_delete = cur_node;
-					cur_node = (Node *)cur_node->p;
+					cur_node = cur_node->p;
 					_delete_single_node(node_to_delete);
 				}
 			}
@@ -386,6 +384,43 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(K key, V &&value) {
 			return _insert(key, std::move(value));
+		}
+
+		Option<V> remove(const K &index) noexcept {
+			Node *node = _root;
+			Height height = _height;
+
+			while (height > R) {
+				K offset = (index >> (height - R)) & MASK;
+				if (!node->children[offset])
+					return NULL_OPTION;
+				node = node->children[offset];
+				height -= R;
+			}
+
+			K offset = index & MASK;
+			if (!node->radix_value.has_value(offset))
+				return NULL_OPTION;
+
+			V removed = std::move(node->radix_value.value(offset));
+			node->radix_value.move(offset);
+			--node->num_used_children;
+
+			while (node->num_used_children == 0 && node != _root) {
+				Node *parent = node->p;
+				parent->children[node->offset] = nullptr;
+				--parent->num_used_children;
+				_delete_single_node(node);
+				node = parent;
+			}
+
+			if (node == _root && node->num_used_children == 0) {
+				_delete_single_node(_root);
+				_root = nullptr;
+				_height = 0;
+			}
+
+			return std::move(removed);
 		}
 
 		PEFF_FORCEINLINE const V &at(K key) const {
@@ -400,81 +435,55 @@ namespace peff {
 			return _num_nodes;
 		}
 
-		PEFF_FORCEINLINE static Node *get_next_node(const Node *node) noexcept {
-			while (true) {
-				if (node->children[1]) {
-					node = node->children[1];
-					while (node->children[0]) {
-						node = node->children[0];
+		[[nodiscard]] static Node *get_next_node(const Node *node) noexcept {
+			const Node *cur = node;
+			while (cur->p) {
+				K off = cur->offset;
+				const Node *parent = cur->p;
+				for (K i = off + 1; i < N; ++i) {
+					if (parent->children[i]) {
+						return _get_min_node(parent->children[i]);
 					}
-				} else {
-					const Node *parent = node->p;
-					while (parent && node == parent->children[1]) {
-						node = parent;
-						parent = parent->p;
-					}
-					node = parent;
 				}
-
-				if (!node) {
-					return nullptr;
-				}
-
-				if (!node->children[0] && !node->children[1]) {
-					return const_cast<Node *>(node);
-				}
+				cur = parent;
 			}
+			return nullptr;
 		}
 
-		PEFF_FORCEINLINE static Node *get_prev_node(const Node *node) noexcept {
-			while (true) {
-				if (node->children[0]) {
-					node = node->children[0];
-					while (node->children[1]) {
-						node = node->children[1];
+		[[nodiscard]] static Node *get_prev_node(const Node *node) noexcept {
+			const Node *cur = node;
+			while (cur->p) {
+				K off = cur->offset;
+				const Node *parent = cur->p;
+				for (K i = off; i-- > 0;) {
+					if (parent->children[i]) {
+						return _get_max_node(parent->children[i]);
 					}
-				} else {
-					const Node *parent = node->p;
-					while (parent && node == parent->children[0]) {
-						node = parent;
-						parent = parent->p;
-					}
-					node = parent;
 				}
-
-				if (!node) {
-					return nullptr;
-				}
-
-				if (!node->children[1] && !node->children[0]) {
-					return const_cast<Node *>(node);
-				}
+				cur = parent;
 			}
+			return nullptr;
 		}
 
 		struct Iterator {
 			Node *node;
 			ThisType *tree;
 			IteratorDirection direction;
-			bool is_right;
+			size_t slot_index;
 
 			PEFF_FORCEINLINE Iterator(
 				Node *node,
 				ThisType *tree,
 				IteratorDirection direction,
-				bool is_right)
-				: node(node),
-				  tree(tree),
-				  direction(direction),
-				  is_right(is_right) {}
+				size_t slot_index)
+				: node(node), tree(tree), direction(direction), slot_index(slot_index) {}
 
 			Iterator(const Iterator &it) = default;
 			PEFF_FORCEINLINE Iterator(Iterator &&it) {
 				node = it.node;
 				tree = it.tree;
 				direction = it.direction;
-				is_right = it.is_right;
-
+				slot_index = it.slot_index;
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
@@ -482,6 +491,7 @@ namespace peff {
 					throw std::logic_error("Incompatible iterator direction");
 				node = rhs.node;
 				tree = rhs.tree;
+				slot_index = rhs.slot_index;
 				return *this;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
@@ -501,26 +511,47 @@ namespace peff {
 					throw std::logic_error("Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
-					if (!is_right) {
-						if (node->radix_value.has_value(1)) {
-							is_right = true;
+					for (size_t i = slot_index + 1; i < N; ++i) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
 							return *this;
 						}
 					}
-					is_right = false;
-					node = ThisType::get_next_node(node);
-				} else {
-					if (is_right) {
-						if (node->radix_value.has_value(0)) {
-							is_right = false;
-							return *this;
-						}
-					}
-					is_right = true;
-					node = ThisType::get_prev_node(node);
-				}
 
-				return *this;
+					node = ThisType::get_next_node(node);
+					if (!node) {
+						slot_index = 0;
+						return *this;
+					}
+
+					for (size_t i = 0; i < N; ++i) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
+							return *this;
+						}
+					}
+
+					throw std::logic_error("Corrupted tree: empty leaf in forward traversal");
+				} else {
+					for (size_t i = slot_index; i-- > 0;) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
+							return *this;
+						}
+					}
+					node = ThisType::get_prev_node(node);
+					if (!node) {
+						slot_index = N - 1;
+						return *this;
+					}
+					for (size_t i = N; i-- > 0;) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
+							return *this;
+						}
+					}
+					throw std::logic_error("Corrupted tree: empty leaf in backward traversal");
+				}
 			}
 
 			PEFF_FORCEINLINE Iterator operator++(int) {
@@ -531,46 +562,63 @@ namespace peff {
 
 			PEFF_FORCEINLINE Iterator next() {
 				Iterator iterator = *this;
-
 				return ++iterator;
 			}
 
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
-					if (node == tree->_get_min_node(tree->_root))
-						throw std::logic_error("Dereasing the begin iterator");
+					if (node == tree->_get_min_node(tree->_root) && slot_index == [&]() {
+							for (size_t i = 0; i < N; ++i)
+								if (node->radix_value.has_value(i)) return i;
+							return size_t(0);
+						}())
+						throw std::logic_error("Decreasing the begin iterator");
 
-					if (!is_right) {
-						if (node->radix_value.has_value(0)) {
-							is_right = true;
+					for (size_t i = slot_index; i-- > 0;) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
 							return *this;
 						}
 					}
-					is_right = false;
-
 					if (!node)
 						node = (Node *)tree->_get_max_node(tree->_root);
 					else
 						node = ThisType::get_prev_node(node);
-				} else {
-					if (node == tree->_get_max_node(tree->_root))
-						throw std::logic_error("Dereasing the begin iterator");
-
-					if (is_right) {
-						if (node->radix_value.has_value(0)) {
-							is_right = false;
+					if (!node) throw std::logic_error("Decreasing invalid");
+					for (size_t i = N; i-- > 0;) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
 							return *this;
 						}
 					}
-					is_right = true;
+					throw std::logic_error("Corrupted tree");
+				} else {
+					if (node == tree->_get_max_node(tree->_root) && slot_index == [&]() {
+							for (size_t i = N; i-- > 0;)
+								if (node->radix_value.has_value(i)) return i;
+							return size_t(N - 1);
+						}())
+						throw std::logic_error("Decreasing the begin iterator");
 
+					for (size_t i = slot_index + 1; i < N; ++i) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
+							return *this;
+						}
+					}
 					if (!node)
 						node = (Node *)tree->_get_min_node(tree->_root);
 					else
 						node = ThisType::get_next_node(node);
+					if (!node) throw std::logic_error("Decreasing invalid");
+					for (size_t i = 0; i < N; ++i) {
+						if (node->radix_value.has_value(i)) {
+							slot_index = i;
+							return *this;
+						}
+					}
+					throw std::logic_error("Corrupted tree");
 				}
-
-				return *this;
 			}
 
 			PEFF_FORCEINLINE Iterator operator--(int) {
@@ -581,104 +629,74 @@ namespace peff {
 
 			PEFF_FORCEINLINE Iterator prev() {
 				Iterator iterator = *this;
-
 				return --iterator;
-			}
-
-			PEFF_FORCEINLINE bool operator==(const Node *node) const noexcept {
-				return node == node;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &it) const {
 				if (tree != it.tree)
 					throw std::logic_error("Cannot compare iterators from different trees");
-				if (node != it.node)
-					return false;
-				return is_right == it.is_right;
-			}
-
-			PEFF_FORCEINLINE bool operator==(const Iterator &&rhs) const {
-				const Iterator it = rhs;
-				return *this == it;
-			}
-
-			PEFF_FORCEINLINE bool operator!=(const Node *node) const noexcept {
-				return node != node;
+				return node == it.node && slot_index == it.slot_index;
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const Iterator &it) const {
-				if (tree != it.tree)
-					throw std::logic_error("Cannot compare iterators from different trees");
-				if (node != it.node)
-					return true;
-				return is_right != it.is_right;
-			}
-
-			PEFF_FORCEINLINE bool operator!=(Iterator &&rhs) const {
-				Iterator it = rhs;
-				return *this != it;
+				return !(*this == it);
 			}
 
 			PEFF_FORCEINLINE V &operator*() {
 				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return is_right ? node->radix_value.value(1) : node->radix_value.value(0);
+					throw std::logic_error("Dereferencing the end iterator");
+				return node->radix_value.value(slot_index);
 			}
 
-			PEFF_FORCEINLINE V &operator*() const {
+			PEFF_FORCEINLINE const V &operator*() const {
 				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return is_right ? node->radix_value.value(1) : node->radix_value.value(0);
+					throw std::logic_error("Dereferencing the end iterator");
+				return node->radix_value.value(slot_index);
 			}
 
 			PEFF_FORCEINLINE V *operator->() {
 				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return is_right ? &node->radix_value.value(1) : &node->radix_value.value(0);
+					throw std::logic_error("Dereferencing the end iterator");
+				return &node->radix_value.value(slot_index);
 			}
 
-			PEFF_FORCEINLINE V *operator->() const {
+			PEFF_FORCEINLINE const V *operator->() const {
 				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
-				return is_right ? &node->radix_value.value(1) : &node->radix_value.value(0);
+					throw std::logic_error("Dereferencing the end iterator");
+				return &node->radix_value.value(slot_index);
 			}
 		};
 
 		PEFF_FORCEINLINE Iterator begin() {
 			Node *node = _get_min_node(_root);
-			bool is_right;
-			if (node)
-				is_right = node->radix_value.has_value(0) ? false : true;
-			else
-				is_right = false;
-			return Iterator((Node *)node, this, IteratorDirection::Forward, is_right);
+			if (!node) return end();
+			size_t slot = 0;
+			for (; slot < N; ++slot)
+				if (node->radix_value.has_value(slot)) break;
+			return Iterator(node, this, IteratorDirection::Forward, slot);
 		}
 		PEFF_FORCEINLINE Iterator end() {
-			return Iterator(nullptr, this, IteratorDirection::Forward, false);
+			return Iterator(nullptr, this, IteratorDirection::Forward, 0);
 		}
 		PEFF_FORCEINLINE Iterator begin_reversed() {
 			Node *node = _get_max_node(_root);
-			bool is_right;
-			if (node)
-				is_right = node->radix_value.has_value(1) ? true : false;
-			else
-				is_right = false;
-			return Iterator((Node *)node, this, IteratorDirection::Reversed, is_right);
+			if (!node) return end_reversed();
+			size_t slot = N - 1;
+			for (; slot < N; --slot);
+			slot = N - 1;
+			while (slot > 0 && !node->radix_value.has_value(slot)) --slot;
+			return Iterator(node, this, IteratorDirection::Reversed, node->radix_value.has_value(slot) ? slot : 0);
 		}
 		PEFF_FORCEINLINE Iterator end_reversed() {
-			return Iterator(nullptr, this, IteratorDirection::Reversed, true);
+			return Iterator(nullptr, this, IteratorDirection::Reversed, N - 1);
 		}
 
 		struct ConstIterator {
 			Iterator _iterator;
 
-			PEFF_FORCEINLINE ConstIterator(
-				Iterator &&iterator)
-				: _iterator(iterator) {}
-
+			PEFF_FORCEINLINE ConstIterator(Iterator &&iterator) : _iterator(iterator) {}
 			ConstIterator(const ConstIterator &it) = default;
-			PEFF_FORCEINLINE ConstIterator(ConstIterator &&it) : _iterator(std::move(it._iterator)) {
-			}
+			PEFF_FORCEINLINE ConstIterator(ConstIterator &&it) : _iterator(std::move(it._iterator)) {}
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
 				_iterator = rhs._iterator;
 				return *this;
@@ -697,68 +715,36 @@ namespace peff {
 				++_iterator;
 				return *this;
 			}
-
 			PEFF_FORCEINLINE ConstIterator operator++(int) {
 				ConstIterator it = *this;
 				++(*this);
 				return it;
 			}
-
 			PEFF_FORCEINLINE ConstIterator next() {
-				ConstIterator iterator = *this;
-
-				return ++iterator;
+				ConstIterator it = *this;
+				return ++it;
 			}
-
 			PEFF_FORCEINLINE ConstIterator &operator--() {
 				--_iterator;
 				return *this;
 			}
-
 			PEFF_FORCEINLINE ConstIterator operator--(int) {
 				ConstIterator it = *this;
 				--(*this);
 				return it;
 			}
-
 			PEFF_FORCEINLINE ConstIterator prev() {
-				ConstIterator iterator = *this;
-
-				return --iterator;
+				ConstIterator it = *this;
+				return --it;
 			}
 
-			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const {
-				return _iterator == it._iterator;
-			}
+			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const { return _iterator == it._iterator; }
+			PEFF_FORCEINLINE bool operator!=(const ConstIterator &it) const { return _iterator != it._iterator; }
 
-			PEFF_FORCEINLINE bool operator!=(const ConstIterator &it) const {
-				return _iterator != it._iterator;
-			}
-
-			PEFF_FORCEINLINE bool operator==(const Node *node) const {
-				return _iterator == node;
-			}
-
-			PEFF_FORCEINLINE bool operator!=(ConstIterator &&rhs) const {
-				ConstIterator it = rhs;
-				return *this != it;
-			}
-
-			PEFF_FORCEINLINE const V &operator*() {
-				return *_iterator;
-			}
-
-			PEFF_FORCEINLINE const V &operator*() const {
-				return *_iterator;
-			}
-
-			PEFF_FORCEINLINE const V *operator->() {
-				return &*_iterator;
-			}
-
-			PEFF_FORCEINLINE const V *operator->() const {
-				return &*_iterator;
-			}
+			PEFF_FORCEINLINE const V &operator*() { return *_iterator; }
+			PEFF_FORCEINLINE const V &operator*() const { return *_iterator; }
+			PEFF_FORCEINLINE const V *operator->() { return &*_iterator; }
+			PEFF_FORCEINLINE const V *operator->() const { return &*_iterator; }
 		};
 
 		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {

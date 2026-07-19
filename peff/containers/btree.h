@@ -25,7 +25,7 @@ namespace peff {
 	class BTree final {
 	private:
 		struct Node : public BTreeNodeBase {
-			char keys[sizeof(T) * (Degree * 2 - 1)] alignas(T);
+			char keys alignas(T)[sizeof(T) * (Degree * 2 - 1)];
 			size_t num_keys = 0;
 			Node *children[(Degree * 2 - 1)] = { nullptr };
 			size_t num_children = 0;
@@ -534,11 +534,11 @@ namespace peff {
 			goto recurse;
 		}
 
-		PEFF_FORCEINLINE T* find(const T &key) noexcept {
+		PEFF_FORCEINLINE T *find(const T &key) noexcept {
 			if (!_root)
 				return nullptr;
 			auto result = _find(key, _root);
-			if(!result.first)
+			if (!result.first)
 				return nullptr;
 			return &result.first->key(result.second);
 		}

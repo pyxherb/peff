@@ -38,7 +38,7 @@ namespace peff {
 				_buffer[index] &= mask;
 				_buffer[index] |= b << bit_index_in_byte;
 
-				uint8_t bits_remaining = num_bits - (8 - bit_index_in_byte);
+				uint8_t bits_remaining = static_cast<uint8_t>(num_bits - (8 - bit_index_in_byte));
 				mask = 0xff << bits_remaining;
 				_buffer[index + 1] &= mask;
 				_buffer[index + 1] |= b >> (8 - bit_index_in_byte);

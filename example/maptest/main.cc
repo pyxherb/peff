@@ -6,7 +6,7 @@
 #include <peff/containers/list.h>
 #include <peff/containers/hashset.h>
 #include <peff/containers/hashmap.h>
-#include <peff/containers/radix_tree.h>
+#include <peff/containers/radix_map.h>
 #include <peff/containers/map.h>
 #include <peff/containers/bitarray.h>
 #include <peff/containers/binary_heap.h>
@@ -435,9 +435,9 @@ int main() {
 
 	puts("Radix tree begin");
 	{
-		peff::RadixTree<uint32_t, int, 16> test(peff::default_allocator());
+		peff::RadixMap<uint32_t, int, 8> test(peff::default_allocator());
 
-		for (uint32_t i = 0; i < 100; ++i) {
+		for (uint32_t i = 0; i < 10; ++i) {
 			if (!test.insert(i, i))
 				std::terminate();
 		}
@@ -446,7 +446,7 @@ int main() {
 			printf("Value: %d\n", *i);
 		}
 
-		for (uint32_t i = 0; i < 100; ++i) {
+		for (uint32_t i = 0; i < 10; ++i) {
 			test.remove(i);
 
 			for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
@@ -454,6 +454,36 @@ int main() {
 			}
 
 			puts("");
+		}
+
+		for (uint32_t i = 0; i < 10; ++i) {
+			if (!test.insert(i, i))
+				std::terminate();
+		}
+
+		test.clear();
+
+		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+			printf("Value: %d\n", *i);
+		}
+
+		for (uint32_t i = 0; i < 10; ++i) {
+			if (!test.insert(i, i))
+				std::terminate();
+		}
+
+		for (uint32_t i = 0; i < 5; ++i) {
+			test.remove(i);
+
+			for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+				printf("%d ", *i);
+			}
+
+			puts("");
+		}
+
+		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+			printf("Value: %d\n", *i);
 		}
 	}
 	puts("Radix tree end");

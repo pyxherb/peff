@@ -407,7 +407,7 @@ namespace peff {
 		PEFF_FORCEINLINE T value(size_t index) && noexcept {
 			assert(index < length);
 			assert(has_value(index));
-			_has_value = false;
+			_has_value[index] = false;
 			return std::move(*((T *)(&_data[index * sizeof(T)])));
 		}
 

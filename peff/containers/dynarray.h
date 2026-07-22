@@ -804,11 +804,11 @@ namespace peff {
 			return _data + _length;
 		}
 
-		PEFF_FORCEINLINE ConstIterator begin_const() const {
+		PEFF_FORCEINLINE ConstIterator cbegin() const {
 			return _data;
 		}
 
-		PEFF_FORCEINLINE ConstIterator end_const() const {
+		PEFF_FORCEINLINE ConstIterator cend() const {
 			return _data + _length;
 		}
 

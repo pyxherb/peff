@@ -148,7 +148,7 @@ namespace peff {
 	template <typename T>
 	class Option<T &> final {
 	private:
-		using V = std::remove_reference_t<T>;
+		using V = T;
 		V *_data = nullptr;
 		using ThisType = Option<T &>;
 
@@ -254,7 +254,7 @@ namespace peff {
 	template <typename T>
 	class Option<const T &> final {
 	private:
-		using V = const std::remove_reference_t<T>;
+		using V = const T;
 		using ThisType = Option<const T &>;
 		V *_data = nullptr;
 

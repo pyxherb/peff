@@ -211,11 +211,11 @@ namespace peff {
 		Iterator end() {
 			return Iterator(_set.end());
 		}
-		Iterator begin_reversed() {
-			return Iterator(_set.begin_reversed());
+		Iterator rbegin() {
+			return Iterator(_set.rbegin());
 		}
-		Iterator end_reversed() {
-			return Iterator(_set.end_reversed());
+		Iterator rend() {
+			return Iterator(_set.rend());
 		}
 
 		struct ConstIterator {
@@ -261,29 +261,29 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cbegin() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
-		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cend() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->begin_reversed());
+		PEFF_FORCEINLINE ConstIterator crbegin() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rbegin());
 		}
-		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
+		PEFF_FORCEINLINE ConstIterator cend_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rend());
 		}
 		PEFF_FORCEINLINE ConstIterator begin() const {
-			return begin_const();
+			return cbegin();
 		}
 		PEFF_FORCEINLINE ConstIterator end() const {
-			return end_const();
+			return cend();
 		}
-		PEFF_FORCEINLINE ConstIterator begin_reversed() const {
-			return begin_const_reversed();
+		PEFF_FORCEINLINE ConstIterator rbegin() const {
+			return crbegin();
 		}
-		PEFF_FORCEINLINE ConstIterator end_reversed() const {
-			return end_const_reversed();
+		PEFF_FORCEINLINE ConstIterator rend() const {
+			return cend_reversed();
 		}
 
 		PEFF_FORCEINLINE ConstIterator find(const K &key) const {

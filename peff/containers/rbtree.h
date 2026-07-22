@@ -735,10 +735,10 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(nullptr, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE Iterator begin_reversed() {
+		PEFF_FORCEINLINE Iterator rbegin() {
 			return Iterator((Node *)_cached_max_node, this, IteratorDirection::Reversed);
 		}
-		PEFF_FORCEINLINE Iterator end_reversed() {
+		PEFF_FORCEINLINE Iterator rend() {
 			return Iterator(nullptr, this, IteratorDirection::Reversed);
 		}
 
@@ -834,17 +834,17 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cbegin() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
-		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cend() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->begin_reversed());
+		PEFF_FORCEINLINE ConstIterator crbegin() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rbegin());
 		}
-		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
+		PEFF_FORCEINLINE ConstIterator cend_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rend());
 		}
 
 		PEFF_FORCEINLINE peff::Option<T> remove(const Iterator &iterator) {

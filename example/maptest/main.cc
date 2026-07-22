@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <peff/utils/byteord.h>
+#include <peff/utils/span.h>
 #include <peff/containers/set.h>
 #include <peff/containers/dynarray.h>
 #include <peff/containers/string.h>
@@ -442,14 +443,14 @@ int main() {
 				std::terminate();
 		}
 
-		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+		for (auto i = test.rbegin(); i != test.rend(); ++i) {
 			printf("Value: %d\n", *i);
 		}
 
 		for (uint32_t i = 0; i < 10; ++i) {
 			test.remove(i);
 
-			for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+			for (auto i = test.rbegin(); i != test.rend(); ++i) {
 				printf("%d ", *i);
 			}
 
@@ -463,7 +464,7 @@ int main() {
 
 		test.clear();
 
-		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+		for (auto i = test.rbegin(); i != test.rend(); ++i) {
 			printf("Value: %d\n", *i);
 		}
 
@@ -475,14 +476,14 @@ int main() {
 		for (uint32_t i = 0; i < 5; ++i) {
 			test.remove(i);
 
-			for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+			for (auto i = test.rbegin(); i != test.rend(); ++i) {
 				printf("%d ", *i);
 			}
 
 			puts("");
 		}
 
-		for (auto i = test.begin_reversed(); i != test.end_reversed(); ++i) {
+		for (auto i = test.rbegin(); i != test.rend(); ++i) {
 			printf("Value: %d\n", *i);
 		}
 	}

@@ -565,7 +565,7 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(this, SIZE_MAX, nullptr, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE Iterator begin_reversed() {
+		PEFF_FORCEINLINE Iterator rbegin() {
 			for (size_t i = _buckets.size(); i; --i) {
 				auto &cur_bucket = _buckets.at(i);
 				typename Bucket::NodeHandle node = cur_bucket.last_node();
@@ -579,10 +579,10 @@ namespace peff {
 			if (node) {
 				return Iterator(this, 0, node, IteratorDirection::Reversed);
 			}
-			return end_reversed();
+			return rend();
 		}
 
-		PEFF_FORCEINLINE Iterator end_reversed() {
+		PEFF_FORCEINLINE Iterator rend() {
 			return Iterator(this, SIZE_MAX, nullptr, IteratorDirection::Reversed);
 		}
 
@@ -633,17 +633,17 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cbegin() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
-		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cend() const noexcept {
 			return ConstIterator(const_cast<ThisType *>(this)->end());
 		}
-		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->begin_reversed());
+		PEFF_FORCEINLINE ConstIterator crbegin() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rbegin());
 		}
-		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
-			return ConstIterator(const_cast<ThisType *>(this)->end_reversed());
+		PEFF_FORCEINLINE ConstIterator cend_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rend());
 		}
 
 		PEFF_FORCEINLINE Iterator find(const T &value) {

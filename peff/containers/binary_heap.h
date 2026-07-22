@@ -116,19 +116,19 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
-			return _heap_array.begin_const();
+			return _heap_array.cbegin();
 		}
 
 		PEFF_FORCEINLINE ConstIterator end() const noexcept {
-			return _heap_array.end_const();
+			return _heap_array.cend();
 		}
 
-		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
-			return _heap_array.begin_const();
+		PEFF_FORCEINLINE ConstIterator cbegin() const noexcept {
+			return _heap_array.cbegin();
 		}
 
-		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
-			return _heap_array.end_const();
+		PEFF_FORCEINLINE ConstIterator cend() const noexcept {
+			return _heap_array.cend();
 		}
 	};
 }

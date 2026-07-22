@@ -406,10 +406,10 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(nullptr, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE Iterator begin_reversed() {
+		PEFF_FORCEINLINE Iterator rbegin() {
 			return Iterator(_last, this, IteratorDirection::Reversed);
 		}
-		PEFF_FORCEINLINE Iterator end_reversed() {
+		PEFF_FORCEINLINE Iterator rend() {
 			return Iterator(nullptr, this, IteratorDirection::Reversed);
 		}
 
@@ -567,24 +567,24 @@ namespace peff {
 			}
 		};
 
-		PEFF_FORCEINLINE ConstIterator begin_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cbegin() const noexcept {
 			return ConstIterator((Node *)_first, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE ConstIterator end_const() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cend() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Forward);
 		}
-		PEFF_FORCEINLINE ConstIterator begin_const_reversed() const noexcept {
+		PEFF_FORCEINLINE ConstIterator crbegin() const noexcept {
 			return ConstIterator((Node *)_last, this, IteratorDirection::Reversed);
 		}
-		PEFF_FORCEINLINE ConstIterator end_const_reversed() const noexcept {
+		PEFF_FORCEINLINE ConstIterator cend_reversed() const noexcept {
 			return ConstIterator(nullptr, this, IteratorDirection::Reversed);
 		}
 
 		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
-			return begin_const();
+			return cbegin();
 		}
 		PEFF_FORCEINLINE ConstIterator end() const noexcept {
-			return end_const();
+			return cend();
 		}
 
 		PEFF_FORCEINLINE Alloc *allocator() const {

@@ -9,7 +9,7 @@ namespace peff {
 	struct NullOption {
 	};
 
-	constexpr static NullOption NULL_OPTION;
+	constexpr static NullOption NULLOPT;
 
 	template <typename T>
 	class Option final {

@@ -129,7 +129,7 @@ namespace peff {
 					if (auto result = _eq_cmp(i->data.data, data); result.has_value()) {
 						return i;
 					} else {
-						return NULL_OPTION;
+						return NULLOPT;
 					}
 				} else {
 					if (_eq_cmp(i->data.data, data)) {
@@ -279,7 +279,7 @@ namespace peff {
 				if (auto result = _hasher(data); result.has_value()) {
 					hash_code = result.value();
 				} else
-					return NULL_OPTION;
+					return NULLOPT;
 			} else {
 				hash_code = _hasher(data);
 			}
@@ -341,7 +341,7 @@ namespace peff {
 				auto maybe_handle = _get(data, index);
 
 				if (!maybe_handle.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return maybe_handle.value();
 			} else {
@@ -674,7 +674,7 @@ namespace peff {
 				auto maybe_node = _get(value, index);
 
 				if (!maybe_node.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				node = maybe_node.value();
 			} else {
@@ -692,7 +692,7 @@ namespace peff {
 				auto maybe_node = _get(value, index);
 
 				if (!maybe_node.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				node = maybe_node.value();
 			} else {

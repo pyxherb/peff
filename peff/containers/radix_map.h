@@ -244,7 +244,7 @@ namespace peff {
 
 		[[nodiscard]] inline peff::Option<std::pair<Node *, size_t>> _lookup(K index) const {
 			if (!_root)
-				return NULL_OPTION;
+				return NULLOPT;
 			Node *node = _root;
 			Height height = _height;
 			while (height > R) {
@@ -252,7 +252,7 @@ namespace peff {
 				K offset = (index >> shift) & MASK;
 				if (!node->children[offset]) {
 					if (!node->radix_value.has_value(offset))
-						return NULL_OPTION;
+						return NULLOPT;
 					return std::pair<Node *, size_t>(node, offset);
 				}
 				node = node->children[offset];
@@ -260,7 +260,7 @@ namespace peff {
 			}
 			K offset = index & MASK;
 			if (!node->radix_value.has_value(offset))
-				return NULL_OPTION;
+				return NULLOPT;
 			return std::pair<Node *, size_t>(node, offset);
 		}
 
@@ -402,14 +402,14 @@ namespace peff {
 			while (height > R) {
 				K offset = (index >> (height - R)) & MASK;
 				if (!node->children[offset])
-					return NULL_OPTION;
+					return NULLOPT;
 				node = node->children[offset];
 				height -= R;
 			}
 
 			K offset = index & MASK;
 			if (!node->radix_value.has_value(offset))
-				return NULL_OPTION;
+				return NULLOPT;
 
 			V removed = std::move(node->radix_value.value(offset));
 			node->radix_value.move(offset);

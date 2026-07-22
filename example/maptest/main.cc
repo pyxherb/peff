@@ -97,14 +97,14 @@ struct B {
 template <typename T>
 struct FallibleComparator {
 	peff::Option<bool> operator()(const T &lhs, const T &rhs) const {
-		return peff::NULL_OPTION;
+		return peff::NULLOPT;
 	}
 };
 
 template <typename T>
 struct FallibleHasher {
 	peff::Option<size_t> operator()(const T &lhs) const {
-		return peff::NULL_OPTION;
+		return peff::NULLOPT;
 	}
 };
 

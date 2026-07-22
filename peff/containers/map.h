@@ -122,7 +122,7 @@ namespace peff {
 				auto v = _set.at(QueryPair(&key));
 
 				if (!v.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return v.value().value.get();
 			} else {
@@ -136,7 +136,7 @@ namespace peff {
 				auto v = _set.template at_alt<U>(key);
 
 				if (!v.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return v.value().value.get();
 			} else {
@@ -149,7 +149,7 @@ namespace peff {
 				auto v = _set.at(QueryPair(&key));
 
 				if (!v.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return v.value().value.get();
 			} else {
@@ -163,7 +163,7 @@ namespace peff {
 				auto v = _set.template at_alt<U>(key);
 
 				if (!v.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return v.value().value.get();
 			} else {

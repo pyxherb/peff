@@ -103,7 +103,7 @@ namespace peff {
 				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				assert(node.value());
 
@@ -127,7 +127,7 @@ namespace peff {
 				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				assert(node.value());
 
@@ -315,7 +315,7 @@ namespace peff {
 				auto node = _tree.template get_alt<U>(key);
 
 				if (!node.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return node.value();
 			} else {

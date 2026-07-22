@@ -139,7 +139,7 @@ namespace peff {
 							else
 								return i;
 						} else
-							return NULL_OPTION;
+							return NULLOPT;
 					} else {
 						Option<bool> result;
 
@@ -150,7 +150,7 @@ namespace peff {
 									assert(!result.value());
 									i = (Node *)i->r;
 								} else {
-									return NULL_OPTION;
+									return NULLOPT;
 								}
 #else
 								i = (Node *)i->r;
@@ -161,10 +161,10 @@ namespace peff {
 								} else
 									return i;
 							} else {
-								return NULL_OPTION;
+								return NULLOPT;
 							}
 						} else {
-							return NULL_OPTION;
+							return NULLOPT;
 						}
 					}
 				}
@@ -297,7 +297,7 @@ namespace peff {
 									assert(!result.value());
 									cur_node = (Node *)cur_node->r;
 								} else {
-									return NULL_OPTION;
+									return NULLOPT;
 								}
 #endif
 								max_node = cur_node;
@@ -308,10 +308,10 @@ namespace peff {
 								} else
 									return cur_node;
 							} else {
-								return NULL_OPTION;
+								return NULLOPT;
 							}
 						} else {
-							return NULL_OPTION;
+							return NULLOPT;
 						}
 					}
 				}
@@ -528,7 +528,7 @@ namespace peff {
 			y->l = nullptr;
 			y->r = nullptr;
 			y->p = nullptr;
-			return peff::NULL_OPTION;
+			return peff::NULLOPT;
 		}
 
 		PEFF_FORCEINLINE void clear() {

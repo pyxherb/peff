@@ -119,7 +119,7 @@ namespace peff {
 				auto maybe_pair = _set.at(QueryPair(&key));
 
 				if (!maybe_pair.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return maybe_pair.value().value.get();
 			} else {
@@ -132,7 +132,7 @@ namespace peff {
 				auto maybe_pair = _set.at(QueryPair(&key));
 
 				if (!maybe_pair.has_value())
-					return NULL_OPTION;
+					return NULLOPT;
 
 				return maybe_pair.value().value.get();
 			} else {

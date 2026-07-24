@@ -11,14 +11,6 @@ namespace peff {
 		uint16_t b, c, d;
 		uint64_t e;
 
-		UUID() = default;
-		~UUID() = default;
-		constexpr UUID(const UUID &) = default;
-		constexpr UUID(UUID &&) = default;
-
-		constexpr UUID &operator=(const UUID &) = default;
-		constexpr UUID &operator=(UUID &&) = default;
-
 		PEFF_FORCEINLINE constexpr bool operator<(const UUID &rhs) const {
 			if (a < rhs.a)
 				return true;

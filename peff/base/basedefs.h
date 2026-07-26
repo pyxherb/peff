@@ -229,7 +229,7 @@
 
 // The parameter is both a non-null input and a nullable output parameter.
 #ifdef _MSC_VER
-	#define PEFF_IN_OUT_NULLABLE _Outptr_result_maybenull__
+	#define PEFF_IN_OUT_NULLABLE _Outptr_result_maybenull_
 #elif defined(__GNUC__) || defined(__clang__)
 	#define PEFF_IN_OUT_NULLABLE PEFF_NONNULL
 #else

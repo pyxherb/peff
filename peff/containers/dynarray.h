@@ -702,7 +702,7 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE T *insert_range_uninit(size_t index, size_t length) {
-			return _insert_range<true>(index, length);
+			return _insert_range<false>(index, length);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE T *insert(size_t index, T &&data) {

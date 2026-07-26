@@ -164,23 +164,23 @@ namespace peff {
 			_array.extract_range(idx_start, idx_end + 1);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE char *append(PEFF_NONNULL const char *data, size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE bool append(PEFF_NONNULL const char *data, size_t length) {
 			assert(data != this->data());
 			const size_t old_size = size();
 			if (!resize(old_size + length))
-				return nullptr;
+				return false;
 			memcpy(_array.data() + old_size, data, length);
-			return _array.data();
+			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE char *append(PEFF_NONNULL const char *data) {
+		[[nodiscard]] PEFF_FORCEINLINE bool append(PEFF_NONNULL const char *data) {
 			assert(data != this->data());
 			const size_t old_size = size();
 			const size_t data_length = strlen(data);
 			if (!resize(old_size + data_length))
-				return nullptr;
+				return false;
 			memcpy(_array.data() + old_size, data, data_length);
-			return _array.data();
+			return true;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(char data) {

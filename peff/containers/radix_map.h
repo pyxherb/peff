@@ -446,6 +446,20 @@ namespace peff {
 			return result->first->radix_value.value(result->second);
 		}
 
+		PEFF_FORCEINLINE peff::Option<const V &> try_at(K key) const {
+			auto result = _lookup(key);
+			if (!result.has_value())
+				return peff::NULLOPT;
+			return result->first->radix_value.value(result->second);
+		}
+
+		PEFF_FORCEINLINE peff::Option<V &> try_at(K key) {
+			auto result = _lookup(key);
+			if (!result.has_value())
+				return peff::NULLOPT;
+			return result->first->radix_value.value(result->second);
+		}
+
 		PEFF_FORCEINLINE bool contains(K key) const noexcept {
 			return _lookup(key).has_value();
 		}

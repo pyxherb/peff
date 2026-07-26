@@ -697,34 +697,30 @@ namespace peff {
 			return _length;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insert_range_init(size_t index, size_t length) {
-			if (!_insert_range<true>(index, length))
-				return false;
-			return true;
+		[[nodiscard]] PEFF_FORCEINLINE T *insert_range_init(size_t index, size_t length) {
+			return _insert_range<true>(index, length);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insert_range_uninit(size_t index, size_t length) {
-			if (!_insert_range<true>(index, length))
-				return false;
-			return true;
+		[[nodiscard]] PEFF_FORCEINLINE T *insert_range_uninit(size_t index, size_t length) {
+			return _insert_range<true>(index, length);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insert(size_t index, T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE T *insert(size_t index, T &&data) {
 			T *gap = (T *)_insert_range<false>(index, 1);
 
 			if (!gap)
-				return false;
+				return nullptr;
 
 			peff::construct_at<T>(gap, std::move(data));
 
-			return true;
+			return gap;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool push_front(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE T *push_front(T &&data) {
 			return insert(0, std::move(data));
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool push_back(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE T *push_back(T &&data) {
 			return insert(_length, std::move(data));
 		}
 

@@ -115,7 +115,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE SharedPtr() noexcept : control_block(nullptr), ptr(nullptr) {
 		}
-		PEFF_FORCEINLINE SharedPtr(SharedPtrControlBlock *control_block, T *ptr) noexcept : control_block(control_block), ptr(ptr) {
+		PEFF_FORCEINLINE SharedPtr(PEFF_NULLABLE SharedPtrControlBlock *control_block, PEFF_NULLABLE T *ptr) noexcept : control_block(control_block), ptr(ptr) {
 			if (control_block) {
 				control_block->inc_strong_ref();
 			}
@@ -162,7 +162,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE T *get() const noexcept {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET T *get() const noexcept {
 			return (T *)ptr;
 		}
 
@@ -225,7 +225,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE WeakPtr() noexcept : control_block(nullptr), ptr(nullptr) {
 		}
-		PEFF_FORCEINLINE explicit WeakPtr(SharedPtrControlBlock *control_block, T *ptr) noexcept : control_block(control_block), ptr(ptr) {
+		PEFF_FORCEINLINE explicit WeakPtr(PEFF_NULLABLE SharedPtrControlBlock *control_block, PEFF_NULLABLE T *ptr) noexcept : control_block(control_block), ptr(ptr) {
 			if (control_block) {
 				control_block->inc_weak_ref();
 			}
@@ -303,7 +303,7 @@ namespace peff {
 	using SharedFromThis = typename SharedPtr<T>::SharedFromThis;
 
 	template <typename T, typename... Args>
-	PEFF_FORCEINLINE SharedPtr<T> make_shared(peff::Alloc *allocator, Args &&...args) {
+	PEFF_FORCEINLINE SharedPtr<T> make_shared(PEFF_NONNULL peff::Alloc *allocator, Args &&...args) {
 		T *ptr = peff::alloc_and_construct<T>(allocator, alignof(T), std::forward<Args>(args)...);
 		if (!ptr)
 			return {};
@@ -325,7 +325,7 @@ namespace peff {
 	}
 
 	template <typename T, typename D, typename... Args>
-	PEFF_FORCEINLINE SharedPtr<T> make_shared_with_control_block(peff::Alloc *allocator, Args &&...args) {
+	PEFF_FORCEINLINE SharedPtr<T> make_shared_with_control_block(PEFF_NONNULL peff::Alloc *allocator, Args &&...args) {
 		T *ptr = peff::alloc_and_construct<T>(allocator, alignof(T), std::forward<Args>(args)...);
 		if (!ptr)
 			return {};

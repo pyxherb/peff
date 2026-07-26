@@ -32,13 +32,13 @@ namespace peff {
 			return *this;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&value) {
+		[[nodiscard]] PEFF_FORCEINLINE T *insert(T &&value) {
 			typename Tree::Node *node = _tree.insert(std::move(value));
 
 			if (!node)
-				return false;
+				return nullptr;
 
-			return true;
+			return &node->rb_value;
 		}
 
 		PEFF_FORCEINLINE RemoveResultType remove(const T &key) {

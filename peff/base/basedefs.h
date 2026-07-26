@@ -272,7 +272,6 @@
 	#define PEFF_IN_OUT_ARG(index)
 #endif
 
-
 namespace peff {
 }
 

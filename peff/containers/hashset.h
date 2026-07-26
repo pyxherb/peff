@@ -176,13 +176,11 @@ namespace peff {
 		/// @param buckets Buckets to be operated.
 		/// @param data Element to insert.
 		/// @return true for succeeded, false if failed.
-		[[nodiscard]] PEFF_FORCEINLINE bool _insert(T &&data, bool force_resize_buckets) {
+		[[nodiscard]] PEFF_FORCEINLINE T *_insert(T &&data, bool force_resize_buckets) {
 			if (!_buckets.size()) {
-				if (!_buckets.resize_uninit(1)) {
-					return false;
+				if (!_buckets.push_back(Bucket(_buckets.allocator()))) {
+					return nullptr;
 				}
-
-				peff::construct_at<Bucket>(&_buckets.at(0), _buckets.allocator());
 			}
 
 			T tmp_data = std::move(data);
@@ -192,32 +190,38 @@ namespace peff {
 				if (auto result = _hasher(tmp_data); result.has_value()) {
 					hash_code = result.value();
 				} else
-					return false;
+					return nullptr;
 			} else {
 				hash_code = _hasher(tmp_data);
 			}
 			size_t index = ((size_t)hash_code) % _buckets.size();
 			Bucket &bucket = _buckets.at(index);
 
+			T *result = nullptr;
 			for (auto &i : bucket) {
 				if (_eq_cmp(i.data, tmp_data)) {
 					move_assign_or_move_construct<T>(i.data, std::move(tmp_data));
+					result = &i.data;
 					goto inserted;
 				}
 			}
-			if (!bucket.push_front(Element(std::move(tmp_data), hash_code)))
-				return false;
+			{
+				auto h = bucket.push_front(Element(std::move(tmp_data), hash_code));
+				if (!h)
+					return nullptr;
+				result = &h->data.data;
+			}
 
 		inserted:
 			if (!_check_and_resize_buckets()) {
 				if (force_resize_buckets) {
 					bucket.pop_front();
-					return false;
+					return nullptr;
 				}
 			}
 
 			++_size;
-			return true;
+			return result;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType _remove(const T &data, bool force_resize_buckets) {
@@ -409,11 +413,6 @@ namespace peff {
 					throw std::logic_error("Incompatible iterator direction");
 				peff::construct_at<Iterator>(this, std::move(rhs));
 				return *this;
-			}
-
-			PEFF_FORCEINLINE bool copy(Iterator &dest) noexcept {
-				dest = *this;
-				return true;
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {

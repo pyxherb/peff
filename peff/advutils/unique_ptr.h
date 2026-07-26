@@ -29,7 +29,7 @@ namespace peff {
 			_pair.first() = nullptr;
 		}
 
-		PEFF_FORCEINLINE T *release() noexcept {
+		PEFF_FORCEINLINE PEFF_NULLABLE T *release() noexcept {
 			T *p = _pair.first();
 			_pair.first() = nullptr;
 			return p;
@@ -37,7 +37,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE UniquePtr() : _pair(nullptr, D{}) {
 		}
-		PEFF_FORCEINLINE UniquePtr(T *ptr) noexcept : _pair(+ptr, D{}) {
+		PEFF_FORCEINLINE UniquePtr(PEFF_NULLABLE T *ptr) noexcept : _pair(+ptr, D{}) {
 		}
 		UniquePtr(const ThisType &) = delete;
 		PEFF_FORCEINLINE UniquePtr(ThisType &&other) noexcept : _pair(+other._pair.first(), std::move(other._pair.second())) {
@@ -47,7 +47,7 @@ namespace peff {
 			reset();
 		}
 
-		PEFF_FORCEINLINE ThisType &operator=(T *_ptr) noexcept {
+		PEFF_FORCEINLINE ThisType &operator=(PEFF_NULLABLE T *_ptr) noexcept {
 			reset();
 			this->_pair.first() = _ptr;
 			return *this;
@@ -61,7 +61,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE T *get() const noexcept {
+		PEFF_FORCEINLINE PEFF_NULLABLE T *get() const noexcept {
 			return _pair.first();
 		}
 		PEFF_FORCEINLINE T *&get_ref() noexcept {
@@ -74,14 +74,14 @@ namespace peff {
 		PEFF_FORCEINLINE T *const &get_ref_without_release() const noexcept {
 			return _pair.first();
 		}
-		PEFF_FORCEINLINE T **get_addr() noexcept {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET T **get_addr() noexcept {
 			reset();
 			return &_pair.first();
 		}
-		PEFF_FORCEINLINE T **get_addr_without_release() noexcept {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET T **get_addr_without_release() noexcept {
 			return &_pair.first();
 		}
-		PEFF_FORCEINLINE T *const *get_addr_without_release() const noexcept {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET T *const *get_addr_without_release() const noexcept {
 			return &_pair.first();
 		}
 		PEFF_FORCEINLINE T *operator->() const noexcept {

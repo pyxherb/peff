@@ -82,7 +82,11 @@ namespace peff {
 			return N;
 		}
 
-		PEFF_FORCEINLINE uint8_t *data() const {
+		PEFF_FORCEINLINE PEFF_NONNULL uint8_t *data() {
+			return _buffer;
+		}
+
+		PEFF_FORCEINLINE PEFF_NONNULL const uint8_t *data() const {
 			return _buffer;
 		}
 
@@ -175,7 +179,7 @@ namespace peff {
 			return _get_byte(bit_index, num_bits);
 		}
 
-		PEFF_FORCEINLINE void get_bytes(char *buf, size_t len, size_t bit_index) const {
+		PEFF_FORCEINLINE void get_bytes(PEFF_OUT char *buf, size_t len, size_t bit_index) const {
 			assert(bit_index + 8 * len <= N);
 
 			if (!((bit_index) & 7)) {

@@ -56,7 +56,7 @@ namespace peff {
 			return 0;
 		}
 
-		PEFF_FORCEINLINE void _move_data(T *new_data, T *old_data, size_t length) noexcept {
+		PEFF_FORCEINLINE void _move_data(PEFF_OUT T *new_data, PEFF_NONNULL T *old_data, size_t length) noexcept {
 			if constexpr (std::is_trivially_copy_assignable_v<T>) {
 				memmove(new_data, old_data, sizeof(T) * length);
 			} else {
@@ -72,7 +72,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void move_data_uninit(T *new_data, T *old_data, size_t length) noexcept {
+		PEFF_FORCEINLINE void move_data_uninit(PEFF_OUT T *new_data, PEFF_NONNULL T *old_data, size_t length) noexcept {
 			if constexpr (std::is_trivially_move_constructible_v<T>) {
 				memmove(new_data, old_data, sizeof(T) * length);
 			} else {
@@ -88,7 +88,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void _construct_data(T *new_data, size_t length) {
+		PEFF_FORCEINLINE void _construct_data(PEFF_OUT T *new_data, size_t length) {
 			if constexpr (!std::is_trivially_constructible_v<T>) {
 				for (size_t i = 0; i < length; ++i) {
 					peff::construct_at<T>(&new_data[i]);
@@ -96,7 +96,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE void _destruct_data(T *original_data, size_t length) {
+		PEFF_FORCEINLINE void _destruct_data(PEFF_NONNULL T *original_data, size_t length) {
 			if constexpr (!std::is_trivially_destructible_v<T>) {
 				for (size_t i = 0; i < length; ++i) {
 					std::destroy_at<T>(&original_data[i]);
@@ -106,7 +106,7 @@ namespace peff {
 
 		template <bool construct, typename... Args>
 		PEFF_FORCEINLINE void _expand_to(
-			T *new_data,
+			PEFF_NONNULL T *new_data,
 			size_t length,
 			Args &&...args) {
 			assert(length > _length);
@@ -144,7 +144,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void _shrink(
-			T *new_data,
+			PEFF_NONNULL T *new_data,
 			size_t length) noexcept {
 			assert(length < _length);
 
@@ -411,7 +411,7 @@ namespace peff {
 		using ThisType = DynArray<T>;
 
 	public:
-		PEFF_FORCEINLINE DynArray(Alloc *allocator) : _allocator(allocator), _data(nullptr) {
+		PEFF_FORCEINLINE DynArray(PEFF_NONNULL Alloc *allocator) : _allocator(allocator), _data(nullptr) {
 		}
 		PEFF_FORCEINLINE DynArray(ThisType &&rhs) noexcept : _allocator(std::move(rhs._allocator)), _data(std::move(rhs._data)), _length(rhs._length), _capacity(rhs._capacity) {
 			rhs._data = nullptr;
@@ -770,21 +770,21 @@ namespace peff {
 			assert(result);
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _allocator.get();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) {
 			verify_replaceable(_allocator.get(), rhs);
 
 			_allocator = rhs;
 		}
 
-		PEFF_FORCEINLINE T *data() {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET T *data() {
 			return _data;
 		}
 
-		PEFF_FORCEINLINE const T *data() const {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET const T *data() const {
 			return _data;
 		}
 

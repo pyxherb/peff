@@ -67,7 +67,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE BitArray(Alloc *allocator) : _buffer(allocator) {
+		PEFF_FORCEINLINE BitArray(PEFF_NONNULL Alloc *allocator) : _buffer(allocator) {
 		}
 		PEFF_FORCEINLINE ~BitArray() {
 		}
@@ -111,7 +111,7 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE bool push_back_bytes(char *data, size_t len) {
+		PEFF_FORCEINLINE bool push_back_bytes(PEFF_IN const char *data, size_t len) {
 			size_t old_num_bits = _num_bits;
 			if (!resize_uninit(_num_bits + len * 8)) {
 				return false;
@@ -147,11 +147,11 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE const uint8_t *data() const {
+		PEFF_FORCEINLINE PEFF_NULLABLE const uint8_t *data() const {
 			return _buffer.data();
 		}
 
-		PEFF_FORCEINLINE uint8_t *data() {
+		PEFF_FORCEINLINE PEFF_NULLABLE uint8_t *data() {
 			return _buffer.data();
 		}
 
@@ -244,7 +244,7 @@ namespace peff {
 			return _get_byte(bit_index, num_bits);
 		}
 
-		PEFF_FORCEINLINE void get_bytes(char *buf, size_t len, size_t bit_index) const {
+		PEFF_FORCEINLINE void get_bytes(PEFF_OUT char *buf, size_t len, size_t bit_index) const {
 			assert(bit_index + 8 * len <= _num_bits);
 
 			if (!((bit_index) & 7)) {
@@ -258,11 +258,11 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL Alloc *allocator() const {
 			return _buffer.allocator();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) {
 			_buffer.replace_allocator(rhs);
 		}
 	};

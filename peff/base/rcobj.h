@@ -138,7 +138,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE T *get() const noexcept {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET T *get() const noexcept {
 			return _ptr;
 		}
 		PEFF_FORCEINLINE T *&get_ref() noexcept {
@@ -151,14 +151,14 @@ namespace peff {
 		PEFF_FORCEINLINE T *const &get_ref_without_release() const noexcept {
 			return _ptr;
 		}
-		PEFF_FORCEINLINE T **get_addr() noexcept {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET T **get_addr() noexcept {
 			reset();
 			return &_ptr;
 		}
-		PEFF_FORCEINLINE T **get_addr_without_release() noexcept {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET T **get_addr_without_release() noexcept {
 			return &_ptr;
 		}
-		PEFF_FORCEINLINE T *const *get_addr_without_release() const noexcept {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET T *const *get_addr_without_release() const noexcept {
 			return &_ptr;
 		}
 		PEFF_FORCEINLINE T *operator->() const noexcept {

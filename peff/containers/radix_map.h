@@ -45,7 +45,7 @@ namespace peff {
 		size_t _size;
 		Node *_root;
 
-		[[nodiscard]] PEFF_FORCEINLINE Node *_alloc_single_node() {
+		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET Node *_alloc_single_node() {
 			Node *node = alloc_and_construct<Node>(_allocator.get(), alignof(Node));
 			if (!node)
 				return nullptr;
@@ -53,7 +53,7 @@ namespace peff {
 			return node;
 		}
 
-		PEFF_FORCEINLINE void _delete_single_node(Node *node) {
+		PEFF_FORCEINLINE void _delete_single_node(PEFF_NONNULL Node *node) {
 			destroy_and_release<Node>(_allocator.get(), node, alignof(Node));
 		}
 
@@ -264,7 +264,7 @@ namespace peff {
 			return std::pair<Node *, size_t>(node, offset);
 		}
 
-		[[nodiscard]] static inline Node *_get_min_node(Node *node) {
+		[[nodiscard]] static inline Node *_get_min_node(PEFF_NONNULL Node *node) {
 			assert(node);
 
 			while (true) {
@@ -283,7 +283,7 @@ namespace peff {
 			return node;
 		}
 
-		[[nodiscard]] static inline Node *_get_max_node(Node *node) {
+		[[nodiscard]] static inline Node *_get_max_node(PEFF_NONNULL Node *node) {
 			assert(node);
 
 			while (true) {
@@ -302,7 +302,7 @@ namespace peff {
 			return node;
 		}
 
-		[[nodiscard]] inline Node *_lookup_upper_bound(K index) const {
+		[[nodiscard]] PEFF_NULLABLE_RET inline Node *_lookup_upper_bound(K index) const {
 			if (!_root)
 				return nullptr;
 
@@ -344,7 +344,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE RadixMap(peff::Alloc *allocator) : _allocator(allocator), _height(0), _size(0), _root(nullptr) {}
+		PEFF_FORCEINLINE RadixMap(PEFF_NONNULL peff::Alloc *allocator) : _allocator(allocator), _height(0), _size(0), _root(nullptr) {}
 		PEFF_FORCEINLINE ~RadixMap() {
 			clear();
 		}
@@ -454,7 +454,7 @@ namespace peff {
 			return _size;
 		}
 
-		static Node *get_next_node(const Node *leaf) {
+		static Node *get_next_node(PEFF_NONNULL const Node *leaf) {
 			const Node *cur = leaf;
 			while (cur->p) {
 				size_t off = cur->offset;
@@ -468,7 +468,7 @@ namespace peff {
 			return nullptr;
 		}
 
-		static Node *get_prev_node(const Node *leaf) {
+		static Node *get_prev_node(PEFF_NONNULL const Node *leaf) {
 			const Node *cur = leaf;
 			while (cur->p) {
 				size_t off = cur->offset;
@@ -489,8 +489,8 @@ namespace peff {
 			size_t slot_index;
 
 			PEFF_FORCEINLINE Iterator(
-				Node *node,
-				ThisType *tree,
+				PEFF_NONNULL Node *node,
+				PEFF_NONNULL ThisType *tree,
 				IteratorDirection direction,
 				size_t slot_index)
 				: node(node), tree(tree), direction(direction), slot_index(slot_index) {}

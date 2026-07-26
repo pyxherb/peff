@@ -29,7 +29,7 @@ namespace peff {
 		using Iterator = HeapArray::Iterator;
 		using ConstIterator = HeapArray::ConstIterator;
 
-		PEFF_FORCEINLINE BinaryHeapArray(peff::Alloc *allocator, Ord &&ord = {}) : _heap_array(allocator), _ord(ord) {
+		PEFF_FORCEINLINE BinaryHeapArray(PEFF_NULLABLE peff::Alloc *allocator, Ord &&ord = {}) : _heap_array(allocator), _ord(ord) {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool insert(T &&data) noexcept {

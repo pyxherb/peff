@@ -383,7 +383,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE BTree(peff::Alloc *allocator, Comparator cmp = {}) : _allocator(allocator), _cmp(cmp) {
+		PEFF_FORCEINLINE BTree(PEFF_NONNULL peff::Alloc *allocator, Comparator cmp = {}) : _allocator(allocator), _cmp(cmp) {
 		}
 
 		inline T *insert(T &&key) noexcept {

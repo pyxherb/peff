@@ -4,7 +4,7 @@
 
 using namespace peff;
 
-PEFF_UTILS_API uint32_t peff::djb_hash32(const char* data, size_t size) {
+PEFF_UTILS_API uint32_t peff::djb_hash32(PEFF_NONNULL const char *data, size_t size) {
 	uint32_t hash = 5381;
 	for (size_t i = 0; i < size; ++i) {
 		hash += (hash << 5) + *(data++);
@@ -12,7 +12,7 @@ PEFF_UTILS_API uint32_t peff::djb_hash32(const char* data, size_t size) {
 	return hash;
 }
 
-PEFF_UTILS_API uint64_t peff::djb_hash64(const char *data, size_t size) {
+PEFF_UTILS_API uint64_t peff::djb_hash64(PEFF_NONNULL const char *data, size_t size) {
 	uint64_t hash = 5381;
 	for (size_t i = 0; i < size; ++i) {
 		hash += (hash << 5) + *(data++);
@@ -112,7 +112,7 @@ static uint32_t _city_hash32_len_5_to_12(const char *s, size_t len) {
 	std::swap(a, b);                 \
 	std::swap(a, c)
 
-PEFF_UTILS_API uint32_t peff::city_hash32(const char *s, size_t len) {
+PEFF_UTILS_API uint32_t peff::city_hash32(PEFF_NONNULL const char *s, size_t len) {
 	if (len <= 24) {
 		return len <= 12 ? (len <= 4 ? _city_hash32_len_0_to_4(s, len) : _city_hash32_len_5_to_12(s, len)) : _city_hash_len_13_to_24(s, len);
 	}
@@ -292,7 +292,7 @@ static uint64_t _city_hash_len_33_to_64(const char *s, size_t len) {
 	return b + x;
 }
 
-PEFF_UTILS_API uint64_t peff::city_hash64(const char *s, size_t len) {
+PEFF_UTILS_API uint64_t peff::city_hash64(PEFF_NONNULL const char *s, size_t len) {
 	if (len <= 32) {
 		if (len <= 16) {
 			return _city_hash_len_0_to_16(s, len);

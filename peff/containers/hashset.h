@@ -290,7 +290,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE HashSetImpl(Alloc *allocator) : _buckets(allocator) {
+		PEFF_FORCEINLINE HashSetImpl(PEFF_NONNULL Alloc *allocator) : _buckets(allocator) {
 		}
 
 		PEFF_FORCEINLINE HashSetImpl(ThisType &&other)
@@ -357,11 +357,11 @@ namespace peff {
 			_buckets.clear_and_shrink();
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _buckets.allocator();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
 			for (auto &i : _buckets) {
 				i.replace_allocator(rhs);
 			}

@@ -2,7 +2,7 @@
 
 using namespace peff;
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_min_node(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_get_min_node(PEFF_NONNULL NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -11,7 +11,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_min_node(NodeBase *no
 	return node;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_max_node(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_get_max_node(PEFF_NONNULL NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -20,7 +20,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_max_node(NodeBase *no
 	return node;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_l_rot(NodeBase *x) noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_l_rot(PEFF_NONNULL NodeBase *x) noexcept {
 	NodeBase* y = x->r;
 	assert(y);
 
@@ -41,7 +41,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_l_rot(NodeBase *x) noexcept {
 	x->p = y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_r_rot(NodeBase *x) noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_r_rot(PEFF_NONNULL NodeBase *x) noexcept {
 	NodeBase* y = x->l;
 	assert(y);
 
@@ -61,7 +61,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_r_rot(NodeBase *x) noexcept {
 	x->p = y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_insert_fix_up(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_insert_fix_up(PEFF_NONNULL NodeBase *node) noexcept {
 	NodeBase* p, * gp = node, * u;  // Parent, grandparent and uncle
 
 	while ((p = gp->p) && _is_red(p)) {
@@ -112,7 +112,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_insert_fix_up(NodeBase *node) noexcept {
 	_root->color = RBColor::Black;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_remove_fix_up(NodeBase *node) noexcept {
+PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_remove_fix_up(PEFF_NONNULL NodeBase *node) noexcept {
 	// From SGI STL's stl_tree, with some minor improvements.
 	NodeBase* y = node, * x, * p;
 
@@ -240,7 +240,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_remove_fix_up(NodeBase *n
 	return y;
 }
 
-PEFF_CONTAINERS_API void RBTreeBase::_verify(NodeBase *node, const size_t num_black, size_t black_count) const noexcept {
+PEFF_CONTAINERS_API void RBTreeBase::_verify(PEFF_NONNULL NodeBase *node, const size_t num_black, size_t black_count) const noexcept {
 	if (!node) {
 		// We have reached a terminal node.
 		if (num_black != black_count)
@@ -277,7 +277,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify() const noexcept {
 	_verify(_root, num_black, 0);
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_get_next_node(const NodeBase* node, const NodeBase* last_node) noexcept {
+PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_next_node(PEFF_IN const NodeBase *node, PEFF_IN const NodeBase *last_node) noexcept {
 	assert(node);
 
 	if (node != last_node) {
@@ -294,7 +294,7 @@ PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_get_next_node(const NodeB
 	return nullptr;
 }
 
-PEFF_CONTAINERS_API RBTreeBase::NodeBase* RBTreeBase::_get_prev_node(const NodeBase* node, const NodeBase* first_node) noexcept {
+PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_prev_node(PEFF_IN const NodeBase *node, PEFF_IN const NodeBase *first_node) noexcept {
 	assert(node);
 
 	if (node != first_node) {

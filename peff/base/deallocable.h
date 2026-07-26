@@ -23,7 +23,7 @@ namespace peff {
 	template <typename T>
 	PEFF_REQUIRES_CONCEPT(DeallocableTrait<T>)
 	struct DeallocableDeleter {
-		PEFF_FORCEINLINE void operator()(T *ptr) const noexcept {
+		PEFF_FORCEINLINE void operator()(PEFF_NULLABLE T *ptr) const noexcept {
 			if (ptr)
 				ptr->dealloc();
 		}

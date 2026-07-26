@@ -50,13 +50,13 @@ namespace peff {
 			return node;
 		}
 
-		PEFF_FORCEINLINE void _delete_node(Node *node) {
+		PEFF_FORCEINLINE void _delete_node(PEFF_NONNULL Node *node) {
 			std::destroy_at<Node>(node);
 
 			_allocator->release(node, sizeof(Node), alignof(Node));
 		}
 
-		PEFF_FORCEINLINE void _prepend(Node *dest, Node *node) noexcept {
+		PEFF_FORCEINLINE void _prepend(PEFF_NULLABLE Node *dest, PEFF_NONNULL Node *node) noexcept {
 			if (dest) {
 				if (dest->prev)
 					dest->prev->next = node;
@@ -75,7 +75,7 @@ namespace peff {
 			++_length;
 		}
 
-		PEFF_FORCEINLINE void _append(Node *dest, Node *node) noexcept {
+		PEFF_FORCEINLINE void _append(PEFF_NULLABLE Node *dest, PEFF_NONNULL Node *node) noexcept {
 			if (dest) {
 				if (dest->next)
 					dest->next->prev = node;
@@ -94,7 +94,7 @@ namespace peff {
 			++_length;
 		}
 
-		PEFF_FORCEINLINE void _remove(Node *dest) {
+		PEFF_FORCEINLINE void _remove(PEFF_NONNULL Node *dest) {
 			assert(dest);
 
 			if (dest == _first) {
@@ -113,7 +113,7 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE List(Alloc *allocator) : _allocator(allocator) {}
+		PEFF_FORCEINLINE List(PEFF_NONNULL Alloc *allocator) : _allocator(allocator) {}
 		List(const ThisType &other) = delete;
 		PEFF_FORCEINLINE List(ThisType &&other) : _first(other._first), _last(other._last), _length(other._length), _allocator(std::move(other._allocator)) {
 			other._first = nullptr;
@@ -136,7 +136,7 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insert_front(NodeHandle node, NodeHandle new_node) {
+		[[nodiscard]] PEFF_FORCEINLINE PEFF_NONNULL_RET NodeHandle insert_front(PEFF_NONNULL NodeHandle node, PEFF_NONNULL NodeHandle new_node) {
 			assert(node);
 
 			_prepend(node, new_node);
@@ -144,7 +144,7 @@ namespace peff {
 			return new_node;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle insert_back(NodeHandle node, NodeHandle new_node) {
+		[[nodiscard]] PEFF_FORCEINLINE PEFF_NONNULL_RET NodeHandle insert_back(PEFF_NONNULL NodeHandle node, PEFF_NONNULL NodeHandle new_node) {
 			assert(node);
 
 			_append(node, new_node);
@@ -152,11 +152,11 @@ namespace peff {
 			return new_node;
 		}
 
-		PEFF_FORCEINLINE void push_front(NodeHandle node) noexcept {
+		PEFF_FORCEINLINE void push_front(PEFF_NONNULL NodeHandle node) noexcept {
 			_prepend(_first, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle push_front(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET NodeHandle push_front(T &&data) {
 			Node *new_node = _alloc_node(std::move(data));
 			if (!new_node)
 				return nullptr;
@@ -164,11 +164,11 @@ namespace peff {
 			return new_node;
 		}
 
-		PEFF_FORCEINLINE void push_back(NodeHandle node) noexcept {
+		PEFF_FORCEINLINE void push_back(PEFF_NONNULL NodeHandle node) noexcept {
 			_append(_last, node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE NodeHandle push_back(T &&data) {
+		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET NodeHandle push_back(T &&data) {
 			Node *new_node = _alloc_node(std::move(data));
 			if (!new_node)
 				return nullptr;
@@ -184,16 +184,16 @@ namespace peff {
 			remove(_last);
 		}
 
-		PEFF_FORCEINLINE void remove(NodeHandle node) {
+		PEFF_FORCEINLINE void remove(PEFF_NONNULL NodeHandle node) {
 			_remove(node);
 			_delete_node(node);
 		}
 
-		PEFF_FORCEINLINE void detach(NodeHandle node) {
+		PEFF_FORCEINLINE void detach(PEFF_NONNULL NodeHandle node) {
 			_remove(node);
 		}
 
-		PEFF_FORCEINLINE static Node *next(NodeHandle cur_node, size_t index) {
+		PEFF_FORCEINLINE static Node *next(PEFF_NONNULL NodeHandle cur_node, size_t index) {
 			while (index) {
 				assert(cur_node);
 				cur_node = cur_node->next;
@@ -203,7 +203,7 @@ namespace peff {
 			return cur_node;
 		}
 
-		PEFF_FORCEINLINE static Node *prev(NodeHandle cur_node, size_t index) {
+		PEFF_FORCEINLINE static Node *prev(PEFF_NONNULL NodeHandle cur_node, size_t index) {
 			while (index) {
 				assert(cur_node);
 				cur_node = cur_node->prev;
@@ -213,23 +213,23 @@ namespace peff {
 			return cur_node;
 		}
 
-		PEFF_FORCEINLINE void delete_node(NodeHandle node) {
+		PEFF_FORCEINLINE void delete_node(PEFF_NONNULL NodeHandle node) {
 			_delete_node(node);
 		}
 
-		PEFF_FORCEINLINE NodeHandle first_node() {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET NodeHandle first_node() {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE const NodeHandle first_node() const {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET const NodeHandle first_node() const {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE NodeHandle last_node() {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET NodeHandle last_node() {
 			return _last;
 		}
 
-		PEFF_FORCEINLINE const NodeHandle last_node() const {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET const NodeHandle last_node() const {
 			return _last;
 		}
 
@@ -587,11 +587,11 @@ namespace peff {
 			return cend();
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _allocator.get();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
 			verify_replaceable(_allocator.get(), rhs);
 
 			_allocator = rhs;

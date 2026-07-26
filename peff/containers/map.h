@@ -43,7 +43,7 @@ namespace peff {
 		struct QueryPair : public Pair {
 			const K *query_key;
 
-			PEFF_FORCEINLINE QueryPair(const K *query_key) : Pair(), query_key(query_key) {}
+			PEFF_FORCEINLINE QueryPair(PEFF_NONNULL const K *query_key) : Pair(), query_key(query_key) {}
 		};
 
 		/// @brief Wrapped comparator for comparing pairs by key.
@@ -85,7 +85,7 @@ namespace peff {
 		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const V &>, const V &>;
 		using ContainsResultType = typename SetType::ContainsResultType;
 
-		PEFF_FORCEINLINE MapImpl(Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
+		PEFF_FORCEINLINE MapImpl(PEFF_NONNULL Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
 		PEFF_FORCEINLINE MapImpl(ThisType &&rhs) : _set(std::move(rhs._set)) {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
@@ -171,11 +171,11 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _set.allocator();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
 			_set.replace_allocator(rhs);
 		}
 

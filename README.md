@@ -2,6 +2,8 @@
 
 PEFF is a exception-free common library for exceptionless C++ projects.
 
+The `bad_alloc` in the C++ standard library is not used, instead, it returns a result to indicate if there is an OOM.
+
 ## Build
 
 ### CMake
@@ -20,3 +22,7 @@ sudo cmake --install build --config <Your config>
 ```
 
 For **Windows** you may have to use the **administrator privileged command prompt** instead of the `sudo` usage.
+
+## Licnese
+
+MIT

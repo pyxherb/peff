@@ -89,10 +89,10 @@ namespace peff {
 		}
 	};
 
-	PEFF_UTILS_API uint32_t djb_hash32(const char *data, size_t size);
-	PEFF_UTILS_API uint64_t djb_hash64(const char *data, size_t size);
-	PEFF_UTILS_API uint32_t city_hash32(const char *s, size_t len);	 // FIXME: Fix hash inequality bug.
-	PEFF_UTILS_API uint64_t city_hash64(const char *s, size_t len);	 // FIXME: Fix hash inequality bug.
+	PEFF_UTILS_API uint32_t djb_hash32(PEFF_NONNULL const char *data, size_t size);
+	PEFF_UTILS_API uint64_t djb_hash64(PEFF_NONNULL const char *data, size_t size);
+	PEFF_UTILS_API uint32_t city_hash32(PEFF_NONNULL const char *s, size_t len);  // FIXME: Fix hash inequality bug.
+	PEFF_UTILS_API uint64_t city_hash64(PEFF_NONNULL const char *s, size_t len);  // FIXME: Fix hash inequality bug.
 
 	template <>
 	struct Hasher<std::string_view> {

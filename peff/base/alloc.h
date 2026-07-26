@@ -16,12 +16,12 @@ namespace peff {
 		virtual size_t inc_ref(size_t global_ref_count) noexcept = 0;
 		virtual size_t dec_ref(size_t global_ref_count) noexcept = 0;
 
-		virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
-		virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept = 0;
-		virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept = 0;
-		virtual void release(void *ptr, size_t size, size_t alignment) noexcept = 0;
+		PEFF_NULLABLE_RET virtual void *alloc(size_t size, size_t alignment) noexcept = 0;
+		PEFF_NULLABLE_RET virtual void *realloc(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept = 0;
+		PEFF_NULLABLE_RET virtual void *realloc_in_place(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size) noexcept = 0;
+		virtual void release(PEFF_NONNULL void *ptr, size_t size, size_t alignment) noexcept = 0;
 
-		virtual bool is_replaceable(const Alloc *rhs) const noexcept = 0;
+		virtual bool is_replaceable(PEFF_NONNULL const Alloc *rhs) const noexcept = 0;
 
 		virtual UUID type_identity() const noexcept = 0;
 	};
@@ -36,12 +36,12 @@ namespace peff {
 
 		PEFF_BASE_API virtual void on_ref_zero() noexcept;
 
-		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
-		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc_in_place(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
+		PEFF_BASE_API virtual void release(PEFF_NONNULL void *ptr, size_t size, size_t alignment) noexcept override;
 
-		PEFF_BASE_API virtual bool is_replaceable(const Alloc *rhs) const noexcept override;
+		PEFF_BASE_API virtual bool is_replaceable(PEFF_NONNULL const Alloc *rhs) const noexcept override;
 
 		PEFF_BASE_API virtual UUID type_identity() const noexcept override;
 	};
@@ -60,12 +60,12 @@ namespace peff {
 
 		PEFF_BASE_API virtual void on_ref_zero() noexcept;
 
-		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
-		PEFF_BASE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
-		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc_in_place(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
+		PEFF_BASE_API virtual void release(PEFF_NONNULL void *ptr, size_t size, size_t alignment) noexcept override;
 
-		PEFF_BASE_API virtual bool is_replaceable(const Alloc *rhs) const noexcept override;
+		PEFF_BASE_API virtual bool is_replaceable(PEFF_IN const Alloc *rhs) const noexcept override;
 
 		PEFF_BASE_API virtual UUID type_identity() const noexcept override;
 	};
@@ -82,26 +82,26 @@ namespace peff {
 
 		PEFF_BASE_API virtual void on_ref_zero() noexcept;
 
-		PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
-		PEFF_BASE_API virtual void *realloc(void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_BASE_API virtual void *realloc_in_place(void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
-		PEFF_BASE_API virtual void release(void *ptr, size_t size, size_t alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc_in_place(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
+		PEFF_BASE_API virtual void release(PEFF_NONNULL void *ptr, size_t size, size_t alignment) noexcept override;
 
-		PEFF_BASE_API virtual bool is_replaceable(const Alloc *rhs) const noexcept override;
+		PEFF_BASE_API virtual bool is_replaceable(PEFF_IN const Alloc *rhs) const noexcept override;
 
 		PEFF_BASE_API virtual UUID type_identity() const noexcept override;
 	};
 
 	PEFF_BASE_API extern NullAlloc g_null_alloc;
 
-	PEFF_FORCEINLINE void verify_allocator(const Alloc *x, const Alloc *y) {
+	PEFF_FORCEINLINE void verify_allocator(PEFF_NONNULL const Alloc *x, PEFF_NONNULL const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			PEFF_ASSERT(x->type_identity() == y->type_identity(), "Incompatible allocators");
 		}
 	}
 
-	PEFF_FORCEINLINE void verify_replaceable(const Alloc *x, const Alloc *y) {
+	PEFF_FORCEINLINE void verify_replaceable(PEFF_NONNULL const Alloc *x, PEFF_NONNULL const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			PEFF_ASSERT(x->is_replaceable(y), "Incompatible allocators");
@@ -114,7 +114,7 @@ namespace peff {
 #else
 	template <typename T, typename... Args>
 #endif
-		PEFF_FORCEINLINE void construct_at(T *ptr, Args &&...args) {
+		PEFF_FORCEINLINE void construct_at(PEFF_OUT T *ptr, Args &&...args) {
 #ifdef new
 	#if __cplusplus >= 202002L
 		std::construct_at<T>(ptr, std::forward<Args>(args)...);
@@ -135,7 +135,7 @@ namespace peff {
 	}
 
 	template <typename T>
-	PEFF_FORCEINLINE void destroy_at(T *const ptr) {
+	PEFF_FORCEINLINE void destroy_at(PEFF_NONNULL T *const ptr) {
 		std::destroy_at<T>(ptr);
 	}
 
@@ -145,7 +145,7 @@ namespace peff {
 #else
 	template <typename T, typename... Args>
 #endif
-		PEFF_FORCEINLINE T *alloc_and_construct(Alloc *allocator, size_t alignment, Args &&...args) {
+	PEFF_FORCEINLINE T *alloc_and_construct(PEFF_NONNULL Alloc *allocator, size_t alignment, Args &&...args) {
 		RcObjectPtr<Alloc> allocator_holder(allocator);
 
 		void *ptr = allocator_holder->alloc(sizeof(T), alignment);
@@ -167,7 +167,7 @@ namespace peff {
 	/// @tparam T The final type of the object
 	/// @note T must be the final type of the object, the behavior is undefined if T is not the final type.
 	template <typename T>
-	PEFF_FORCEINLINE void destroy_and_release(Alloc *allocator, T *ptr, size_t alignment) {
+	PEFF_FORCEINLINE void destroy_and_release(PEFF_NONNULL Alloc *allocator, PEFF_NONNULL T *ptr, size_t alignment) {
 		RcObjectPtr<Alloc> allocator_holder(allocator);
 		std::destroy_at<T>(ptr);
 		allocator_holder->release((void *)ptr, sizeof(T), alignment);
@@ -181,7 +181,7 @@ namespace peff {
 		PEFF_FORCEINLINE ParamBasedAllocUniquePtrDeleter(peff::Alloc *allocator, size_t alignment = alignof(T)) : allocator(allocator), alignment(alignment) {
 		}
 
-		PEFF_FORCEINLINE void operator()(T *ptr) const {
+		PEFF_FORCEINLINE void operator()(PEFF_NULLABLE T *ptr) const {
 			if (ptr)
 				peff::destroy_and_release<T>(allocator.get(), ptr, alignment);
 		}

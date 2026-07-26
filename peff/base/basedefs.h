@@ -105,6 +105,174 @@
 	#define PEFF_REQUIRES_CONCEPT(...)
 #endif
 
+#ifdef _MSC_VER
+	#include <sal.h>
+#endif
+
+// The parameter must be null.
+#ifdef _MSC_VER
+	#define PEFF_MUSTNULL _Null_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_MUSTNULL
+#else
+	#define PEFF_MUSTNULL
+#endif
+
+// The parameter is nullable.
+#ifdef _MSC_VER
+	#define PEFF_NULLABLE _Maybenull_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_NULLABLE
+#else
+	#define PEFF_NULLABLE
+#endif
+
+// The parameter must be non-null.
+#ifdef _MSC_VER
+	#define PEFF_NONNULL _Notnull_
+#elif defined(__clang__)
+	#define PEFF_NONNULL __attribute__((nonnull))
+#elif defined(__GNUC__)
+	#define PEFF_NONNULL
+#else
+	#define PEFF_NONNULL
+#endif
+
+// The return value must be null.
+#ifdef _MSC_VER
+	#define PEFF_MUSTNULL_RET _Ret_null_
+#elif defined(__GNUC__) || defined(__clang__)
+#else
+	#define PEFF_MUSTNULL_RET
+#endif
+
+// The return value may be null.
+#ifdef _MSC_VER
+	#define PEFF_NULLABLE_RET _Ret_maybenull_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_NULLABLE_RET
+#else
+	#define PEFF_NULLABLE_RET
+#endif
+
+// The return value must not be null.
+#ifdef _MSC_VER
+	#define PEFF_NONNULL_RET _Ret_notnull_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_NONNULL_RET __attribute__((__returns_nonnull__))
+#else
+	#define PEFF_NONNULL_RET
+#endif
+
+// Specified parameter is non-nullable.
+#ifdef _MSC_VER
+	#define PEFF_NONNULL_ARG(index)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_NONNULL_ARG(index) __attribute__((__nonnull__(index)))
+#else
+	#define PEFF_NONNULL_ARG
+#endif
+
+// The parameter is a non-null input parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN _In_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN PEFF_NONNULL
+#else
+	#define PEFF_IN
+#endif
+
+// The parameter is a nullable input parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE _In_opt_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE
+#else
+	#define PEFF_IN_NULLABLE
+#endif
+
+// The parameter is a non-null output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT _Out_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT PEFF_NONNULL
+#else
+	#define PEFF_OUT
+#endif
+
+// The parameter is a nullable output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_NULLABLE _Out_opt_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_NULLABLE
+#else
+	#define PEFF_OUT_NULLABLE
+#endif
+
+// The parameter is both a non-null input and a non-null output parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_OUT _Inout_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_OUT PEFF_NONNULL
+#else
+	#define PEFF_IN_OUT
+#endif
+
+// The parameter is both a nullable input and a non-null output parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE_OUT _Outptr_opt_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE_OUT
+#else
+	#define PEFF_IN_NULLABLE_OUT
+#endif
+
+// The parameter is both a non-null input and a nullable output parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_OUT_NULLABLE _Outptr_result_maybenull__
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_OUT_NULLABLE PEFF_NONNULL
+#else
+	#define PEFF_IN_OUT_NULLABLE
+#endif
+
+// The parameter is both a nullable input and a nullable output parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE_OUT_NULLABLE _Outptr_opt_result_maybenull_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE_OUT_NULLABLE
+#else
+	#define PEFF_IN_NULLABLE_OUT_NULLABLE
+#endif
+
+// Specified parameter is an input parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_ARG(index)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_ARG(index) __attribute__((__access__(read_only, index)))
+#else
+	#define PEFF_IN_ARG(index)
+#endif
+
+// Specified parameter is an output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_ARG(index)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_ARG(index) __attribute__((__access__(write_only, index)))
+#else
+	#define PEFF_OUT_ARG(index)
+#endif
+
+// Specified parameter is both an input and an output parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_OUT_ARG(index)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_OUT_ARG(index) __attribute__((__access__(read_write, index)))
+#else
+	#define PEFF_IN_OUT_ARG(index)
+#endif
+
+
 namespace peff {
 }
 

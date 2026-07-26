@@ -128,21 +128,21 @@ namespace peff {
 			return true;
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _array.allocator();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
 			_array.replace_allocator(rhs);
 		}
 
-		PEFF_FORCEINLINE char *data() {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET char *data() {
 			if (_array.size())
 				return _array.data();
 			return const_cast<char *>("");
 		}
 
-		PEFF_FORCEINLINE const char *data() const {
+		PEFF_FORCEINLINE PEFF_NULLABLE_RET const char *data() const {
 			if (_array.size())
 				return _array.data();
 			return "";
@@ -164,23 +164,23 @@ namespace peff {
 			_array.extract_range(idx_start, idx_end + 1);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data, size_t length) {
+		[[nodiscard]] PEFF_FORCEINLINE char *append(PEFF_NONNULL const char *data, size_t length) {
 			assert(data != this->data());
 			const size_t old_size = size();
 			if (!resize(old_size + length))
-				return false;
+				return nullptr;
 			memcpy(_array.data() + old_size, data, length);
-			return true;
+			return _array.data();
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE bool append(const char *data) {
+		[[nodiscard]] PEFF_FORCEINLINE char *append(PEFF_NONNULL const char *data) {
 			assert(data != this->data());
 			const size_t old_size = size();
 			const size_t data_length = strlen(data);
 			if (!resize(old_size + data_length))
-				return false;
+				return nullptr;
 			memcpy(_array.data() + old_size, data, data_length);
-			return true;
+			return _array.data();
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE bool append(char data) {

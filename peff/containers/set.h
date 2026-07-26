@@ -20,7 +20,7 @@ namespace peff {
 
 		using NodeType = typename Tree::NodeType;
 
-		PEFF_FORCEINLINE SetImpl(Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
+		PEFF_FORCEINLINE SetImpl(PEFF_NONNULL Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
 		}
 		PEFF_FORCEINLINE SetImpl(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
 		}
@@ -73,11 +73,11 @@ namespace peff {
 			return _tree.size();
 		}
 
-		PEFF_FORCEINLINE Alloc *allocator() const {
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _tree.allocator();
 		}
 
-		PEFF_FORCEINLINE void replace_allocator(Alloc *rhs) noexcept {
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
 			_tree.replace_allocator(rhs);
 		}
 

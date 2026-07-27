@@ -245,6 +245,114 @@
 	#define PEFF_IN_NULLABLE_OUT_NULLABLE
 #endif
 
+// The parameter is an input array.
+#ifdef _MSC_VER
+	#define PEFF_IN_ARRAY(size_arg) _In_reads_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_ARRAY(size_arg) PEFF_NONNULL
+#else
+	#define PEFF_IN_ARRAY(size_arg)
+#endif
+
+// The parameter is a nullable input array.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE_ARRAY(size_arg) _In_reads_opt_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE_ARRAY(size_arg)
+#else
+	#define PEFF_IN_NULLABLE_ARRAY(size_arg)
+#endif
+
+// The parameter is an output array.
+#ifdef _MSC_VER
+	#define PEFF_OUT_ARRAY(size_arg) _Out_writes_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_ARRAY(size_arg) PEFF_NONNULL
+#else
+	#define PEFF_OUT_ARRAY(size_arg)
+#endif
+
+// The parameter is a nullable output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_NULLABLE_ARRAY(size_arg) _Out_writes_opt_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_NULLABLE_ARRAY(size_arg)
+#else
+	#define PEFF_OUT_NULLABLE_ARRAY(size_arg)
+#endif
+
+// The parameter is both an input and an output array.
+#ifdef _MSC_VER
+	#define PEFF_IN_OUT_ARRAY(size_arg) _Inout_updates_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_OUT_ARRAY(size_arg) PEFF_NONNULL
+#else
+	#define PEFF_IN_OUT_ARRAY(size_arg)
+#endif
+
+// The parameter is a nullable input and output array.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE_OUT_ARRAY(size_arg) _Inout_updates_opt_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE_OUT_ARRAY(size_arg)
+#else
+	#define PEFF_IN_NULLABLE_OUT_ARRAY(size_arg)
+#endif
+
+// The parameter is an input array.
+#ifdef _MSC_VER
+	#define PEFF_IN_ARRAY_BYTES(size_arg) _In_reads_bytes_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_ARRAY_BYTES(size_arg) PEFF_NONNULL
+#else
+	#define PEFF_IN_ARRAY_BYTES(size_arg)
+#endif
+
+// The parameter is a nullable input array.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE_ARRAY_BYTES(size_arg) _In_reads_bytes_opt_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE_ARRAY_BYTES(size_arg)
+#else
+	#define PEFF_IN_NULLABLE_ARRAY_BYTES(size_arg)
+#endif
+
+// The parameter is an output array.
+#ifdef _MSC_VER
+	#define PEFF_OUT_ARRAY_BYTES(size_arg) _Out_writes_bytes_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_ARRAY_BYTES(size_arg) PEFF_NONNULL
+#else
+	#define PEFF_OUT_ARRAY_BYTES(size_arg)
+#endif
+
+// The parameter is a nullable output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_NULLABLE_ARRAY_BYTES(size_arg) _Out_writes_bytes_opt_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_NULLABLE_ARRAY_BYTES(size_arg)
+#else
+	#define PEFF_OUT_NULLABLE_ARRAY_BYTES(size_arg)
+#endif
+
+// The parameter is both an input and an output array.
+#ifdef _MSC_VER
+	#define PEFF_IN_OUT_ARRAY_BYTES(size_arg) _Inout_updates_bytes_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_OUT_ARRAY_BYTES(size_arg) PEFF_NONNULL
+#else
+	#define PEFF_IN_OUT_ARRAY_BYTES(size_arg)
+#endif
+
+// The parameter is a nullable input and output array.
+#ifdef _MSC_VER
+	#define PEFF_IN_NULLABLE_OUT_ARRAY_BYTES(size_arg) _Inout_updates_bytes_opt_(size_arg)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_NULLABLE_OUT_ARRAY_BYTES(size_arg)
+#else
+	#define PEFF_IN_NULLABLE_OUT_ARRAY_BYTES(size_arg)
+#endif
+
 // Specified parameter is an input parameter.
 #ifdef _MSC_VER
 	#define PEFF_IN_ARG(index)

@@ -82,9 +82,9 @@ namespace peff {
 
 		PEFF_BASE_API virtual void on_ref_zero() noexcept;
 
-		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
-		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
-		PEFF_NULLABLE_RET PEFF_BASE_API virtual void *realloc_in_place(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
+		PEFF_MUSTNULL_RET PEFF_BASE_API virtual void *alloc(size_t size, size_t alignment = 0) noexcept override;
+		PEFF_MUSTNULL_RET PEFF_BASE_API virtual void *realloc(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size, size_t new_alignment) noexcept override;
+		PEFF_MUSTNULL_RET PEFF_BASE_API virtual void *realloc_in_place(PEFF_NONNULL void *ptr, size_t size, size_t alignment, size_t new_size) noexcept override;
 		PEFF_BASE_API virtual void release(PEFF_NONNULL void *ptr, size_t size, size_t alignment) noexcept override;
 
 		PEFF_BASE_API virtual bool is_replaceable(PEFF_IN const Alloc *rhs) const noexcept override;

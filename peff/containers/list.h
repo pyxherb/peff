@@ -217,19 +217,19 @@ namespace peff {
 			_delete_node(node);
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET NodeHandle first_node() {
+		PEFF_FORCEINLINE NodeHandle first_node() {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET const NodeHandle first_node() const {
+		PEFF_FORCEINLINE const NodeHandle first_node() const {
 			return _first;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET NodeHandle last_node() {
+		PEFF_FORCEINLINE NodeHandle last_node() {
 			return _last;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET const NodeHandle last_node() const {
+		PEFF_FORCEINLINE const NodeHandle last_node() const {
 			return _last;
 		}
 

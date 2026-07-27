@@ -136,13 +136,13 @@ namespace peff {
 			_array.replace_allocator(rhs);
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET char *data() {
+		PEFF_FORCEINLINE char *data() {
 			if (_array.size())
 				return _array.data();
 			return const_cast<char *>("");
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET const char *data() const {
+		PEFF_FORCEINLINE const char *data() const {
 			if (_array.size())
 				return _array.data();
 			return "";

@@ -244,7 +244,7 @@ namespace peff {
 			return _get_byte(bit_index, num_bits);
 		}
 
-		PEFF_FORCEINLINE void get_bytes(PEFF_OUT char *buf, size_t len, size_t bit_index) const {
+		PEFF_FORCEINLINE void get_bytes(PEFF_OUT_ARRAY(len) char *buf, size_t len, size_t bit_index) const {
 			assert(bit_index + 8 * len <= _num_bits);
 
 			if (!((bit_index) & 7)) {

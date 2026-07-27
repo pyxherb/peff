@@ -2,7 +2,7 @@
 
 using namespace peff;
 
-PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_get_min_node(PEFF_NONNULL NodeBase *node) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_min_node(PEFF_NULLABLE NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -11,7 +11,7 @@ PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_get_min_
 	return node;
 }
 
-PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_get_max_node(PEFF_NONNULL NodeBase *node) noexcept {
+PEFF_CONTAINERS_API RBTreeBase::NodeBase *RBTreeBase::_get_max_node(PEFF_NULLABLE NodeBase *node) noexcept {
 	if (!node)
 		return nullptr;
 
@@ -277,7 +277,7 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify() const noexcept {
 	_verify(_root, num_black, 0);
 }
 
-PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_next_node(PEFF_IN const NodeBase *node, PEFF_IN const NodeBase *last_node) noexcept {
+PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_next_node(PEFF_IN const NodeBase *node, PEFF_NULLABLE const NodeBase *last_node) noexcept {
 	assert(node);
 
 	if (node != last_node) {
@@ -294,7 +294,7 @@ PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_nex
 	return nullptr;
 }
 
-PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_prev_node(PEFF_IN const NodeBase *node, PEFF_IN const NodeBase *first_node) noexcept {
+PEFF_CONTAINERS_API PEFF_NULLABLE_RET RBTreeBase::NodeBase *RBTreeBase::_get_prev_node(PEFF_IN const NodeBase *node, PEFF_NULLABLE const NodeBase *first_node) noexcept {
 	assert(node);
 
 	if (node != first_node) {

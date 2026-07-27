@@ -776,11 +776,11 @@ namespace peff {
 			_allocator = rhs;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET T *data() {
+		PEFF_FORCEINLINE T *data() {
 			return _data;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET const T *data() const {
+		PEFF_FORCEINLINE const T *data() const {
 			return _data;
 		}
 

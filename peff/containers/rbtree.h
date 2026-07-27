@@ -37,8 +37,8 @@ namespace peff {
 		NodeBase *_cached_min_node = nullptr, *_cached_max_node = nullptr;
 		size_t _num_nodes = 0;
 
-		PEFF_CONTAINERS_API PEFF_NONNULL_RET static NodeBase *_get_min_node(PEFF_NONNULL NodeBase *node) noexcept;
-		PEFF_CONTAINERS_API PEFF_NONNULL_RET static NodeBase *_get_max_node(PEFF_NONNULL NodeBase *node) noexcept;
+		PEFF_CONTAINERS_API static NodeBase *_get_min_node(PEFF_NULLABLE NodeBase *node) noexcept;
+		PEFF_CONTAINERS_API static NodeBase *_get_max_node(PEFF_NULLABLE NodeBase *node) noexcept;
 
 		PEFF_FORCEINLINE static bool _is_red(PEFF_NULLABLE NodeBase *node) noexcept { return node && node->color == RBColor::Red; }
 		PEFF_FORCEINLINE static bool _is_black(PEFF_NULLABLE NodeBase *node) noexcept { return (!node) || node->color == RBColor::Black; }
@@ -53,8 +53,8 @@ namespace peff {
 		PEFF_CONTAINERS_API void _verify(PEFF_NONNULL NodeBase *node, const size_t num_black, size_t black_count) const noexcept;
 		PEFF_CONTAINERS_API void _verify() const noexcept;
 
-		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_next_node(PEFF_IN const NodeBase *node, PEFF_IN const NodeBase *last_node) noexcept;
-		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_prev_node(PEFF_IN const NodeBase *node, PEFF_IN const NodeBase *first_node) noexcept;
+		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_next_node(PEFF_IN const NodeBase *node, PEFF_NULLABLE const NodeBase *last_node) noexcept;
+		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_prev_node(PEFF_IN const NodeBase *node, PEFF_NULLABLE const NodeBase *first_node) noexcept;
 
 		PEFF_CONTAINERS_API RBTreeBase() noexcept;
 		PEFF_CONTAINERS_API ~RBTreeBase();

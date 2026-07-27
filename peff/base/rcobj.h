@@ -86,7 +86,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE RcObjectPtr() : _ptr(nullptr) {
 		}
-		PEFF_FORCEINLINE RcObjectPtr(T *ptr) noexcept : _ptr(nullptr) {
+		PEFF_FORCEINLINE RcObjectPtr(PEFF_NULLABLE T *ptr) noexcept : _ptr(nullptr) {
 			if (ptr) {
 				_set_and_inc_ref(ptr);
 			}
@@ -138,7 +138,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET T *get() const noexcept {
+		PEFF_FORCEINLINE T *get() const noexcept {
 			return _ptr;
 		}
 		PEFF_FORCEINLINE T *&get_ref() noexcept {

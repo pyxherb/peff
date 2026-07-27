@@ -29,7 +29,7 @@ namespace peff {
 			_pair.first() = nullptr;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE T *release() noexcept {
+		PEFF_FORCEINLINE T *release() noexcept {
 			T *p = _pair.first();
 			_pair.first() = nullptr;
 			return p;
@@ -61,7 +61,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE T *get() const noexcept {
+		PEFF_FORCEINLINE T *get() const noexcept {
 			return _pair.first();
 		}
 		PEFF_FORCEINLINE T *&get_ref() noexcept {

@@ -43,7 +43,7 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE PEFF_NULLABLE_RET T *data() const noexcept {
+		PEFF_FORCEINLINE T *data() const noexcept {
 			return _ptr;
 		}
 

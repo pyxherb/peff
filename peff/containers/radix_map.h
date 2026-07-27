@@ -13,7 +13,7 @@
 #include <stdexcept>
 
 namespace peff {
-	template <typename K, typename V, size_t R = sizeof(K) * 2>
+	template <typename K, typename V, size_t R>
 	class RadixMap final {
 	public:
 		static_assert(std::is_integral_v<K>, "The key must be integral type");

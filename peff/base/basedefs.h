@@ -142,6 +142,7 @@
 #ifdef _MSC_VER
 	#define PEFF_MUSTNULL_RET _Ret_null_
 #elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_MUSTNULL_RET
 #else
 	#define PEFF_MUSTNULL_RET
 #endif

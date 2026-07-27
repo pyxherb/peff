@@ -394,9 +394,9 @@ namespace peff {
 					(*pair).value_constructed = false;
 					return std::pair<K, V>{ std::move((*pair).key.get()), std::move((*pair).value.get()) };
 				}
-				return {};
+				return peff::NULLOPT;
 			}
-			return {};
+			return peff::NULLOPT;
 		}
 	};
 

@@ -94,14 +94,14 @@ namespace peff {
 
 	PEFF_BASE_API extern NullAlloc g_null_alloc;
 
-	PEFF_FORCEINLINE void verify_allocator(PEFF_NONNULL const Alloc *x, PEFF_NONNULL const Alloc *y) {
+	PEFF_FORCEINLINE void verify_allocator(PEFF_NULLABLE const Alloc *x, PEFF_NULLABLE const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			PEFF_ASSERT(x->type_identity() == y->type_identity(), "Incompatible allocators");
 		}
 	}
 
-	PEFF_FORCEINLINE void verify_replaceable(PEFF_NONNULL const Alloc *x, PEFF_NONNULL const Alloc *y) {
+	PEFF_FORCEINLINE void verify_replaceable(PEFF_NULLABLE const Alloc *x, PEFF_NULLABLE const Alloc *y) {
 		if (x && y) {
 			// Check if the allocators have the same type.
 			PEFF_ASSERT(x->is_replaceable(y), "Incompatible allocators");

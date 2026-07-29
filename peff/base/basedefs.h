@@ -219,6 +219,69 @@
 	#define PEFF_IN_OUT
 #endif
 
+// The parameter is a non-null input parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_REF _In_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_REF
+#else
+	#define PEFF_IN_REF
+#endif
+
+// The parameter is a non-null output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_REF _Out_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_REF
+#else
+	#define PEFF_OUT_REF
+#endif
+
+// The parameter is a non-null output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_PTR_REF _Outref_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_PTR_REF
+#else
+	#define PEFF_OUT_PTR_REF
+#endif
+
+// The parameter is a nullable output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_NULLABLE_REF _Outref_result_maybenull_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_NULLABLE_REF
+#else
+	#define PEFF_OUT_NULLABLE_REF
+#endif
+
+// The parameter is a non-null 2-level pointer output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_PTR _Outptr_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_PTR PEFF_NONNULL
+#else
+	#define PEFF_OUT_PTR
+#endif
+
+// The parameter is a nullable 2-level pointer output parameter.
+#ifdef _MSC_VER
+	#define PEFF_OUT_NULLABLE_PTR _Outptr_opt_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_OUT_NULLABLE_PTR PEFF_NONNULL
+#else
+	#define PEFF_OUT_NULLABLE_PTR
+#endif
+
+// The parameter is both a non-null input and a non-null output parameter.
+#ifdef _MSC_VER
+	#define PEFF_IN_OUT_REF _Inout_
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_IN_OUT_REF 
+#else
+	#define PEFF_IN_OUT_REF
+#endif
+
 // The parameter is both a nullable input and a non-null output parameter.
 #ifdef _MSC_VER
 	#define PEFF_IN_NULLABLE_OUT _Outptr_opt_

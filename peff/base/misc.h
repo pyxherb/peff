@@ -58,6 +58,13 @@ namespace peff {
 			return *this;
 		}
 	};
+	template <class T>
+	struct TypeIdentity {
+		using type = T;
+	};
+
+	template <class T>
+	using TypeIdentityType = typename peff::TypeIdentity<T>::type;
 
 	enum class ControlFlow : bool {
 		Break = false,

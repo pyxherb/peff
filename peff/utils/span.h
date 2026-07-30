@@ -3,6 +3,7 @@
 
 #include "basedefs.h"
 #include <peff/base/assert.h>
+#include <peff/base/misc.h>
 #include <type_traits>
 #include <array>
 
@@ -18,7 +19,7 @@ namespace peff {
 
 		Span(T *ptr, size_t length) : _ptr(ptr), _length(length) {}
 		template <size_t N>
-		Span(std::type_identity_t<T> (&array)[N]) : _ptr(array), _length(N) {}
+		Span(peff::TypeIdentityType<T> (&array)[N]) : _ptr(array), _length(N) {}
 		template <size_t N>
 		Span(const std::array<T, N> &array) : _ptr(array.data()), _length(N) {}
 
@@ -31,7 +32,7 @@ namespace peff {
 		Span &operator=(Span<T> &&other) noexcept = default;
 
 		template <size_t N>
-		Span operator=(std::type_identity_t<T> (&array)[N]) {
+		Span operator=(peff::TypeIdentityType<T> (&array)[N]) {
 			_ptr = array;
 			_length = N;
 			return *this;

@@ -123,7 +123,8 @@ namespace peff {
 			return true;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get_bucket_slot(const Bucket &bucket, const T &data) const {
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get_bucket_slot_alt(const Bucket &bucket, const U &data) const {
 			for (auto i = bucket.first_node(); i; i = i->next) {
 				if constexpr (Fallible) {
 					if (auto result = _eq_cmp(i->data.data, data); result.has_value()) {
@@ -224,7 +225,8 @@ namespace peff {
 			return result;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType _remove(const T &data, bool force_resize_buckets) {
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType _remove_alt(const U &data, bool force_resize_buckets) {
 			if (!_buckets.size()) {
 				if constexpr (Fallible) {
 					return true;
@@ -256,7 +258,7 @@ namespace peff {
 
 				node = maybe_node.value();
 			} else {
-				node = _get_bucket_slot(bucket, data);
+				node = _get_bucket_slot_alt(bucket, data);
 			}
 
 			if (node) {
@@ -273,7 +275,8 @@ namespace peff {
 			}
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get(const T &data, size_t &index) const {
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType _get_alt(PEFF_IN_REF const U &data, size_t &index_out) const {
 			if (!_buckets.size()) {
 				return Bucket::null_node_handle();
 			}
@@ -290,7 +293,9 @@ namespace peff {
 			size_t i = ((size_t)hash_code) % _buckets.size();
 			const Bucket &bucket = _buckets.at(i);
 
-			return _get_bucket_slot(bucket, data);
+			index_out = i;
+
+			return _get_bucket_slot_alt<U>(bucket, data);
 		}
 
 	public:
@@ -328,28 +333,58 @@ namespace peff {
 
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove(const T &data) {
 			if constexpr (Fallible) {
-				return _remove(data, false).has_value();
+				return _remove_alt<T>(data, false).has_value();
 			} else {
-				_remove(data, false);
+				_remove_alt<T>(data, false);
+			}
+		}
+
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove_alt(const U &data) {
+			if constexpr (Fallible) {
+				return _remove_alt<U>(data, false).has_value();
+			} else {
+				_remove_alt<U>(data, false);
 			}
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType get(const T &data) {
 			size_t index;
-			return _get(data, index);
+			return _get_alt<T>(data, index);
+		}
+
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE BucketNodeHandleQueryResultType get_alt(const U &data) {
+			size_t index;
+			return _get_alt<U>(data, index);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE ContainsResultType contains(const T &data) const {
 			size_t index;
 			if constexpr (Fallible) {
-				auto maybe_handle = _get(data, index);
+				auto maybe_handle = _get_alt<T>(data, index);
 
 				if (!maybe_handle.has_value())
 					return NULLOPT;
 
 				return maybe_handle.value();
 			} else {
-				return _get(data, index);
+				return _get_alt<T>(data, index);
+			}
+		}
+
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE ContainsResultType contains(const U &data) const {
+			size_t index;
+			if constexpr (Fallible) {
+				auto maybe_handle = _get_alt<U>(data, index);
+
+				if (!maybe_handle.has_value())
+					return NULLOPT;
+
+				return maybe_handle.value();
+			} else {
+				return _get_alt<U>(data, index);
 			}
 		}
 
@@ -648,14 +683,32 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator find(const T &value) {
 			size_t index;
 			if constexpr (Fallible) {
-				BucketNodeHandleQueryResultType node = _get(value, index);
+				BucketNodeHandleQueryResultType node = _get_alt<T>(value, index);
 				if (!node.has_value())
 					return end();
 				if (typename Bucket::NodeHandle handle = node.value(); handle)
 					return Iterator(this, index, handle, IteratorDirection::Forward);
 				return end();
 			} else {
-				typename Bucket::NodeHandle node = _get(value, index);
+				typename Bucket::NodeHandle node = _get_alt<T>(value, index);
+				if (!node)
+					return end();
+				return Iterator(this, index, node, IteratorDirection::Forward);
+			}
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE Iterator find_alt(const U &value) {
+			size_t index;
+			if constexpr (Fallible) {
+				BucketNodeHandleQueryResultType node = _get_alt<U>(value, index);
+				if (!node.has_value())
+					return end();
+				if (typename Bucket::NodeHandle handle = node.value(); handle)
+					return Iterator(this, index, handle, IteratorDirection::Forward);
+				return end();
+			} else {
+				typename Bucket::NodeHandle node = _get_alt<U>(value, index);
 				if (!node)
 					return end();
 				return Iterator(this, index, node, IteratorDirection::Forward);
@@ -666,18 +719,42 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->find(value));
 		}
 
+		template<typename U>
+		PEFF_FORCEINLINE ConstIterator find_alt(const U &value) const {
+			return ConstIterator(const_cast<ThisType *>(this)->find(value));
+		}
+
 		PEFF_FORCEINLINE ElementQueryResultType at(const T &value) {
 			size_t index;
 			typename Bucket::NodeHandle node;
 			if constexpr (Fallible) {
-				auto maybe_node = _get(value, index);
+				auto maybe_node = _get_alt<T>(value, index);
 
 				if (!maybe_node.has_value())
 					return NULLOPT;
 
 				node = maybe_node.value();
 			} else {
-				node = _get(value, index);
+				node = _get_alt<T>(value, index);
+			}
+			if (!node)
+				throw std::out_of_range("No such element");
+			return node->data.data;
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &value) {
+			size_t index;
+			typename Bucket::NodeHandle node;
+			if constexpr (Fallible) {
+				auto maybe_node = _get_alt<U>(value, index);
+
+				if (!maybe_node.has_value())
+					return NULLOPT;
+
+				node = maybe_node.value();
+			} else {
+				node = _get_alt<U>(value, index);
 			}
 			if (!node)
 				throw std::out_of_range("No such element");
@@ -688,14 +765,33 @@ namespace peff {
 			size_t index;
 			typename Bucket::NodeHandle node;
 			if constexpr (Fallible) {
-				auto maybe_node = _get(value, index);
+				auto maybe_node = _get_alt<T>(value, index);
 
 				if (!maybe_node.has_value())
 					return NULLOPT;
 
 				node = maybe_node.value();
 			} else {
-				node = _get(value, index);
+				node = _get_alt<T>(value, index);
+			}
+			if (!node)
+				throw std::out_of_range("No such element");
+			return node->data.data;
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ConstElementQueryResultType at_alt(const U &value) const {
+			size_t index;
+			typename Bucket::NodeHandle node;
+			if constexpr (Fallible) {
+				auto maybe_node = _get_alt<U>(value, index);
+
+				if (!maybe_node.has_value())
+					return NULLOPT;
+
+				node = maybe_node.value();
+			} else {
+				node = _get_alt<U>(value, index);
 			}
 			if (!node)
 				throw std::out_of_range("No such element");

@@ -54,6 +54,18 @@ namespace peff {
 						&r = rhs.for_query ? *((const QueryPair &)rhs).query_key : rhs.key.get();
 				return eq_cmp(l, r);
 			}
+
+			template <typename U>
+			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<K>(), std::declval<U>())) operator()(const Pair &lhs, const U &rhs) const {
+				const K &l = lhs.for_query ? *((const QueryPair &)lhs).query_key : lhs.key.get();
+				return eq_cmp(l, rhs);
+			}
+
+			template <typename U>
+			PEFF_FORCEINLINE decltype(std::declval<Eq>()(std::declval<U>(), std::declval<K>())) operator()(const U &lhs, const Pair &rhs) const {
+				const K &r = rhs.for_query ? *((const QueryPair &)rhs).query_key : rhs.key.get();
+				return eq_cmp(lhs, r);
+			}
 		};
 
 		struct PairHasher {
@@ -62,6 +74,16 @@ namespace peff {
 			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const Pair &pair) const {
 				const K &k = pair.for_query ? *((const QueryPair &)pair).query_key : pair.key.get();
 				return hasher(k);
+			}
+
+			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const QueryPair &pair) const {
+				const K &k = *pair.query_key;
+				return hasher(k);
+			}
+
+			template<typename U>
+			PEFF_FORCEINLINE decltype(std::declval<Hasher>()(std::declval<K>())) operator()(const U &operand) const {
+				return hasher(operand);
 			}
 		};
 
@@ -110,8 +132,22 @@ namespace peff {
 			}
 		}
 
+		template<typename U>
+		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove_alt(const U &key) {
+			if constexpr (Fallible) {
+				return _set.remove_alt<U>(key);
+			} else {
+				_set.remove_alt<U>(key);
+			}
+		}
+
 		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
 			return _set.contains(QueryPair(&key));
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ContainsResultType contains_alt(const U &key) const {
+			return _set.contains_alt<U>(key);
 		}
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
@@ -127,6 +163,20 @@ namespace peff {
 			}
 		}
 
+		template<typename U>
+		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) {
+			if constexpr (Fallible) {
+				auto maybe_pair = _set.at_alt<U>(key);
+
+				if (!maybe_pair.has_value())
+					return NULLOPT;
+
+				return maybe_pair.value().value.get();
+			} else {
+				return _set.at_alt<U>(key).value.get();
+			}
+		}
+
 		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
 			if constexpr (Fallible) {
 				auto maybe_pair = _set.at(QueryPair(&key));
@@ -137,6 +187,20 @@ namespace peff {
 				return maybe_pair.value().value.get();
 			} else {
 				return _set.at(QueryPair(&key)).value.get();
+			}
+		}
+
+		template<typename U>
+		PEFF_FORCEINLINE ConstElementQueryResultType at_alt(const U &key) const {
+			if constexpr (Fallible) {
+				auto maybe_pair = _set.at_alt<U>(key);
+
+				if (!maybe_pair.has_value())
+					return NULLOPT;
+
+				return maybe_pair.value().value.get();
+			} else {
+				return _set.at_alt<U>(key).value.get();
 			}
 		}
 
@@ -290,8 +354,18 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->find(key));
 		}
 
+		template <typename U>
+		PEFF_FORCEINLINE ConstIterator find_alt(const U &key) const {
+			return ConstIterator(const_cast<ThisType *>(this)->find_alt<U>(key));
+		}
+
 		PEFF_FORCEINLINE Iterator find(const K &key) {
 			return Iterator(_set.find(QueryPair(&key)));
+		}
+
+		template <typename U>
+		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
+			return Iterator(_set.find_alt<U>(key));
 		}
 
 		PEFF_FORCEINLINE size_t size() const {

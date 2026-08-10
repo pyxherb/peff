@@ -179,7 +179,7 @@ namespace peff {
 						return false;
 				}
 			} else {
-				if (_data) {
+				if (!_data) {
 					if (!(new_data = (T *)_allocator->alloc(new_capacity_total_size, alignof(T))))
 						return false;
 					if constexpr (std::is_nothrow_constructible_v<T>) {

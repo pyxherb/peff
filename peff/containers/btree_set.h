@@ -1,5 +1,5 @@
-#ifndef _PEFF_CONTAINERS_BTREE_H_
-#define _PEFF_CONTAINERS_BTREE_H_
+#ifndef _PEFF_CONTAINERS_BTREE_SET_H_
+#define _PEFF_CONTAINERS_BTREE_SET_H_
 
 #include "basedefs.h"
 #include <peff/base/misc.h>
@@ -12,7 +12,6 @@ namespace peff {
 		BTreeNodeBase *parent = nullptr;
 		size_t num_keys = 0;
 		size_t num_children = 0;
-		// Children and keys are defined in the implementation type.
 	};
 
 	template <typename T>
@@ -22,12 +21,15 @@ namespace peff {
 	}
 
 	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false, size_t Degree = _calc_btree_default_node_deg<T>()>
-	class BTree final {
+	class BTreeSet final {
 	private:
+		using ThisType = BTreeSet<T, Comparator, IsThreeway, Degree>;
+
+	public:
 		struct Node : public BTreeNodeBase {
 			char keys alignas(T)[sizeof(T) * (Degree * 2 - 1)];
 			size_t num_keys = 0;
-			Node *children[(Degree * 2 - 1)] = { nullptr };
+			Node *children[Degree * 2] = { nullptr };
 			size_t num_children = 0;
 
 			Node *undo_new_sibling = nullptr;
@@ -60,11 +62,11 @@ namespace peff {
 					reinterpret_cast<T *>(keys)[index] = std::move(key);
 				} else {
 					const size_t limit = num_keys - index;
-					const T *old_ptr = reinterpret_cast<T *>(keys) + index;
+					T *old_ptr = reinterpret_cast<T *>(keys) + index;
 					T *new_ptr = reinterpret_cast<T *>(keys) + index + 1;
 
-					for (size_t i = limit; i; ++i) {
-						peff::construct_at<T>(new_ptr[i - 1], std::move(old_ptr[i - 1]));
+					for (size_t i = limit; i; --i) {
+						peff::construct_at<T>(&new_ptr[i - 1], std::move(old_ptr[i - 1]));
 					}
 
 					peff::construct_at<T>(&reinterpret_cast<T *>(keys)[index], std::move(key));
@@ -80,13 +82,13 @@ namespace peff {
 					memmove(keys + sizeof(T) * index, keys + sizeof(T) * (index + 1), sizeof(T) * (num_keys - index - 1));
 				} else {
 					const size_t limit = num_keys - index - 1;
-					const T *old_ptr = reinterpret_cast<T *>(keys) + index + 1;
+					T *old_ptr = reinterpret_cast<T *>(keys) + index + 1;
 					T *new_ptr = reinterpret_cast<T *>(keys) + index;
 
 					std::destroy_at<T>(new_ptr);
 
-					for (size_t i = limit; i; ++i) {
-						peff::construct_at<T>(new_ptr[i - 1], std::move(old_ptr[i - 1]));
+					for (size_t i = limit; i; --i) {
+						peff::construct_at<T>(&new_ptr[i - 1], std::move(old_ptr[i - 1]));
 					}
 				}
 				--num_keys;
@@ -99,14 +101,14 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE void push_child_node(Node *node) noexcept {
-				PEFF_ASSERT(num_children < std::size(children), "Invalid key number");
+				PEFF_ASSERT(num_children < std::size(children), "Invalid child number");
 				children[num_children] = node;
 				node->parent = this;
 				++num_children;
 			}
 
 			PEFF_FORCEINLINE void insert_child_node(size_t index, Node *node) noexcept {
-				PEFF_ASSERT(num_children < std::size(children), "Invalid key number");
+				PEFF_ASSERT(num_children < std::size(children), "Invalid child number");
 				memmove(children + (index + 1), children + index, sizeof(void *) * (num_children - index));
 				children[index] = node;
 				node->parent = this;
@@ -114,7 +116,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE void remove_child_node(size_t index) noexcept {
-				PEFF_ASSERT(num_children, "Invalid key number");
+				PEFF_ASSERT(num_children, "Invalid child number");
 				memmove(children + index, children + (index + 1), sizeof(void *) * (num_children - index - 1));
 				--num_children;
 			}
@@ -133,6 +135,7 @@ namespace peff {
 			}
 		};
 
+	private:
 		Node *_root = nullptr;
 		size_t _num_elements = 0;
 		peff::RcObjectPtr<peff::Alloc> _allocator;
@@ -226,12 +229,10 @@ namespace peff {
 				_dealloc_node(z);
 			});*/
 
-			// Move right half of key array into new node.
 			for (size_t j = 0; j < Degree - 1; ++j)
 				z->push_key(std::move(y->key(j + Degree)));
 
 			if (!y->is_leaf()) {
-				// Move right half of the child array into new node.
 				for (size_t j = 0; j < Degree; ++j) {
 					Node *child = y->child_node(j + Degree);
 					z->push_child_node(y->child_node(j + Degree));
@@ -247,8 +248,6 @@ namespace peff {
 			x->has_undo = true;
 			x->undo_index = index;
 			x->undo_new_sibling = z;
-
-			// sg.release();
 
 			return true;
 		}
@@ -339,7 +338,7 @@ namespace peff {
 					if (!right_most->is_leaf()) {
 						right_most->insert_child_node(0, left_sib->child_node(left_sib->num_children - 1));
 					}
-					node->key(node->num_keys - 1) = std::move(left_sib->key(left_sib->num_keys - 1));
+					peff::move_assign_or_move_construct(node->key(node->num_keys - 1), std::move(left_sib->key(left_sib->num_keys - 1)));
 					left_sib->remove_key(left_sib->num_keys - 1);
 					if (!left_sib->is_leaf()) {
 						left_sib->remove_child_node(left_sib->num_children - 1);
@@ -369,7 +368,7 @@ namespace peff {
 					if (!left_most->is_leaf()) {
 						left_most->push_child_node(right_sib->child_node(0));
 					}
-					node->key(0) = std::move(right_sib->key(0));
+					peff::move_assign_or_move_construct(node->key(0), std::move(right_sib->key(0)));
 					right_sib->remove_key(0);
 					if (!right_sib->is_leaf()) {
 						right_sib->remove_child_node(0);
@@ -383,7 +382,45 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE BTree(PEFF_NONNULL peff::Alloc *allocator, Comparator cmp = {}) : _allocator(allocator), _cmp(cmp) {
+		PEFF_FORCEINLINE BTreeSet(PEFF_NONNULL peff::Alloc *allocator, Comparator cmp = {}) : _allocator(allocator), _cmp(cmp) {
+		}
+
+		PEFF_FORCEINLINE BTreeSet(ThisType &&other) noexcept : _allocator(std::move(other._allocator)), _cmp(std::move(other._cmp)), _root(other._root), _num_elements(other._num_elements) {
+			other._root = nullptr;
+			other._num_elements = 0;
+		}
+
+		PEFF_FORCEINLINE ~BTreeSet() noexcept {
+			if (!_root) return;
+
+			Node *cur = _root;
+			_root->undo_index = 0;
+
+			while (cur) {
+				if (cur->is_leaf()) {
+					Node *parent = static_cast<Node *>(cur->parent);
+					if (parent) {
+						parent->undo_index++;
+					}
+					_dealloc_node(cur);
+					cur = parent;
+				} else {
+					if (cur->undo_index < cur->num_children) {
+						Node *child = cur->children[cur->undo_index];
+						child->undo_index = 0;
+						cur = child;
+					} else {
+						Node *parent = static_cast<Node *>(cur->parent);
+						if (parent) {
+							parent->undo_index++;
+						}
+						_dealloc_node(cur);
+						cur = parent;
+					}
+				}
+			}
+
+			_root = nullptr;
 		}
 
 		inline T *insert(T &&key) noexcept {
@@ -453,7 +490,7 @@ namespace peff {
 			return ptr;
 		}
 
-		inline void remove(const T &key) {
+		inline void remove(const T &key) noexcept {
 			Node *node = _root;
 		recurse:
 			if (!node)
@@ -478,12 +515,12 @@ namespace peff {
 				Node *left_child = node->child_node(idx);
 				Node *right_child = node->child_node(idx + 1);
 				if (left_child->num_keys >= Degree) {
-					node->key(idx) = delete_max(left_child);
+					peff::move_assign_or_move_construct(node->key(idx), delete_max(left_child));
 					--_num_elements;
 					return;
 				}
 				if (right_child->num_keys >= Degree) {
-					node->key(idx) = delete_min(right_child);
+					peff::move_assign_or_move_construct(node->key(idx), delete_min(right_child));
 					--_num_elements;
 					return;
 				}
@@ -508,7 +545,7 @@ namespace peff {
 					if (!child->is_leaf())
 						child->insert_child_node(0, left_sib->child_node(left_sib->num_children - 1));
 
-					node->key(idx - 1) = std::move(left_sib->key(left_sib->num_keys - 1));
+					peff::move_assign_or_move_construct(node->key(idx - 1), std::move(left_sib->key(left_sib->num_keys - 1)));
 					left_sib->remove_key(left_sib->num_keys - 1);
 					if (!left_sib->is_leaf())
 						left_sib->remove_child_node(left_sib->num_children - 1);
@@ -517,7 +554,7 @@ namespace peff {
 					if (!child->is_leaf())
 						child->push_child_node(right_sib->child_node(0));
 
-					node->key(idx) = std::move(right_sib->key(0));
+					peff::move_assign_or_move_construct(node->key(idx), std::move(right_sib->key(0)));
 					right_sib->remove_key(0);
 					if (!right_sib->is_leaf())
 						right_sib->remove_child_node(0);
@@ -534,37 +571,23 @@ namespace peff {
 			goto recurse;
 		}
 
-		PEFF_FORCEINLINE T *find(const T &key) noexcept {
-			if (!_root)
-				return nullptr;
-			auto result = _find(key, _root);
-			if (!result.first)
-				return nullptr;
-			return &result.first->key(result.second);
-		}
-
-		PEFF_FORCEINLINE const T *find(const T &key) const noexcept {
-			if (!_root)
-				return nullptr;
-			auto result = _find(key, _root);
-			if (!result.first)
-				return nullptr;
-			return &result.first->key(result.second);
-		}
-
 		class Iterator {
 		private:
 			Node *_node;
 			size_t _idx;
 
 		public:
-			Iterator(Node *node, size_t idx) : _node(node), _idx(idx) {}
+			PEFF_FORCEINLINE Iterator(Node *node, size_t idx) : _node(node), _idx(idx) {}
 
-			const T &operator*() const {
+			PEFF_FORCEINLINE const T &operator*() const {
 				return _node->key(_idx);
 			}
 
-			Iterator &operator++() {
+			PEFF_FORCEINLINE T *operator->() const noexcept {
+				return &_node->key(_idx);
+			}
+
+			PEFF_FORCEINLINE Iterator &operator++() {
 				if (!_node)
 					return *this;
 
@@ -599,11 +622,82 @@ namespace peff {
 				return *this;
 			}
 
-			bool operator==(const Iterator &other) const {
+			PEFF_FORCEINLINE bool operator==(const Iterator &other) const {
 				return _node == other._node && _idx == other._idx;
 			}
-			bool operator!=(const Iterator &other) const {
+			PEFF_FORCEINLINE bool operator!=(const Iterator &other) const {
 				return !(*this == other);
+			}
+		};
+
+		struct ConstIterator {
+			Iterator _iterator;
+
+			PEFF_FORCEINLINE ConstIterator(
+				Iterator &&iterator)
+				: _iterator(iterator) {}
+
+			ConstIterator(const ConstIterator &it) = default;
+			PEFF_FORCEINLINE ConstIterator(ConstIterator &&it) : _iterator(std::move(it._iterator)) {
+			}
+			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
+				_iterator = rhs._iterator;
+				return *this;
+			}
+			PEFF_FORCEINLINE ConstIterator &operator=(ConstIterator &&rhs) noexcept {
+				_iterator = std::move(rhs._iterator);
+				return *this;
+			}
+
+			PEFF_FORCEINLINE bool copy(ConstIterator &dest) noexcept {
+				peff::construct_at<ConstIterator>(&dest, *this);
+				return true;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator++() {
+				++_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator operator++(int) {
+				ConstIterator it = *this;
+				++(*this);
+				return it;
+			}
+
+			PEFF_FORCEINLINE ConstIterator next() {
+				ConstIterator iterator = *this;
+
+				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const {
+				return _iterator == it._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator!=(const ConstIterator &it) const {
+				return _iterator != it._iterator;
+			}
+
+			PEFF_FORCEINLINE bool operator!=(ConstIterator &&rhs) const {
+				ConstIterator it = rhs;
+				return *this != it;
+			}
+
+			PEFF_FORCEINLINE const T &operator*() {
+				return *_iterator;
+			}
+
+			PEFF_FORCEINLINE const T &operator*() const {
+				return *_iterator;
+			}
+
+			PEFF_FORCEINLINE const T *operator->() {
+				return &*_iterator;
+			}
+
+			PEFF_FORCEINLINE const T *operator->() const {
+				return &*_iterator;
 			}
 		};
 
@@ -615,6 +709,34 @@ namespace peff {
 
 		PEFF_FORCEINLINE Iterator end() noexcept {
 			return Iterator(nullptr, 0);
+		}
+
+		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
+			if (!_root)
+				return end();
+			return ConstIterator(begin());
+		}
+
+		PEFF_FORCEINLINE ConstIterator end() const noexcept {
+			return ConstIterator(Iterator(nullptr, 0));
+		}
+
+		PEFF_FORCEINLINE Iterator find(const T &key) noexcept {
+			if (!_root)
+				return end();
+			auto result = _find(key, _root);
+			if (!result.first)
+				return end();
+			return Iterator(result.first, result.second);
+		}
+
+		PEFF_FORCEINLINE ConstIterator find(const T &key) const noexcept {
+			if (!_root)
+				return end();
+			auto result = _find(key, _root);
+			if (!result.first)
+				return end();
+			return ConstIterator(Iterator(result.first, result.second));
 		}
 	};
 }

@@ -114,6 +114,9 @@ PEFF_CONTAINERS_API void RBTreeBase::_insert_fix_up(PEFF_NONNULL NodeBase *node)
 
 PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_remove_fix_up(PEFF_NONNULL NodeBase *node) noexcept {
 	// From SGI STL's stl_tree, with some minor improvements.
+	// We are wondering if we should put the MIT license text here becuase
+	// we just learned and reconstructed the way the library used.
+	// TODO: Put the license text here if needed.
 	NodeBase* y = node, * x, * p;
 
 	if (!y->l)

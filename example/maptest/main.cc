@@ -13,7 +13,7 @@
 #include <peff/containers/binary_heap.h>
 #include <peff/advutils/shared_ptr.h>
 #include <peff/advutils/buffer_alloc.h>
-#include <peff/containers/btree.h>
+#include <peff/containers/btree_map.h>
 #include <iostream>
 #include <string>
 #include <random>
@@ -552,7 +552,7 @@ int main() {
 
 	RandomFailAlloc rf_alloc;
 	{
-		peff::BTree<int, std::less<int>, false, 4> hm(&rf_alloc);
+		peff::BTreeMap<int, int, std::less<int>, false, 4> hm(&rf_alloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;
@@ -561,13 +561,13 @@ int main() {
 			if (j == 20)
 				puts("");
 
-			if (!hm.insert(+j)) {
+			if (!hm.insert(+j, +j)) {
 				puts("Random fail");
 			}
 
 			auto k = hm.begin();
 			while (k != hm.end()) {
-				printf("%d\n", *k);
+				printf("%d\n", k.value());
 				++k;
 			}
 		}
@@ -577,13 +577,13 @@ int main() {
 			printf("Removing: %d\n", j);
 
 			auto result = hm.find(j);
-			printf("%s: %d\n", result ? "Found" : "Not found", j);
+			printf("%s: %d\n", result == hm.end() ? "Found" : "Not found", j);
 
 			hm.remove(j);
 
 			auto k = hm.begin();
 			while (k != hm.end()) {
-				printf("%d\n", *k);
+				printf("%d\n", k.value());
 				++k;
 			}
 

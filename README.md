@@ -25,4 +25,6 @@ For **Windows** you may have to use the **administrator privileged command promp
 
 ## Licnese
 
-MIT
+MIT license.
+
+For 3rd-party softwares we used, see [Third-party Licenses](3rd-party-licenses.md).

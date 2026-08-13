@@ -577,7 +577,7 @@ int main() {
 			printf("Removing: %d\n", j);
 
 			auto result = hm.find(j);
-			printf("%s: %d\n", result == hm.end() ? "Found" : "Not found", j);
+			printf("%s: %d\n", result != hm.end() ? "Found" : "Not found", j);
 
 			hm.remove(j);
 

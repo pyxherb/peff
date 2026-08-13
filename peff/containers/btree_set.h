@@ -12,6 +12,7 @@ namespace peff {
 		BTreeNodeBase *parent = nullptr;
 		size_t num_keys = 0;
 		size_t num_children = 0;
+		// Children and keys are defined in the implementation type.
 	};
 
 	template <typename T>
@@ -37,86 +38,72 @@ namespace peff {
 			bool has_undo = false;
 
 			PEFF_FORCEINLINE T &key(size_t index) noexcept {
-				PEFF_ASSERT(num_keys <= std::size(keys), "Invalid key number");
 				PEFF_ASSERT(index < num_keys, "Key access out-of-range");
 				return reinterpret_cast<T *>(keys)[index];
 			}
-
 			PEFF_FORCEINLINE const T &key(size_t index) const noexcept {
-				PEFF_ASSERT(num_keys <= std::size(keys), "Invalid key number");
 				PEFF_ASSERT(index < num_keys, "Key access out-of-range");
 				return reinterpret_cast<const T *>(keys)[index];
 			}
 
 			PEFF_FORCEINLINE T &push_key(T &&key) noexcept {
-				PEFF_ASSERT(num_keys < std::size(keys), "Invalid key number");
+				PEFF_ASSERT(num_keys < std::size(keys) / sizeof(T), "Key capacity exceeded");
 				peff::construct_at<T>(reinterpret_cast<T *>(keys) + num_keys, std::move(key));
 				++num_keys;
 				return reinterpret_cast<T *>(keys)[num_keys - 1];
 			}
 
 			PEFF_FORCEINLINE T &insert_key(size_t index, T &&key) noexcept {
-				PEFF_ASSERT(num_keys < std::size(keys), "Invalid key number");
+				PEFF_ASSERT(num_keys < std::size(keys) / sizeof(T), "Key capacity exceeded");
 				if constexpr (std::is_trivial_v<T>) {
 					memmove(keys + sizeof(T) * (index + 1), keys + sizeof(T) * index, sizeof(T) * (num_keys - index));
 					reinterpret_cast<T *>(keys)[index] = std::move(key);
 				} else {
-					const size_t limit = num_keys - index;
-					T *old_ptr = reinterpret_cast<T *>(keys) + index;
-					T *new_ptr = reinterpret_cast<T *>(keys) + index + 1;
-
-					for (size_t i = limit; i; --i) {
-						peff::construct_at<T>(&new_ptr[i - 1], std::move(old_ptr[i - 1]));
+					T *base = reinterpret_cast<T *>(keys);
+					for (size_t i = num_keys; i > index; --i) {
+						peff::construct_at<T>(&base[i], std::move(base[i - 1]));
+						std::destroy_at<T>(&base[i - 1]);
 					}
-
-					peff::construct_at<T>(&reinterpret_cast<T *>(keys)[index], std::move(key));
+					peff::construct_at<T>(&base[index], std::move(key));
 				}
 				++num_keys;
-
 				return this->key(index);
 			}
 
 			PEFF_FORCEINLINE void remove_key(size_t index) noexcept {
-				PEFF_ASSERT(num_keys, "Invalid key number");
+				PEFF_ASSERT(num_keys > 0, "Invalid key number");
 				if constexpr (std::is_trivial_v<T>) {
 					memmove(keys + sizeof(T) * index, keys + sizeof(T) * (index + 1), sizeof(T) * (num_keys - index - 1));
 				} else {
-					const size_t limit = num_keys - index - 1;
-					T *old_ptr = reinterpret_cast<T *>(keys) + index + 1;
-					T *new_ptr = reinterpret_cast<T *>(keys) + index;
-
-					std::destroy_at<T>(new_ptr);
-
-					for (size_t i = limit; i; --i) {
-						peff::construct_at<T>(&new_ptr[i - 1], std::move(old_ptr[i - 1]));
+					T *base = reinterpret_cast<T *>(keys);
+					std::destroy_at<T>(&base[index]);
+					for (size_t i = index + 1; i < num_keys; ++i) {
+						peff::construct_at<T>(&base[i - 1], std::move(base[i]));
+						std::destroy_at<T>(&base[i]);
 					}
 				}
 				--num_keys;
 			}
 
 			PEFF_FORCEINLINE Node *child_node(size_t index) const noexcept {
-				PEFF_ASSERT(num_children <= std::size(children), "Invalid child number");
 				PEFF_ASSERT(index < num_children, "Child node access out-of-range");
 				return children[index];
 			}
-
 			PEFF_FORCEINLINE void push_child_node(Node *node) noexcept {
-				PEFF_ASSERT(num_children < std::size(children), "Invalid child number");
+				PEFF_ASSERT(num_children < std::size(children), "Child capacity exceeded");
 				children[num_children] = node;
 				node->parent = this;
 				++num_children;
 			}
-
 			PEFF_FORCEINLINE void insert_child_node(size_t index, Node *node) noexcept {
-				PEFF_ASSERT(num_children < std::size(children), "Invalid child number");
+				PEFF_ASSERT(num_children < std::size(children), "Child capacity exceeded");
 				memmove(children + (index + 1), children + index, sizeof(void *) * (num_children - index));
 				children[index] = node;
 				node->parent = this;
 				++num_children;
 			}
-
 			PEFF_FORCEINLINE void remove_child_node(size_t index) noexcept {
-				PEFF_ASSERT(num_children, "Invalid child number");
+				PEFF_ASSERT(num_children > 0, "Invalid child number");
 				memmove(children + index, children + (index + 1), sizeof(void *) * (num_children - index - 1));
 				--num_children;
 			}
@@ -125,14 +112,10 @@ namespace peff {
 				for (size_t i = 0; i < num_keys; ++i)
 					std::destroy_at<T>(&key(i));
 			}
-
 			PEFF_FORCEINLINE ~Node() {
 				destroy_keys();
 			}
-
-			PEFF_FORCEINLINE bool is_leaf() const noexcept {
-				return !num_children;
-			}
+			PEFF_FORCEINLINE bool is_leaf() const noexcept { return !num_children; }
 		};
 
 	private:
@@ -177,11 +160,24 @@ namespace peff {
 			}
 		}
 
+		PEFF_FORCEINLINE size_t _bsearch_lower_bound(const Node *node, const T &key) const noexcept {
+			size_t lo = 0, hi = node->num_keys;
+			while (lo < hi) {
+				size_t mid = lo + (hi - lo) / 2;
+				int result = _compare(key, node->key(mid));
+				if (result < 0)
+					hi = mid;
+				else if (result > 0)
+					lo = mid + 1;
+				else
+					return mid;
+			}
+			return lo;
+		}
+
 		inline std::pair<Node *, size_t> _find(const T &key, Node *node) const noexcept {
 		recurse:
-			size_t i = 0;
-			while ((i < node->num_keys) && (this->_gt(key, node->key(i))))
-				++i;
+			size_t i = _bsearch_lower_bound(node, key);
 			if ((i < node->num_keys) && (!this->_compare(key, node->key(i)))) {
 				return { node, i };
 			} else if (node->is_leaf())
@@ -229,9 +225,11 @@ namespace peff {
 				_dealloc_node(z);
 			});*/
 
+			// Move right half of key array into new node.
 			for (size_t j = 0; j < Degree - 1; ++j)
 				z->push_key(std::move(y->key(j + Degree)));
 
+			// Move right half of the child array into new node.
 			if (!y->is_leaf()) {
 				for (size_t j = 0; j < Degree; ++j) {
 					Node *child = y->child_node(j + Degree);
@@ -254,20 +252,30 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _merge(Node *left_child, Node *right_child, Node *parent, size_t index) noexcept {
 			left_child->push_key(std::move(parent->key(index)));
-			for (size_t i = 0; i < Degree - 1; ++i)
+
+			for (size_t i = 0; i < Degree - 1; ++i) {
 				left_child->push_key(std::move(right_child->key(i)));
-			if (!left_child->is_leaf()) {
-				for (size_t i = 0; i < Degree; ++i)
-					left_child->push_child_node(right_child->child_node(i));
 			}
+
+			if (!left_child->is_leaf()) {
+				for (size_t i = 0; i < Degree; ++i) {
+					left_child->push_child_node(right_child->child_node(i));
+				}
+			}
+
 			_dealloc_node(right_child);
 
 			parent->remove_key(index);
 			parent->remove_child_node(index + 1);
+
 			if (!parent->num_keys) {
-				_root = parent->child_node(index);
-				_root->parent = nullptr;
-				_dealloc_node(parent);
+				if (parent->parent == nullptr) {
+					_root = parent->child_node(0);
+					_root->parent = nullptr;
+					_dealloc_node(parent);
+				} else {
+					PEFF_ASSERT(false, "Non-root node should not underflow in deletion");
+				}
 			}
 		}
 
@@ -290,9 +298,7 @@ namespace peff {
 
 		PEFF_FORCEINLINE T *_insert_nonfull(Node *node, T &&key) noexcept {
 		recurse:
-			size_t i = 0;
-			while (i < node->num_keys && _gt(key, node->key(i)))
-				++i;
+			size_t i = _bsearch_lower_bound(node, key);
 
 			if (node->is_leaf()) {
 				node->insert_key(i, std::move(key));
@@ -324,12 +330,14 @@ namespace peff {
 		recurse:
 			if (node->is_leaf()) {
 				T max_key = std::move(node->key(node->num_keys - 1));
-				if (!(--node->num_keys)) {
+				node->remove_key(node->num_keys - 1);
+				if (!node->num_keys) {
 					_dealloc_node(node);
 					_root = nullptr;
 				}
 				return max_key;
 			}
+
 			Node *right_most = node->child_node(node->num_keys);
 			if (right_most->num_keys == Degree - 1) {
 				Node *left_sib = node->child_node(node->num_keys - 1);
@@ -496,9 +504,7 @@ namespace peff {
 			if (!node)
 				return;
 
-			size_t idx = 0;
-			while (idx < node->num_keys && _gt(key, node->key(idx)))
-				++idx;
+			size_t idx = _bsearch_lower_bound(node, key);
 
 			if (idx < node->num_keys && !_compare(key, node->key(idx))) {
 				if (node->is_leaf()) {

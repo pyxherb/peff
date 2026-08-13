@@ -33,6 +33,24 @@ namespace peff {
 			if (value_constructed)
 				value.destroy();
 		}
+
+		PEFF_FORCEINLINE BTreeMapPair<K, V> &operator=(BTreeMapPair<K, V> &&rhs) noexcept {
+			if (key_constructed)
+				key.destroy();
+			if (value_constructed)
+				value.destroy();
+			if (rhs.key_constructed) {
+				key = std::move(rhs.key.get());
+				rhs.key_constructed = false;
+				key_constructed = true;
+			}
+			if (rhs.value_constructed) {
+				value = std::move(rhs.value.get());
+				rhs.value_constructed = false;
+				value_constructed = true;
+			}
+			return *this;
+		}
 	};
 
 	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false, size_t Degree = _calc_btree_default_node_deg<BTreeMapPair<K, V>>()>
@@ -213,16 +231,16 @@ namespace peff {
 			}
 		};
 
-		Iterator begin() {
+		PEFF_FORCEINLINE Iterator begin() {
 			return Iterator(_set.begin());
 		}
-		Iterator end() {
+		PEFF_FORCEINLINE Iterator end() {
 			return Iterator(_set.end());
 		}
-		Iterator rbegin() {
+		PEFF_FORCEINLINE Iterator rbegin() {
 			return Iterator(_set.rbegin());
 		}
-		Iterator rend() {
+		PEFF_FORCEINLINE Iterator rend() {
 			return Iterator(_set.rend());
 		}
 
@@ -302,19 +320,8 @@ namespace peff {
 			return Iterator(_set.find(QueryPair(&key)));
 		}
 
-		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove(const Iterator &iterator) {
-			peff::Option<Pair> pair = _set.remove(iterator._iterator);
-			if (pair.has_value()) {
-				assert(((*pair).key_constructed && (*pair).value_constructed) ||
-					   ((!(*pair).key_constructed) && (!(*pair).key_constructed)));
-				if ((*pair).key_constructed) {
-					(*pair).key_constructed = false;
-					(*pair).value_constructed = false;
-					return std::pair<K, V>{ std::move((*pair).key.get()), std::move((*pair).value.get()) };
-				}
-				return peff::NULLOPT;
-			}
-			return peff::NULLOPT;
+		PEFF_FORCEINLINE void remove(const Iterator &iterator) {
+			_set.remove(iterator._iterator);
 		}
 	};
 }

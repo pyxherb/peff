@@ -733,10 +733,12 @@ namespace peff {
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE T &back() {
+			PEFF_ASSERT(_length, "Called back() when DynArray is empty");
 			return at(_length - 1);
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE const T &back() const {
+			PEFF_ASSERT(_length, "Called back() when DynArray is empty");
 			return at(_length - 1);
 		}
 

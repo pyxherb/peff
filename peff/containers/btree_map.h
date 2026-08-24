@@ -93,7 +93,7 @@ namespace peff {
 			}
 		};
 
-		using SetType = BTreeSet<Pair, PairComparator, IsThreeway>;
+		using SetType = BTreeSet<Pair, PairComparator, IsThreeway, Degree>;
 
 		SetType _set;
 

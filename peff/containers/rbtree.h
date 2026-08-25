@@ -498,7 +498,7 @@ namespace peff {
 			return _insert(static_cast<Node *>(parent), node);
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE PEFF_NONNULL_RET Node *insert(T &&key) {
+		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET Node *insert(T &&key) {
 			NodeBase *parent = nullptr, **slot = _get_slot(key, parent);
 
 			if (!slot) {

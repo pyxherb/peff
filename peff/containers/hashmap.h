@@ -135,9 +135,9 @@ namespace peff {
 		template<typename U>
 		[[nodiscard]] PEFF_FORCEINLINE RemoveResultType remove_alt(const U &key) {
 			if constexpr (Fallible) {
-				return _set.remove_alt<U>(key);
+				return _set.template remove_alt<U>(key);
 			} else {
-				_set.remove_alt<U>(key);
+				_set.template remove_alt<U>(key);
 			}
 		}
 
@@ -147,7 +147,7 @@ namespace peff {
 
 		template<typename U>
 		PEFF_FORCEINLINE ContainsResultType contains_alt(const U &key) const {
-			return _set.contains_alt<U>(key);
+			return _set.template contains_alt<U>(key);
 		}
 
 		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
@@ -166,14 +166,14 @@ namespace peff {
 		template<typename U>
 		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) {
 			if constexpr (Fallible) {
-				auto maybe_pair = _set.at_alt<U>(key);
+				auto maybe_pair = _set.template at_alt<U>(key);
 
 				if (!maybe_pair.has_value())
 					return NULLOPT;
 
 				return maybe_pair.value().value.get();
 			} else {
-				return _set.at_alt<U>(key).value.get();
+				return _set.template at_alt<U>(key).value.get();
 			}
 		}
 
@@ -193,14 +193,14 @@ namespace peff {
 		template<typename U>
 		PEFF_FORCEINLINE ConstElementQueryResultType at_alt(const U &key) const {
 			if constexpr (Fallible) {
-				auto maybe_pair = _set.at_alt<U>(key);
+				auto maybe_pair = _set.template at_alt<U>(key);
 
 				if (!maybe_pair.has_value())
 					return NULLOPT;
 
 				return maybe_pair.value().value.get();
 			} else {
-				return _set.at_alt<U>(key).value.get();
+				return _set.template at_alt<U>(key).value.get();
 			}
 		}
 
@@ -365,7 +365,7 @@ namespace peff {
 
 		template <typename U>
 		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
-			return Iterator(_set.find_alt<U>(key));
+			return Iterator(_set.template find_alt<U>(key));
 		}
 
 		PEFF_FORCEINLINE size_t size() const {

@@ -577,6 +577,20 @@ namespace peff {
 			goto recurse;
 		}
 
+		PEFF_FORCEINLINE T &at(const T &key) noexcept {
+			PEFF_ASSERT(_root, "The set is empty");
+			auto result = _find(key, _root);
+			PEFF_ASSERT(!result.first, "Corresponding element not found");
+			return result.first->key(result.second);
+		}
+
+		PEFF_FORCEINLINE const T &at(const T &key) const noexcept {
+			PEFF_ASSERT(_root, "The set is empty");
+			auto result = _find(key, _root);
+			PEFF_ASSERT(!result.first, "Corresponding element not found");
+			return result.first->key(result.second);
+		}
+
 		class Iterator {
 		private:
 			Node *_node;

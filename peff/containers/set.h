@@ -4,27 +4,23 @@
 #include "rbtree.h"
 
 namespace peff {
-	template <typename T, typename Comparator, bool Fallible, bool IsThreeway>
+	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false>
 	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
-	class SetImpl final {
+	class Set final {
 	private:
 		static_assert(std::is_move_constructible_v<T>, "The element must be move-constructible");
-		using Tree = std::conditional_t<Fallible, FallibleRBTree<T, Comparator, IsThreeway>, RBTree<T, Comparator, IsThreeway>>;
+		using Tree = RBTree<T, Comparator, IsThreeway>;
 		Tree _tree;
-		using ThisType = SetImpl<T, Comparator, Fallible, IsThreeway>;
-	public:
-		using RemoveResultType = typename std::conditional_t<Fallible, bool, void>;
-		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<T &>, T &>;
-		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const T &>, const T &>;
-		using ContainsResultType = typename std::conditional_t<Fallible, Option<bool>, bool>;
+		using ThisType = Set<T, Comparator, IsThreeway>;
 
+	public:
 		using NodeType = typename Tree::NodeType;
 
-		PEFF_FORCEINLINE SetImpl(PEFF_NONNULL Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
+		PEFF_FORCEINLINE Set(PEFF_NONNULL Alloc *allocator, Comparator &&comparator = {}) : _tree(allocator, std::move(comparator)) {
 		}
-		PEFF_FORCEINLINE SetImpl(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
+		PEFF_FORCEINLINE Set(ThisType &&rhs) : _tree(std::move(rhs._tree)) {
 		}
-		PEFF_FORCEINLINE ~SetImpl() {
+		PEFF_FORCEINLINE ~Set() {
 		}
 
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&dest) noexcept {
@@ -41,28 +37,18 @@ namespace peff {
 			return &node->rb_value;
 		}
 
-		PEFF_FORCEINLINE RemoveResultType remove(const T &key) {
+		PEFF_FORCEINLINE peff::Option<T> remove(const T &key) {
 			return remove_alt<T>(key);
 		}
 
-		template<typename U>
-		PEFF_FORCEINLINE RemoveResultType remove_alt(const U &key) {
-			if constexpr (Fallible) {
-				auto node = _tree.template get_alt<U>(key);
+		template <typename U>
+		PEFF_FORCEINLINE peff::Option<T> remove_alt(const U &key) {
+			auto node = _tree.template get_alt<U>(key);
 
-				if (!node.has_value())
-					return false;
+			if (node)
+				return _tree.remove(node);
 
-				if (auto v = node.value(); v)
-					_tree.remove(node.value());
-
-				return true;
-			} else {
-				auto node = _tree.template get_alt<U>(key);
-
-				if (node)
-					_tree.remove(node);
-			}
+			return peff::NULLOPT;
 		}
 
 		PEFF_FORCEINLINE void verify() {
@@ -93,52 +79,30 @@ namespace peff {
 			_tree.clear();
 		}
 
-		PEFF_FORCEINLINE ElementQueryResultType at(const T &key) {
+		PEFF_FORCEINLINE T &at(const T &key) {
 			return at_alt<T>(key);
 		}
 
-		template<typename U>
-		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) {
-			if constexpr (Fallible) {
-				auto node = _tree.template get_alt<U>(key);
+		template <typename U>
+		PEFF_FORCEINLINE T &at_alt(const U &key) {
+			auto node = _tree.template get_alt<U>(key);
 
-				if (!node.has_value())
-					return NULLOPT;
+			PEFF_ASSERT(node, "Corresponding element not found!");
 
-				assert(node.value());
-
-				return node.value()->value;
-			} else {
-				auto node = _tree.template get_alt<U>(key);
-
-				assert(node);
-
-				return node->rb_value;
-			}
+			return node->rb_value;
 		}
 
-		PEFF_FORCEINLINE ConstElementQueryResultType at(const T &key) const {
+		PEFF_FORCEINLINE const T &at(const T &key) const {
 			return at_alt<T>(key);
 		}
 
-		template<typename U>
-		PEFF_FORCEINLINE ConstElementQueryResultType at_alt(const U &key) const {
-			if constexpr (Fallible) {
-				auto node = _tree.template get_alt<U>(key);
+		template <typename U>
+		PEFF_FORCEINLINE const T &at_alt(const U &key) const {
+			auto node = _tree.template get_alt<U>(key);
 
-				if (!node.has_value())
-					return NULLOPT;
+			assert(node);
 
-				assert(node.value());
-
-				return node.value()->value;
-			} else {
-				auto node = _tree.template get_alt<U>(key);
-
-				assert(node);
-
-				return node->rb_value;
-			}
+			return node->rb_value;
 		}
 
 		struct Iterator {
@@ -305,27 +269,18 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->rend());
 		}
 
-		PEFF_FORCEINLINE ContainsResultType contains(const T &key) const {
+		PEFF_FORCEINLINE bool contains(const T &key) const {
 			return contains_alt<T>(key);
 		}
 
-		template<typename U>
-		PEFF_FORCEINLINE ContainsResultType contains_alt(const U &key) const {
-			if constexpr (Fallible) {
-				auto node = _tree.template get_alt<U>(key);
-
-				if (!node.has_value())
-					return NULLOPT;
-
-				return node.value();
-			} else {
-				return _tree.template get_alt<U>(key);
-			}
+		template <typename U>
+		PEFF_FORCEINLINE bool contains_alt(const U &key) const {
+			return _tree.template get_alt<U>(key);
 		}
 		PEFF_FORCEINLINE ConstIterator find(const T &key) const {
 			return const_cast<ThisType *>(this)->find(key);
 		}
-		template<typename U>
+		template <typename U>
 		PEFF_FORCEINLINE ConstIterator find_alt(const U &key) const {
 			return const_cast<ThisType *>(this)->find_alt<U>(key);
 		}
@@ -333,26 +288,19 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator find(const T &key) {
 			return find_alt<T>(key);
 		}
-		template<typename U>
+		template <typename U>
 		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
-			if constexpr (Fallible) {
-				if (auto node = _tree.template get_alt<U>(key); node.has_value()) {
-					return Iterator(typename Tree::Iterator(node.value(), &_tree, IteratorDirection::Forward));
-				}
-				return _tree.end();
-			} else {
-				if (auto node = _tree.template get_alt<U>(key); node) {
-					return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
-				}
-				return _tree.end();
+			if (auto node = _tree.template get_alt<U>(key); node) {
+				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
 			}
+			return _tree.end();
 		}
 
 		PEFF_FORCEINLINE Iterator find_max_lteq(const T &key) {
 			return find_max_lteq_alt<T>(key);
 		}
 
-		template<typename U>
+		template <typename U>
 		PEFF_FORCEINLINE Iterator find_max_lteq_alt(const U &key) {
 			if (auto node = _tree.template get_max_lteq_alt<U>(key); node) {
 				return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
@@ -364,7 +312,7 @@ namespace peff {
 			return const_cast<ThisType *>(this)->find_max_lteq(key);
 		}
 
-		template<typename U>
+		template <typename U>
 		PEFF_FORCEINLINE ConstIterator find_max_lteq_alt(const U &key) const {
 			return const_cast<ThisType *>(this)->find_max_lteq_alt(key);
 		}
@@ -373,11 +321,6 @@ namespace peff {
 			return _tree.remove(iterator._iterator);
 		}
 	};
-
-	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false>
-	using Set = SetImpl<T, Comparator, false, IsThreeway>;
-	template <typename T, typename Comparator = FallibleLt<T>, bool IsThreeway = false>
-	using FallibleSet = SetImpl<T, Comparator, true, IsThreeway>;
 }
 
 #endif

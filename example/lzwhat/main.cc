@@ -17,7 +17,7 @@ enum class LZWhatDataType : uint8_t {
 };
 
 bool lzwhat_encode_varint64(peff::BitArray &bit_array, uint64_t data) {
-	size_t beginning = bit_array.bit_size();
+	size_t beginning = bit_array.size();
 	if (data < (1llu << 7)) {
 		uint8_t b = 0b1;
 
@@ -198,7 +198,7 @@ bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, 
 	data_out = 0;
 
 	auto read_first_bits = [](const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) -> bool {
-		if (cur_index + 7 > bit_array.bit_size()) {
+		if (cur_index + 7 > bit_array.size()) {
 			return false;
 		}
 		uint8_t a;
@@ -208,7 +208,7 @@ bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, 
 		return true;
 	};
 	auto shift_and_read = [](const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) -> bool {
-		if (cur_index + 7 > bit_array.bit_size()) {
+		if (cur_index + 7 > bit_array.size()) {
 			return false;
 		}
 		uint8_t a;
@@ -219,7 +219,7 @@ bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, 
 		return true;
 	};
 	auto read_last_bits = [](const peff::BitArray &bit_array, size_t &cur_index, uint64_t &data_out) -> bool {
-		if (cur_index + 8 > bit_array.bit_size()) {
+		if (cur_index + 8 > bit_array.size()) {
 			return false;
 		}
 		uint8_t a;
@@ -230,35 +230,35 @@ bool lzwhat_decode_varint64(const peff::BitArray &bit_array, size_t &cur_index, 
 		return true;
 	};
 
-	if (cur_index + 1 > bit_array.bit_size()) {
+	if (cur_index + 1 > bit_array.size()) {
 		return false;
 	}
 	if (!bit_array.get_bit(cur_index++)) {
-		if (cur_index + 1 > bit_array.bit_size()) {
+		if (cur_index + 1 > bit_array.size()) {
 			return false;
 		}
 		if (!bit_array.get_bit(cur_index++)) {
-			if (cur_index + 1 > bit_array.bit_size()) {
+			if (cur_index + 1 > bit_array.size()) {
 				return false;
 			}
 			if (!bit_array.get_bit(cur_index++)) {
-				if (cur_index + 1 > bit_array.bit_size()) {
+				if (cur_index + 1 > bit_array.size()) {
 					return false;
 				}
 				if (!bit_array.get_bit(cur_index++)) {
-					if (cur_index + 1 > bit_array.bit_size()) {
+					if (cur_index + 1 > bit_array.size()) {
 						return false;
 					}
 					if (!bit_array.get_bit(cur_index++)) {
-						if (cur_index + 1 > bit_array.bit_size()) {
+						if (cur_index + 1 > bit_array.size()) {
 							return false;
 						}
 						if (!bit_array.get_bit(cur_index++)) {
-							if (cur_index + 1 > bit_array.bit_size()) {
+							if (cur_index + 1 > bit_array.size()) {
 								return false;
 							}
 							if (!bit_array.get_bit(cur_index++)) {
-								if (cur_index + 1 > bit_array.bit_size()) {
+								if (cur_index + 1 > bit_array.size()) {
 									return false;
 								}
 								if (!bit_array.get_bit(cur_index++)) {
@@ -475,10 +475,10 @@ bool lzwhat_decompress(const peff::BitArray &bit_array, peff::Alloc *allocator, 
 		}
 	};
 
-#define INC_CUR_PTR(i, size, bit_array) \
-	if (((i) += (size)) > (bit_array).bit_size()) return false;
+#define INC_CUR_PTR(i, sz, bit_array) \
+	if (((i) += (sz)) > (bit_array).size()) return false;
 
-	while (i < bit_array.bit_size()) {
+	while (i < bit_array.size()) {
 		bool b = bit_array.get_bit(i);
 		INC_CUR_PTR(i, 1, bit_array);
 

@@ -4,8 +4,8 @@
 #include "set.h"
 
 namespace peff {
-	template <typename K, typename V, typename Lt, bool Fallible, bool IsThreeway>
-	class MapImpl final {
+	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false>
+	class Map final {
 	private:
 		static_assert(std::is_move_constructible_v<K>, "The key must be move-constructible");
 		static_assert(std::is_move_constructible_v<V>, "The value must be move-constructible");
@@ -71,22 +71,17 @@ namespace peff {
 			}
 		};
 
-		using SetType = std::conditional_t<Fallible, FallibleSet<Pair, PairComparator, IsThreeway>, Set<Pair, PairComparator, IsThreeway>>;
+		using SetType = Set<Pair, PairComparator, IsThreeway>;
 
 		SetType _set;
 
-		using ThisType = MapImpl<K, V, Lt, Fallible, IsThreeway>;
+		using ThisType = Map<K, V, Lt, IsThreeway>;
 
 	public:
 		using NodeType = typename SetType::NodeType;
 
-		using RemoveResultType = typename SetType::RemoveResultType;
-		using ElementQueryResultType = typename std::conditional_t<Fallible, Option<V &>, V &>;
-		using ConstElementQueryResultType = typename std::conditional_t<Fallible, Option<const V &>, const V &>;
-		using ContainsResultType = typename SetType::ContainsResultType;
-
-		PEFF_FORCEINLINE MapImpl(PEFF_NONNULL Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
-		PEFF_FORCEINLINE MapImpl(ThisType &&rhs) : _set(std::move(rhs._set)) {
+		PEFF_FORCEINLINE Map(PEFF_NONNULL Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
+		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)) {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
 			clear();
@@ -99,76 +94,48 @@ namespace peff {
 			return _set.insert(std::move(pair));
 		}
 
-		PEFF_FORCEINLINE RemoveResultType remove(const K &key) {
-			return _set.remove(QueryPair(&key));
+		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove(const K &key) {
+			auto opt = _set.remove(QueryPair(&key));
+			if (!opt.has_value())
+				return peff::NULLOPT;
+			auto pair = std::move(opt).value();
+			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
 		}
 
 		template <typename U>
-		PEFF_FORCEINLINE RemoveResultType remove_alt(const U &key) {
-			return _set.template remove_alt<U>(key);
+		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove_alt(const U &key) {
+			auto opt = _set.template remove_alt<U>(key);
+			if (!opt.has_value())
+				return peff::NULLOPT;
+			auto pair = std::move(opt).value();
+			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
 		}
 
-		PEFF_FORCEINLINE ContainsResultType contains(const K &key) const {
+		PEFF_FORCEINLINE bool contains(const K &key) const {
 			return _set.contains(QueryPair(&key));
 		}
 
 		template <typename U>
-		PEFF_FORCEINLINE ContainsResultType contains_alt(const U &key) const {
+		PEFF_FORCEINLINE bool contains_alt(const U &key) const {
 			return _set.template contains_alt<U>(key);
 		}
 
-		PEFF_FORCEINLINE ElementQueryResultType at(const K &key) {
-			if constexpr (Fallible) {
-				auto v = _set.at(QueryPair(&key));
-
-				if (!v.has_value())
-					return NULLOPT;
-
-				return v.value().value.get();
-			} else {
-				return _set.at(QueryPair(&key)).value.get();
-			}
+		PEFF_FORCEINLINE V &at(const K &key) {
+			return _set.at(QueryPair(&key)).value.get();
 		}
 
 		template <typename U>
-		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) {
-			if constexpr (Fallible) {
-				auto v = _set.template at_alt<U>(key);
-
-				if (!v.has_value())
-					return NULLOPT;
-
-				return v.value().value.get();
-			} else {
-				return _set.template at_alt<U>(key).value.get();
-			}
+		PEFF_FORCEINLINE V &at_alt(const U &key) {
+			return _set.template at_alt<U>(key).value.get();
 		}
 
-		PEFF_FORCEINLINE ConstElementQueryResultType at(const K &key) const {
-			if constexpr (Fallible) {
-				auto v = _set.at(QueryPair(&key));
-
-				if (!v.has_value())
-					return NULLOPT;
-
-				return v.value().value.get();
-			} else {
-				return _set.at(QueryPair(&key)).value.get();
-			}
+		PEFF_FORCEINLINE const V &at(const K &key) const {
+			return _set.at(QueryPair(&key)).value.get();
 		}
 
 		template <typename U>
-		PEFF_FORCEINLINE ElementQueryResultType at_alt(const U &key) const {
-			if constexpr (Fallible) {
-				auto v = _set.template at_alt<U>(key);
-
-				if (!v.has_value())
-					return NULLOPT;
-
-				return v.value().value.get();
-			} else {
-				return _set.template at_alt<U>(key).value.get();
-			}
+		PEFF_FORCEINLINE const V &at_alt(const U &key) const {
+			return _set.template at_alt<U>(key).value.get();
 		}
 
 		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
@@ -389,7 +356,7 @@ namespace peff {
 			if (pair.has_value()) {
 				assert(((*pair).key_constructed && (*pair).value_constructed) ||
 					   ((!(*pair).key_constructed) && (!(*pair).key_constructed)));
-				if((*pair).key_constructed) {
+				if ((*pair).key_constructed) {
 					(*pair).key_constructed = false;
 					(*pair).value_constructed = false;
 					return std::pair<K, V>{ std::move((*pair).key.get()), std::move((*pair).value.get()) };
@@ -399,11 +366,6 @@ namespace peff {
 			return peff::NULLOPT;
 		}
 	};
-
-	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false>
-	using Map = MapImpl<K, V, Lt, false, IsThreeway>;
-	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false>
-	using FallibleMap = MapImpl<K, V, Lt, true, IsThreeway>;
 }
 
 #endif

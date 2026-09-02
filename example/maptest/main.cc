@@ -161,7 +161,7 @@ int main() {
 
 	peff::SharedPtr<RcObj> outer_shared_ptr;
 
-	{
+	/* {
 		peff::FallibleHashSet<int, FallibleComparator<int>, FallibleHasher<int>> test(&peff::g_std_allocator);
 
 		for (int i = 0; i < 1024; ++i) {
@@ -171,7 +171,7 @@ int main() {
 				}
 			}
 		}
-	}
+	}*/
 	{
 		peff::SharedPtr<RcObj> shared_ptr = peff::make_shared<RcObj>(peff::default_allocator(), "SharedPtr");
 		peff::SharedPtr<Test2> test2_ptr = shared_ptr.cast_to<Test2>();
@@ -291,7 +291,7 @@ int main() {
 		bit_arr.fill_set(0, 64);
 		bit_arr.fill_clear(0, 48);
 
-		for (size_t i = 0; i < bit_arr.bit_size(); ++i) {
+		for (size_t i = 0; i < bit_arr.size(); ++i) {
 			printf("%s", bit_arr.get_bit(i) ? "1" : "0");
 		}
 
@@ -538,7 +538,7 @@ int main() {
 			int j = i & 1 ? i : 32 - i;
 			printf("Removing: %d\n", j);
 
-			hm.remove(j);
+			hm.remove_alt<long>((long)j);
 
 			auto k = hm.begin();
 			while (k != hm.end()) {

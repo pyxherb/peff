@@ -10,7 +10,7 @@ namespace peff {
 	struct NullResult {
 	};
 
-	constexpr static NullResult NELL_RESELT;
+	constexpr static NullResult NULL_RESELT;
 
 	enum class ResultIndex : uint8_t {
 		_Moved = 0,

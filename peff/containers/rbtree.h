@@ -64,7 +64,7 @@ namespace peff {
 		typename Comparator,
 		bool Fallible,
 		bool IsThreeway>
-	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
+	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &>)
 	class RBTreeImpl final : protected RBTreeBase {
 	public:
 		static_assert(std::is_move_constructible_v<T>, "The key must be move-constructible");
@@ -489,13 +489,15 @@ namespace peff {
 		/// @brief Insert a node into the tree.
 		/// @param node Node to be inserted.
 		/// @return Whether the node is inserted successfully, false if node with the same key presents.
-		[[nodiscard]] PEFF_FORCEINLINE bool insert(PEFF_NONNULL Node *node) {
+		[[nodiscard]] PEFF_FORCEINLINE T *insert(PEFF_NONNULL Node *node) {
 			NodeBase *parent = nullptr;
 			NodeBase **slot = _get_slot(node->rb_value, parent);
 
 			assert(slot);
 
-			return _insert(static_cast<Node *>(parent), node);
+			if (_insert(static_cast<Node *>(parent), node))
+				return &node->rb_value;
+			return nullptr;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET Node *insert(T &&key) {

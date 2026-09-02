@@ -67,9 +67,18 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE BitArray(PEFF_NONNULL Alloc *allocator) : _buffer(allocator) {
+		PEFF_FORCEINLINE BitArray(PEFF_NONNULL Alloc *allocator) noexcept : _buffer(allocator) {
+		}
+		PEFF_FORCEINLINE BitArray(BitArray &&rhs) noexcept : _buffer(std::move(rhs._buffer)), _num_bits(rhs._num_bits) {
+			rhs._num_bits = 0;
 		}
 		PEFF_FORCEINLINE ~BitArray() {
+		}
+
+		PEFF_FORCEINLINE BitArray& operator=(BitArray &&rhs) noexcept {
+			_buffer = std::move(rhs._buffer);
+			_num_bits = rhs._num_bits;
+			return *this;
 		}
 
 		PEFF_FORCEINLINE size_t size() const {

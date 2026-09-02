@@ -112,7 +112,6 @@ namespace peff {
 			assert(length > _length);
 
 			if constexpr (construct) {
-				static_assert(std::is_constructible_v<T>, "The type is not defaultly constructible");
 				if constexpr (!std::is_trivially_constructible_v<T>) {
 					// Because construction of new objects may throw exceptions,
 					// we choose to construct the new objects first.
@@ -160,8 +159,8 @@ namespace peff {
 			}
 		}
 
-		template <bool construct>
-		[[nodiscard]] PEFF_FORCEINLINE bool _grow_capacity(size_t length, size_t new_capacity) {
+		template <bool construct, typename... Args>
+		[[nodiscard]] PEFF_FORCEINLINE bool _grow_capacity(size_t length, size_t new_capacity, Args &&...args) {
 			assert(new_capacity > _length);
 			assert(length > _length);
 
@@ -183,13 +182,13 @@ namespace peff {
 					if (!(new_data = (T *)_allocator->alloc(new_capacity_total_size, alignof(T))))
 						return false;
 					if constexpr (std::is_nothrow_constructible_v<T>) {
-						_expand_to<construct>(new_data, length);
+						_expand_to<construct>(new_data, length, std::forward<Args>(args)...);
 					} else {
 						ScopeGuard scope_guard(
 							[this, new_capacity_total_size, new_data]() noexcept {
 								_allocator->release(new_data, new_capacity_total_size, alignof(T));
 							});
-						_expand_to<construct>(new_data, length);
+						_expand_to<construct>(new_data, length, std::forward<Args>(args)...);
 						scope_guard.release();
 					}
 				} else {
@@ -198,7 +197,7 @@ namespace peff {
 								 _data,
 								 sizeof(T) * _capacity, alignof(T),
 								 new_capacity_total_size))) {
-							_expand_to<construct>(new_data, length);
+							_expand_to<construct>(new_data, length, std::forward<Args>(args)...);
 						} else {
 							if (!(new_data = (T *)_allocator->alloc(new_capacity_total_size, alignof(T))))
 								return false;
@@ -206,7 +205,7 @@ namespace peff {
 								[this, new_capacity_total_size, new_data]() noexcept {
 									_allocator->release(new_data, new_capacity_total_size, alignof(T));
 								});
-							_expand_to<construct>(new_data, length);
+							_expand_to<construct>(new_data, length, std::forward<Args>(args)...);
 							scope_guard.release();
 						}
 					} else {
@@ -216,7 +215,7 @@ namespace peff {
 							[this, new_capacity_total_size, new_data]() noexcept {
 								_allocator->release(new_data, new_capacity_total_size, alignof(T));
 							});
-						_expand_to<construct>(new_data, length);
+						_expand_to<construct>(new_data, length, std::forward<Args>(args)...);
 						scope_guard.release();
 					}
 				}
@@ -269,10 +268,10 @@ namespace peff {
 			return true;
 		}
 
-		template <bool construct>
-		[[nodiscard]] PEFF_FORCEINLINE bool _auto_grow_capacity(size_t length) {
+		template <bool construct, typename... Args>
+		[[nodiscard]] PEFF_FORCEINLINE bool _auto_grow_capacity(size_t length, Args &&...args) {
 			if (length > _capacity) {
-				if (!_grow_capacity<construct>(length, _get_grown_capacity(length, _capacity)))
+				if (!_grow_capacity<construct>(length, _get_grown_capacity(length, _capacity), std::forward<Args>(args)...))
 					return false;
 			}
 			return true;
@@ -542,10 +541,10 @@ namespace peff {
 		[[nodiscard]] PEFF_FORCEINLINE bool resize_construct(size_t length, Args &&...args) {
 			if (length > _length) {
 				if (length > _capacity) {
-					if (!_auto_grow_capacity<false>(length))
+					if (!_auto_grow_capacity<true>(length, std::forward<Args>(args)...))
 						return false;
 				} else {
-					_expand_to<false, Args...>(_data, length, std::forward<Args>(args)...);
+					_expand_to<true, Args...>(_data, length, std::forward<Args>(args)...);
 					_length = length;
 				}
 			} else if (length < _length) {

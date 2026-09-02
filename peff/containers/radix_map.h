@@ -344,9 +344,27 @@ namespace peff {
 		}
 
 	public:
-		PEFF_FORCEINLINE RadixMap(PEFF_NONNULL peff::Alloc *allocator) : _allocator(allocator), _height(0), _size(0), _root(nullptr) {}
+		PEFF_FORCEINLINE RadixMap(PEFF_NONNULL peff::Alloc *allocator) noexcept : _allocator(allocator), _height(0), _size(0), _root(nullptr) {}
+		PEFF_FORCEINLINE RadixMap(RadixMap &&rhs) noexcept : _allocator(std::move(rhs._allocator)), _height(rhs._height), _size(rhs._size), _root(rhs._root) {
+			rhs._height = 0;
+			rhs._size = 0;
+			rhs._root = nullptr;
+		}
 		PEFF_FORCEINLINE ~RadixMap() {
 			clear();
+		}
+
+		PEFF_FORCEINLINE RadixMap &operator=(RadixMap &&rhs) noexcept {
+			verify_allocator(this->_allocator.get(), rhs._allocator.get());
+			clear();
+			this->_allocator = std::move(rhs._allocator);
+			_height = rhs._height;
+			_size = rhs._size;
+			_root = rhs._root;
+			rhs._height = 0;
+			rhs._size = 0;
+			rhs._root = nullptr;
+			return *this;
 		}
 
 		inline void clear() noexcept {

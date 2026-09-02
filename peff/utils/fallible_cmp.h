@@ -31,7 +31,7 @@ namespace peff {
 	template <typename T>
 	struct FallibleCmpThreeway {
 		Option<int> operator()(const T &lhs, const T &rhs) const {
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 			return lhs <=> rhs;
 #else
 			if (lhs < rhs)

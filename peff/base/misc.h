@@ -83,7 +83,7 @@ namespace peff {
 		} else {
 			static_assert(std::is_move_constructible_v<T>, "The type must at least be move-constructible");
 			std::destroy_at<T>(&lhs);
-			peff::construct_at<T>(&lhs, std::move(lhs));
+			peff::construct_at<T>(&lhs, std::move(rhs));
 		}
 	}
 

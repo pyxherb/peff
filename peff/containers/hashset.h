@@ -11,7 +11,7 @@
 #include <peff/base/scope_guard.h>
 #include <stdexcept>
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	#include <concepts>
 #endif
 

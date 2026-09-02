@@ -108,7 +108,7 @@ namespace peff {
 		}
 	}
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	template <typename T, typename... Args>
 	requires std::constructible_from<T, Args...>
 #else
@@ -116,7 +116,7 @@ namespace peff {
 #endif
 		PEFF_FORCEINLINE void construct_at(PEFF_OUT T *ptr, Args &&...args) {
 #ifdef new
-	#if __cplusplus >= 202002L
+	#if PEFF_CPLUSPLUS >= 202002L
 		std::construct_at<T>(ptr, std::forward<Args>(args)...);
 	#else
 		#if defined(_MSC_VER) || (defined(__GNUC__)) || (defined(__clang__))
@@ -139,7 +139,7 @@ namespace peff {
 		std::destroy_at<T>(ptr);
 	}
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	template <typename T, typename... Args>
 	requires std::constructible_from<T, Args...>
 #else

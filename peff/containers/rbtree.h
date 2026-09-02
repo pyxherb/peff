@@ -7,7 +7,7 @@
 #include <memory_resource>
 #include <type_traits>
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	#include <concepts>
 #endif
 

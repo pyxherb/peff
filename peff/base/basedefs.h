@@ -16,11 +16,25 @@
 #if defined(_MSC_VER)
 	#define PEFF_FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
-	#ifdef NDEBUG
-		#define PEFF_FORCEINLINE __attribute__((__always_inline__)) inline
-	#else
-		#define PEFF_FORCEINLINE inline
-	#endif
+	#define PEFF_FORCEINLINE __attribute__((__always_inline__)) inline
+#else
+	#define PEFF_FORCEINLINE inline
+#endif
+
+#if defined(_MSC_VER)
+	#define PEFF_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_FORCEINLINE __attribute__((__noinline__)) inline
+#else
+	#define PEFF_FORCEINLINE inline
+#endif
+
+#if defined(_MSC_VER)
+	#define PEFF_FLATTEN [[msvc::flatten]]
+#elif defined(__GNUC__) || defined(__clang__)
+	#define PEFF_FLATTEN __attribute__((__flatten__)) inline
+#else
+	#define PEFF_FLATTEN inline
 #endif
 
 #if defined(_MSC_VER)
@@ -43,14 +57,58 @@
 
 #if defined(_MSC_VER)
 	#define PEFF_UNREACHABLE() \
-		assert(false);            \
+		assert(false);         \
 		__assume(false);
 #elif defined(__GNUC__) || defined(__clang__)
 	#define PEFF_UNREACHABLE() \
-		assert(false);            \
+		assert(false);         \
 		__builtin_unreachable()
 #else
 	#define PEFF_UNREACHABLE() std::terminate()
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+	#define PEFF_USED __attribute__((used))
+#else
+	#define PEFF_USED
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+	#define PEFF_PURE __attribute__((__pure__))
+#else
+	#define PEFF_PURE
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+	#define PEFF_CONST_FN __attribute__((__const__))
+#else
+	#define PEFF_CONST_FN
+#endif
+
+#ifdef _MSC_VER
+	#define PEFF_NO_ASAN __declspec(no_sanitize_address)
+#elif defined(__clang__)
+	#define PEFF_NO_ASAN __attribute__((no_sanitize("address")))
+#elif defined(__GNUC__)
+	#define PEFF_NO_ASAN __attribute__((no_sanitize_address))
+#else
+	#define PEFF_NO_ASAN static_assert(false, "error(This module requires PEFF_NO_ASAN support which current compiler does not support)")
+#endif
+
+#ifdef _MSC_VER
+	#define PEFF_NO_ASAN_OPT PEFF_NO_ASAN
+#elif defined(__clang__)
+	#define PEFF_NO_ASAN_OPT PEFF_NO_ASAN
+#elif defined(__GNUC__)
+	#define PEFF_NO_ASAN_OPT PEFF_NO_ASAN
+#else
+	#define PEFF_NO_ASAN_OPT
+#endif
+
+#ifdef _MSC_VER
+	#define PEFF_NO_VTABLE __declspec(novtable)
+#else
+	#define PEFF_NO_VTABLE
 #endif
 
 #if defined(_MSC_VER)
@@ -67,9 +125,6 @@
 	#define PEFF_DECL_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...)
 	#define PEFF_DEF_EXPLICIT_INSTANTIATED_CLASS(api_modifier, name, ...)
 #endif
-
-#define PEFF_OFFSETOF(t, m) ((size_t)(&reinterpret_cast<const volatile char &>(static_cast<const t *>(nullptr)->m)))
-#define PEFF_CONTAINER_OF(t, m, p) ((t *)(((char *)p) - PEFF_OFFSETOF(t, m)))
 
 #ifdef _MSC_VER
 	#define PEFF_RESTRICT __restrict
@@ -95,11 +150,17 @@
 	#define PEFF_BASE_API
 #endif
 
-#if __cplusplus < 201703L
+#if defined(_MSC_VER)
+	#define PEFF_CPLUSPLUS _MSVC_LANG
+#else
+	#define PEFF_CPLUSPLUS __cplusplus
+#endif
+
+#if PEFF_CPLUSPLUS < 201703L
 	#error Your compiler/configuration/environment does not meet the requirement of PEFF
 #endif
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	#define PEFF_REQUIRES_CONCEPT(...) requires __VA_ARGS__
 #else
 	#define PEFF_REQUIRES_CONCEPT(...)
@@ -277,7 +338,7 @@
 #ifdef _MSC_VER
 	#define PEFF_IN_OUT_REF _Inout_
 #elif defined(__GNUC__) || defined(__clang__)
-	#define PEFF_IN_OUT_REF 
+	#define PEFF_IN_OUT_REF
 #else
 	#define PEFF_IN_OUT_REF
 #endif

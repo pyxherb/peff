@@ -40,7 +40,7 @@ namespace peff {
 	PEFF_BASE_API void unregister_rcobj_ptr_counter_reset_event_listener(RcObjectPtrCounterResetEventListener *listener);
 #endif
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	template <typename T>
 	concept RcObjectTrait = requires(T * rcobj) {
 		rcobj->inc_ref(0);

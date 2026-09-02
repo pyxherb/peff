@@ -14,10 +14,6 @@ set_target_properties(peff_base PROPERTIES
     ARCHIVE FALSE
 )
 
-if(MSVC)
-    target_compile_options(peff_base PRIVATE "/Zc:__cplusplus" INTERFACE $<TARGET_PROPERTY:peff_base,COMPILE_OPTIONS>)
-endif()
-
 add_library(peff_base_static STATIC)
 target_compile_definitions(peff_base_static PRIVATE IS_PEFF_BASE_BUILDING=1)
 set_target_properties(peff_base_static PROPERTIES CXX_STANDARD ${DESIRED_CXX_STANDARD})
@@ -27,10 +23,6 @@ set_target_properties(peff_base_static PROPERTIES
     PUBLIC_HEADER "${HEADERS}"
     VERSION ${PROJECT_VERSION}
 )
-
-if(MSVC)
-    target_compile_options(peff_base_static PRIVATE "/Zc:__cplusplus" INTERFACE $<TARGET_PROPERTY:peff_base_static,COMPILE_OPTIONS>)
-endif()
 
 install(TARGETS peff_base peff_base_static
     EXPORT peffBaseTargets

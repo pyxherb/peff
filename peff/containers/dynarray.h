@@ -6,7 +6,7 @@
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	#include <span>
 #endif
 
@@ -620,7 +620,7 @@ namespace peff {
 			return true;
 		}
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 		[[nodiscard]] PEFF_FORCEINLINE bool build(const std::span<T> &rhs) {
 			clear();
 
@@ -810,7 +810,7 @@ namespace peff {
 			return _data + _length;
 		}
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 		PEFF_FORCEINLINE std::span<T> to_std_span() const {
 			return std::span<T>(_data, _length);
 		}

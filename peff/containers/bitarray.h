@@ -73,16 +73,24 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE size_t size() const {
-			return (_num_bits + 7) >> 3;
+			return _num_bits;
 		}
 
-		PEFF_FORCEINLINE size_t bit_size() const {
-			return _num_bits;
+		PEFF_FORCEINLINE size_t byte_size() const {
+			return (_num_bits + 7) >> 3;
 		}
 
 		PEFF_FORCEINLINE bool resize_uninit(size_t num_bits) {
 			if (!_buffer.resize_uninit((num_bits + 7) / 8))
 				return false;
+			_num_bits = num_bits;
+			return true;
+		}
+
+		PEFF_FORCEINLINE bool resize(size_t num_bits) {
+			if (!_buffer.resize_uninit((num_bits + 7) / 8))
+				return false;
+			memset(_buffer.data(), 0, (num_bits + 7) / 8);
 			_num_bits = num_bits;
 			return true;
 		}

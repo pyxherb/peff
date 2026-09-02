@@ -13,7 +13,7 @@ namespace peff {
 	struct IsDeallocable<T, std::void_t<decltype(std::declval<const T>().dealloc())>> : std::true_type {
 	};
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	template <typename T>
 	concept DeallocableTrait = requires(T * ptr) {
 		ptr->dealloc();

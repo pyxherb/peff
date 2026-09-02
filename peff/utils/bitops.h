@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 	#include <bit>
 #endif
 
@@ -20,7 +20,7 @@
 namespace peff {
 	template <typename To, typename From>
 	PEFF_FORCEINLINE To bit_cast(const From &from) noexcept {
-#if __cplusplus >= 202002L
+#if PEFF_CPLUSPLUS >= 202002L
 		return std::bit_cast<To>(std::forward<const From &>(from));
 #else
 		static_assert(sizeof(To) == sizeof(From), "The size of two types must be equal");

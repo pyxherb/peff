@@ -591,6 +591,13 @@ namespace peff {
 			return result.first->key(result.second);
 		}
 
+		PEFF_FORCEINLINE bool contains(const T& key) const noexcept {
+			if (!_root)
+				return false;
+			auto result = _find(key, _root);
+			return result.first;
+		}
+
 		class Iterator {
 		private:
 			Node *_node;

@@ -5,7 +5,7 @@
 
 namespace peff {
 	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false>
-	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> &&std::strict_weak_order<Comparator, T, T>)
+	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> || std::invocable<Comparator, T &&, T &&>)
 	class Set final {
 	private:
 		static_assert(std::is_move_constructible_v<T>, "The element must be move-constructible");

@@ -89,11 +89,19 @@ namespace peff {
 			return *this;
 		}
 
+		/// @brief Insert a key-value pair to the map.
+		/// @param key Key of the key-value pair to be inserted into the map, must be an rvalue.
+		/// @param value Value of the key-value pair to be inserted into the map, must be an rvalue.
+		/// @return true The key and value were inserted successfully.
+		/// @return false Failed to insert the key and value due to out of memory.
 		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
 			Pair pair = Pair(std::move(key), std::move(value), false);
 			return _set.insert(std::move(pair));
 		}
 
+		/// @brief Remove a key-value pair using a key.
+		/// @param key Key associated to the pair to be removed.
+		/// @return Removed pair containing the key and the value stored in the map previously.
 		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove(const K &key) {
 			auto opt = _set.remove(QueryPair(&key));
 			if (!opt.has_value())
@@ -102,6 +110,9 @@ namespace peff {
 			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
 		}
 
+		/// @brief Remove a key-value pair using an alternative-typed key.
+		/// @param key Alternative-typed key associated to the pair to be removed.
+		/// @return Removed pair containing the key and the value stored in the map previously.
 		template <typename U>
 		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove_alt(const U &key) {
 			auto opt = _set.template remove_alt<U>(key);
@@ -111,53 +122,84 @@ namespace peff {
 			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
 		}
 
+		/// @brief Check if a key is already associated with a key-value pair.
+		/// @param key Key of the pair to be checked.
+		/// @return true Corresponding key-value pair is already contained in this map.
+		/// @return false Corresponding key-value pair was not in this map.
 		PEFF_FORCEINLINE bool contains(const K &key) const {
 			return _set.contains(QueryPair(&key));
 		}
 
+		/// @brief Check if an alternative-typed key is already associated with a key-value pair.
+		/// @param key Alternative-typed key of the pair to be checked.
+		/// @return true Corresponding key-value pair is already contained in this map.
+		/// @return false Corresponding key-value pair was not in this map.
 		template <typename U>
 		PEFF_FORCEINLINE bool contains_alt(const U &key) const {
 			return _set.template contains_alt<U>(key);
 		}
 
+		/// @brief Get reference to the value that is associated to a key.
+		/// @param key Key to the key-value pair.
+		/// @return Reference to the value of the key-value pair in the map.
 		PEFF_FORCEINLINE V &at(const K &key) {
 			return _set.at(QueryPair(&key)).value.get();
 		}
 
+		/// @brief Get immutable reference to the value that is associated to a key.
+		/// @param key Key to the key-value pair.
+		/// @return Immutable reference to the value of the key-value pair in the map.
+		PEFF_FORCEINLINE const V &at(const K &key) const {
+			return _set.at(QueryPair(&key)).value.get();
+		}
+
+		/// @brief Get reference to the value that is associated to a key, using an alternative-typed key.
+		/// @param key Key to the key-value pair.
+		/// @return Reference to the value of the key-value pair in the map.
 		template <typename U>
 		PEFF_FORCEINLINE V &at_alt(const U &key) {
 			return _set.template at_alt<U>(key).value.get();
 		}
 
-		PEFF_FORCEINLINE const V &at(const K &key) const {
-			return _set.at(QueryPair(&key)).value.get();
-		}
-
+		/// @brief Get immutable reference to the value that is associated to a key, using an alternative-typed key.
+		/// @param key Key to the key-value pair.
+		/// @return Immutable reference to the value of the key-value pair in the map.
 		template <typename U>
 		PEFF_FORCEINLINE const V &at_alt(const U &key) const {
 			return _set.template at_alt<U>(key).value.get();
 		}
 
+		/// @brief Get allocator of the container.
+		/// @return Allocator of the container.
 		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _set.allocator();
 		}
 
+		/// @brief Replace allocator of the container.
+		/// @param rhs Allocator for replacement.
 		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
 			_set.replace_allocator(rhs);
 		}
 
+		/// @brief Get comparator of the container.
+		/// @return Reference to the comparator to the container.
 		PEFF_FORCEINLINE Lt &comparator() {
 			return _set.comparator().inner_cmp;
 		}
 
+		/// @brief Get immutable comparator of the container.
+		/// @return Immutable reference to the comparator to the container.
 		PEFF_FORCEINLINE const Lt &comparator() const {
 			return _set.comparator().inner_cmp;
 		}
 
+		/// @brief Clear the map. 
 		PEFF_FORCEINLINE void clear() {
 			_set.clear();
 		}
 
+		/// @brief Get number of key-value pairs contained in the map.
+		/// @return Number of key-value pairs contained in the map.
 		PEFF_FORCEINLINE size_t size() {
 			return _set.size();
 		}
@@ -315,42 +357,69 @@ namespace peff {
 			return ConstIterator(const_cast<ThisType *>(this)->rend());
 		}
 
+		/// @brief Find a key-value pair associated to the given key.
+		/// @param key Key to be found.
+		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
 		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
 			return const_cast<ThisType *>(this)->find(key);
 		}
 
+		/// @brief Find a key-value pair associated to the given alternative-typed key.
+		/// @param key Alternative-typed key to be found.
+		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
 		template <typename U>
 		PEFF_FORCEINLINE ConstIterator find_alt(const U &key) const {
 			return const_cast<ThisType *>(this)->template find_alt<U>(key);
 		}
 
+		/// @brief Find a key-value pair associated to the given key.
+		/// @param key Key to be found.
+		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
 		PEFF_FORCEINLINE Iterator find(const K &key) {
 			return Iterator(_set.find(QueryPair(&key)));
 		}
 
+		/// @brief Find a key-value pair associated to the given alternative-typed key.
+		/// @param key Alternative-typed key to be found.
+		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
 		template <typename U>
 		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
 			return Iterator(_set.template find_alt<U>(key));
 		}
 
+		/// @brief Find the key-value pair that is with the greatest key which is less than the given key.
+		/// @param key Key for query.
+		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
 		PEFF_FORCEINLINE ConstIterator find_max_lteq(const K &key) const {
 			return const_cast<ThisType *>(this)->find_max_lteq(key);
 		}
 
+		/// @brief Find the key-value pair that is with the greatest key which is less than the given alternative-typed key.
+		/// @param key Alternative-typed key for query.
+		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
 		template <typename U>
 		PEFF_FORCEINLINE ConstIterator find_max_lteq_alt(const U &key) const {
 			return const_cast<ThisType *>(this)->find_max_lteq_alt<U>(key);
 		}
 
+		/// @brief Find the key-value pair that is with the greatest key which is less than the given key.
+		/// @param key Key for query.
+		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
 		PEFF_FORCEINLINE Iterator find_max_lteq(const K &key) {
 			return Iterator(_set.find_max_lteq(QueryPair(&key)));
 		}
 
+		/// @brief Find the key-value pair that is with the greatest key which is less than the given alternative-typed key.
+		/// @param key Alternative-typed key for query.
+		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
 		template <typename U>
 		PEFF_FORCEINLINE Iterator find_max_lteq_alt(const U &key) {
 			return Iterator(_set.template find_max_lteq_alt<U>(key));
 		}
 
+		/// @brief Remove the key-value pair associated to the iterator from the map.
+		/// @param iterator Iterator to be removed.
+		/// @return Pair containing previously removed key and value.
 		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove(const Iterator &iterator) {
 			peff::Option<Pair> pair = _set.remove(iterator._iterator);
 			if (pair.has_value()) {

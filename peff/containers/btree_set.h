@@ -134,7 +134,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE bool _lt(const T &lhs, const T &rhs) const noexcept {
 			if constexpr (IsThreeway) {
-				return _cmp(lhs, rhs) < 0;
+				auto result = _cmp(lhs, rhs);
+				if (result < 0) {
+					assert(_cmp(rhs, lhs) > 0);
+					return true;
+				} else
+					return false;
 			} else {
 				return _cmp(lhs, rhs);
 			}
@@ -142,7 +147,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE bool _gt(const T &lhs, const T &rhs) const noexcept {
 			if constexpr (IsThreeway) {
-				return _cmp(lhs, rhs) > 0;
+				auto result = _cmp(lhs, rhs);
+				if (result > 0) {
+					assert(_cmp(rhs, lhs) < 0);
+					return true;
+				} else
+					return false;
 			} else {
 				return _cmp(rhs, lhs);
 			}
@@ -150,10 +160,20 @@ namespace peff {
 
 		PEFF_FORCEINLINE int _compare(const T &lhs, const T &rhs) const noexcept {
 			if constexpr (IsThreeway) {
-				return _cmp(lhs, rhs);
-			} else {
-				if (_cmp(lhs, rhs))
+				auto result = _cmp(lhs, rhs);
+				if (result < 0) {
+					assert(_cmp(rhs, lhs) > 0);
 					return -1;
+				} else if (result > 0) {
+					assert(_cmp(rhs, lhs) < 0);
+					return 1;
+				}
+				return 0;
+			} else {
+				if (_cmp(lhs, rhs)) {
+					assert(!_cmp(rhs, lhs));
+					return -1;
+				}
 				if (_cmp(rhs, lhs))
 					return 1;
 				return 0;
@@ -591,7 +611,7 @@ namespace peff {
 			return result.first->key(result.second);
 		}
 
-		PEFF_FORCEINLINE bool contains(const T& key) const noexcept {
+		PEFF_FORCEINLINE bool contains(const T &key) const noexcept {
 			if (!_root)
 				return false;
 			auto result = _find(key, _root);

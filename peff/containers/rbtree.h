@@ -4,7 +4,6 @@
 #include <cassert>
 #include <stdexcept>
 #include <memory>
-#include <memory_resource>
 #include <type_traits>
 
 #if PEFF_CPLUSPLUS >= 202002L
@@ -18,7 +17,6 @@
 #include <peff/base/scope_guard.h>
 #include <peff/utils/fallible_cmp.h>
 #include <peff/utils/option.h>
-#include <stdexcept>
 
 namespace peff {
 	enum class RBColor {
@@ -64,7 +62,7 @@ namespace peff {
 		typename Comparator,
 		bool Fallible,
 		bool IsThreeway>
-	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &>)
+	PEFF_REQUIRES_CONCEPT(std::invocable<Comparator, const T &, const T &> || std::invocable<Comparator, T &&, T &&>)
 	class RBTreeImpl final : protected RBTreeBase {
 	public:
 		static_assert(std::is_move_constructible_v<T>, "The key must be move-constructible");
@@ -172,11 +170,13 @@ namespace peff {
 				while (i) {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(i->rb_value, key);
-						if (result < 0)
+						if (result < 0) {
+							assert(_comparator(key, i->rb_value) > 0);
 							i = (Node *)i->r;
-						else if (result > 0)
+						} else if (result > 0) {
+							assert(_comparator(key, i->rb_value) < 0);
 							i = (Node *)i->l;
-						else
+						} else
 							return i;
 					} else {
 						if (_comparator(i->rb_value, key)) {
@@ -204,11 +204,13 @@ namespace peff {
 						auto &&result = _comparator(static_cast<Node *>(*i)->rb_value, key);
 
 						if (result) {
-							if (result.value() < 0)
+							if (result.value() < 0) {
+								assert(_comparator(key, static_cast<Node *>(*i)->rb_value) > 0);
 								i = (NodeBase **)&static_cast<Node *>(*i)->r;
-							else if (result.value() > 0)
+							} else if (result.value() > 0) {
+								assert(_comparator(key, static_cast<Node *>(*i)->rb_value) < 0);
 								i = (NodeBase **)&static_cast<Node *>(*i)->l;
-							else
+							} else
 								return nullptr;
 						} else
 							return nullptr;
@@ -248,8 +250,10 @@ namespace peff {
 						auto &&result = _comparator(static_cast<Node *>(*i)->rb_value, key);
 
 						if (result < 0) {
+							assert(_comparator(key, static_cast<Node *>(*i)->rb_value) > 0);
 							i = (NodeBase **)&((*i)->r);
 						} else if (result > 0) {
+							assert(_comparator(key, static_cast<Node *>(*i)->rb_value) < 0);
 							i = (NodeBase **)&((*i)->l);
 						} else
 							return nullptr;
@@ -320,11 +324,13 @@ namespace peff {
 					if constexpr (IsThreeway) {
 						auto &&result = _comparator(cur_node->rb_value, data);
 						if (result < 0) {
+							assert(_comparator(data, cur_node->rb_value) > 0);
 							max_node = cur_node;
 							cur_node = (Node *)cur_node->r;
-						} else if (result > 0)
+						} else if (result > 0) {
+							assert(_comparator(data, cur_node->rb_value) < 0);
 							cur_node = (Node *)cur_node->l;
-						else
+						} else
 							return cur_node;
 					} else {
 						if (_comparator(cur_node->rb_value, data)) {
@@ -355,11 +361,11 @@ namespace peff {
 			if constexpr (Fallible) {
 				if constexpr (IsThreeway) {
 					if (auto &&result = _comparator(node->rb_value, parent->rb_value); result.has_value()) {
-						if (result.value() < 0)
+						if (result.value() < 0) {
 							parent->l = node;
-						else if (result.value() > 0)
+						} else if (result.value() > 0) {
 							parent->r = node;
-						else
+						} else
 							assert(false);
 					} else {
 						return false;
@@ -377,12 +383,14 @@ namespace peff {
 				}
 			} else {
 				if constexpr (IsThreeway) {
-					auto &&result = _comparator(node->rb_value, parent->rb_value);
-					if (result < 0)
+					auto result = _comparator(node->rb_value, parent->rb_value);
+					if (result < 0) {
+						assert(_comparator(parent->rb_value, node->rb_value) > 0);
 						parent->l = node;
-					else if (result > 0)
+					} else if (result > 0) {
+						assert(_comparator(parent->rb_value, node->rb_value) < 0);
 						parent->r = node;
-					else
+					} else
 						assert(false);
 				} else {
 					if (_comparator(node->rb_value, parent->rb_value))

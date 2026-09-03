@@ -247,7 +247,7 @@ int main() {
 		}
 	}
 	{
-		peff::Map<int, peff::String> map(&peff::g_std_allocator);
+		peff::Map<int, peff::String, std::compare_three_way, true> map(&peff::g_std_allocator);
 		peff::Map<peff::String, int, std::less<std::string_view>> map2(&peff::g_std_allocator);
 
 		for (int i = 0; i < 16; i++) {
@@ -552,7 +552,7 @@ int main() {
 
 	RandomFailAlloc rf_alloc;
 	{
-		peff::BTreeMap<int, int, std::less<int>, false, 4> hm(&rf_alloc);
+		peff::BTreeMap<int, int, std::compare_three_way, true, 4> hm(&rf_alloc);
 
 		for (int i = 0; i < 16; i++) {
 			int j = i & 1 ? i : 32 - i;

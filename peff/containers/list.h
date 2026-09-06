@@ -262,9 +262,14 @@ namespace peff {
 			_last = nullptr;
 		}
 
-		PEFF_FORCEINLINE size_t size() const {
+		PEFF_FORCEINLINE size_t size() const noexcept {
 			return _length;
 		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return !_length;
+		}
+
 		struct Iterator {
 			Node *node;
 			ThisType *list;

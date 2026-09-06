@@ -437,8 +437,12 @@ namespace peff {
 			return *this;
 		}
 
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const noexcept {
 			return _length;
+		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return !_length;
 		}
 
 		PEFF_FORCEINLINE size_t capacity() {
@@ -690,10 +694,6 @@ namespace peff {
 		PEFF_FORCEINLINE const T &operator[](size_t index) const {
 			assert(index < _length);
 			return _data[index];
-		}
-
-		PEFF_FORCEINLINE size_t size() const {
-			return _length;
 		}
 
 		[[nodiscard]] PEFF_FORCEINLINE T *insert_range_init(size_t index, size_t length) {

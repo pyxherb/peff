@@ -37,6 +37,10 @@ namespace peff {
 			return _array.size() - 1;
 		}
 
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return _array.empty();
+		}
+
 		PEFF_FORCEINLINE bool resize(size_t length) {
 			if (!_array.resize_uninit(length + 1))
 				return false;

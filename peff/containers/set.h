@@ -59,6 +59,10 @@ namespace peff {
 			return _tree.size();
 		}
 
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return _tree.size();
+		}
+
 		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
 			return _tree.allocator();
 		}

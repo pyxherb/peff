@@ -600,15 +600,23 @@ namespace peff {
 		PEFF_FORCEINLINE T &at(const T &key) noexcept {
 			PEFF_ASSERT(_root, "The set is empty");
 			auto result = _find(key, _root);
-			PEFF_ASSERT(!result.first, "Corresponding element not found");
+			PEFF_ASSERT(result.first, "Corresponding element not found");
 			return result.first->key(result.second);
 		}
 
 		PEFF_FORCEINLINE const T &at(const T &key) const noexcept {
 			PEFF_ASSERT(_root, "The set is empty");
 			auto result = _find(key, _root);
-			PEFF_ASSERT(!result.first, "Corresponding element not found");
+			PEFF_ASSERT(result.first, "Corresponding element not found");
 			return result.first->key(result.second);
+		}
+
+		PEFF_FORCEINLINE size_t size() const noexcept {
+			return _num_elements;
+		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return !_num_elements;
 		}
 
 		PEFF_FORCEINLINE bool contains(const T &key) const noexcept {

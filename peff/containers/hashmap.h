@@ -331,6 +331,10 @@ namespace peff {
 			return _set.size();
 		}
 
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return _set.empty();
+		}
+
 		PEFF_FORCEINLINE bool shrink_buckets() {
 			return _set.shrink_buckets();
 		}

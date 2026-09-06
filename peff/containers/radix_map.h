@@ -482,8 +482,12 @@ namespace peff {
 			return _lookup(key).has_value();
 		}
 
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const noexcept {
 			return _size;
+		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept  {
+			return !_size;
 		}
 
 		static Node *get_next_node(PEFF_NONNULL const Node *leaf) {

@@ -644,7 +644,7 @@ namespace peff {
 			return node->data.data;
 		}
 
-		PEFF_FORCEINLINE const T &at(const T &value) const {
+		PEFF_FORCEINLINE const T &at(const T &value) const noexcept {
 			size_t index;
 			typename Bucket::NodeHandle node = _get_alt<T>(value, index);
 			if (!node)
@@ -653,7 +653,7 @@ namespace peff {
 		}
 
 		template <typename U>
-		PEFF_FORCEINLINE const T &at_alt(const U &value) const {
+		PEFF_FORCEINLINE const T &at_alt(const U &value) const noexcept {
 			size_t index;
 			typename Bucket::NodeHandle node = _get_alt<U>(value, index);
 			if (!node)
@@ -661,8 +661,12 @@ namespace peff {
 			return node->data.data;
 		}
 
-		PEFF_FORCEINLINE size_t size() const {
+		PEFF_FORCEINLINE size_t size() const noexcept {
 			return _size;
+		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return !_size;
 		}
 
 		PEFF_FORCEINLINE bool shrink_buckets() {

@@ -85,7 +85,11 @@ namespace peff {
 			return _num_bits;
 		}
 
-		PEFF_FORCEINLINE size_t byte_size() const {
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return !_num_bits;
+		}
+
+		PEFF_FORCEINLINE size_t size_bytes() const {
 			return (_num_bits + 7) >> 3;
 		}
 

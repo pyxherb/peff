@@ -193,15 +193,19 @@ namespace peff {
 			return _set.comparator().inner_cmp;
 		}
 
-		/// @brief Clear the map. 
+		/// @brief Clear the map.
 		PEFF_FORCEINLINE void clear() {
 			_set.clear();
 		}
 
 		/// @brief Get number of key-value pairs contained in the map.
 		/// @return Number of key-value pairs contained in the map.
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const {
 			return _set.size();
+		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return _set.empty();
 		}
 
 		struct Iterator {

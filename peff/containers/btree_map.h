@@ -155,8 +155,12 @@ namespace peff {
 			_set.clear();
 		}
 
-		PEFF_FORCEINLINE size_t size() {
+		PEFF_FORCEINLINE size_t size() const {
 			return _set.size();
+		}
+
+		PEFF_FORCEINLINE bool empty() const noexcept {
+			return _set.empty();
 		}
 
 		struct Iterator {

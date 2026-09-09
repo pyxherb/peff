@@ -24,9 +24,9 @@
 #if defined(_MSC_VER)
 	#define PEFF_NOINLINE __declspec(noinline)
 #elif defined(__GNUC__) || defined(__clang__)
-	#define PEFF_FORCEINLINE __attribute__((__noinline__)) inline
+	#define PEFF_NOINLINE __attribute__((__noinline__)) inline
 #else
-	#define PEFF_FORCEINLINE inline
+	#define PEFF_NOINLINE inline
 #endif
 
 #if defined(_MSC_VER)

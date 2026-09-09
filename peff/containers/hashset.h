@@ -357,23 +357,20 @@ namespace peff {
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				idx_cur_bucket = rhs.idx_cur_bucket;
 				bucket_node_handle = rhs.bucket_node_handle;
 				hash_set = rhs.hash_set;
 				return *this;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				peff::construct_at<Iterator>(this, std::move(rhs));
 				return *this;
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {
-				if (idx_cur_bucket == SIZE_MAX)
-					throw std::logic_error("Increasing the end iterator");
+				PEFF_ASSERT(idx_cur_bucket == SIZE_MAX, "Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
 					typename Bucket::NodeHandle next_node = Bucket::next(bucket_node_handle, 1);
@@ -423,7 +420,7 @@ namespace peff {
 						if (!next_node) {
 							while (!next_node) {
 								if (!idx_cur_bucket) {
-									throw std::logic_error("Decreasing the beginning iterator");
+									PEFF_ASSERT(false, "Decreasing the beginning iterator");
 								} else {
 									--idx_cur_bucket;
 									next_node = hash_set->_buckets.at(idx_cur_bucket).last_node();
@@ -441,7 +438,7 @@ namespace peff {
 						if (!next_node) {
 							while (!next_node) {
 								if (++idx_cur_bucket >= hash_set->_buckets.size()) {
-									throw std::logic_error("Decreasing the beginning iterator");
+									PEFF_ASSERT(false, "Decreasing the beginning iterator");
 								} else {
 									next_node = hash_set->_buckets.at(idx_cur_bucket).first_node();
 								}
@@ -461,8 +458,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &it) const {
-				if (hash_set != it.hash_set)
-					throw std::logic_error("Cannot compare iterators from different containers");
+				PEFF_ASSERT(hash_set == it.hash_set, "Cannot compare iterators from different containers");
 				return bucket_node_handle == it.bucket_node_handle;
 			}
 
@@ -472,8 +468,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const Iterator &it) const {
-				if (hash_set != it.hash_set)
-					throw std::logic_error("Cannot compare iterators from different containers");
+				PEFF_ASSERT(hash_set == it.hash_set, "Cannot compare iterators from different containers");
 				return bucket_node_handle != it.bucket_node_handle;
 			}
 
@@ -483,26 +478,22 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE T &operator*() {
-				if (!bucket_node_handle)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(bucket_node_handle, "Deferencing the end iterator");
 				return bucket_node_handle->data.data;
 			}
 
 			PEFF_FORCEINLINE T &operator*() const {
-				if (!bucket_node_handle)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(bucket_node_handle, "Deferencing the end iterator");
 				return bucket_node_handle->data.data;
 			}
 
 			PEFF_FORCEINLINE T *operator->() {
-				if (!bucket_node_handle)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(bucket_node_handle, "Deferencing the end iterator");
 				return &bucket_node_handle->data.data;
 			}
 
 			PEFF_FORCEINLINE T *operator->() const {
-				if (!bucket_node_handle)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(bucket_node_handle, "Deferencing the end iterator");
 				return &bucket_node_handle->data.data;
 			}
 		};
@@ -630,8 +621,7 @@ namespace peff {
 		PEFF_FORCEINLINE T &at(const T &value) {
 			size_t index;
 			typename Bucket::NodeHandle node = _get_alt<T>(value, index);
-			if (!node)
-				throw std::out_of_range("No such element");
+			PEFF_ASSERT(node, "No such element");
 			return node->data.data;
 		}
 
@@ -639,16 +629,14 @@ namespace peff {
 		PEFF_FORCEINLINE T &at_alt(const U &value) {
 			size_t index;
 			typename Bucket::NodeHandle node = _get_alt<U>(value, index);
-			if (!node)
-				throw std::out_of_range("No such element");
+			PEFF_ASSERT(node, "No such element");
 			return node->data.data;
 		}
 
 		PEFF_FORCEINLINE const T &at(const T &value) const noexcept {
 			size_t index;
 			typename Bucket::NodeHandle node = _get_alt<T>(value, index);
-			if (!node)
-				throw std::out_of_range("No such element");
+			PEFF_ASSERT(node, "No such element");
 			return node->data.data;
 		}
 
@@ -656,8 +644,7 @@ namespace peff {
 		PEFF_FORCEINLINE const T &at_alt(const U &value) const noexcept {
 			size_t index;
 			typename Bucket::NodeHandle node = _get_alt<U>(value, index);
-			if (!node)
-				throw std::out_of_range("No such element");
+			PEFF_ASSERT(node, "No such element");
 			return node->data.data;
 		}
 

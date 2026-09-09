@@ -294,15 +294,13 @@ namespace peff {
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				node = rhs.node;
 				list = rhs.list;
 				return *this;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				node = rhs.node;
 				list = rhs.list;
 				return *this;
@@ -314,8 +312,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {
-				if (!node)
-					throw std::logic_error("Increasing the end iterator");
+				PEFF_ASSERT(node, "Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
 					node = node->next;
@@ -335,10 +332,10 @@ namespace peff {
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
 					if (!(node = node->prev))
-						throw std::logic_error("Dereasing the begin iterator");
+						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				} else {
 					if (!(node = node->next))
-						throw std::logic_error("Dereasing the begin iterator");
+						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				}
 
 				return *this;
@@ -355,8 +352,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &it) const {
-				if (list != it.list)
-					throw std::logic_error("Cannot compare iterators from different lists");
+				PEFF_ASSERT(list == it.list, "Cannot compare iterators from different lists");
 				return node == it.node;
 			}
 
@@ -370,8 +366,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const Iterator &it) const {
-				if (list != it.list)
-					throw std::logic_error("Cannot compare iterators from different lists");
+				PEFF_ASSERT(list == it.list, "Cannot compare iterators from different lists");
 				return node != it.node;
 			}
 
@@ -381,26 +376,22 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE T &operator*() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return node->data;
 			}
 
 			PEFF_FORCEINLINE T &operator*() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return node->data;
 			}
 
 			PEFF_FORCEINLINE T *operator->() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return &node->data;
 			}
 
 			PEFF_FORCEINLINE T *operator->() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return &node->data;
 			}
 		};
@@ -442,14 +433,12 @@ namespace peff {
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				peff::construct_at<ConstIterator>(this, rhs);
 				return *this;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(ConstIterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				peff::construct_at<ConstIterator>(this, std::move(rhs));
 				return *this;
 			}
@@ -461,15 +450,13 @@ namespace peff {
 				(*this) = it;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(const Iterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				node = rhs.node;
 				list = rhs.list;
 				return *this;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(Iterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				node = rhs.node;
 				list = rhs.list;
 				return *this;
@@ -481,8 +468,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE ConstIterator &operator++() {
-				if (!node)
-					throw std::logic_error("Increasing the end iterator");
+				PEFF_ASSERT(node, "Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
 					node = node->next;
@@ -502,10 +488,10 @@ namespace peff {
 			PEFF_FORCEINLINE ConstIterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
 					if (!(node = node->prev))
-						throw std::logic_error("Dereasing the begin iterator");
+						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				} else {
 					if (!(node = node->next))
-						throw std::logic_error("Dereasing the begin iterator");
+						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				}
 
 				return *this;
@@ -522,8 +508,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const {
-				if (list != it.list)
-					throw std::logic_error("Cannot compare iterators from different lists");
+				PEFF_ASSERT(list == it.list, "Cannot compare iterators from different lists");
 				return node == it.node;
 			}
 
@@ -537,8 +522,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const ConstIterator &it) const {
-				if (list != it.list)
-					throw std::logic_error("Cannot compare iterators from different lists");
+				PEFF_ASSERT(list == it.list, "Cannot compare iterators from different lists");
 				return node != it.node;
 			}
 
@@ -548,26 +532,22 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE const T &operator*() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return node->data;
 			}
 
 			PEFF_FORCEINLINE const T &operator*() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return node->data;
 			}
 
 			PEFF_FORCEINLINE const T *operator->() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return &node->data;
 			}
 
 			PEFF_FORCEINLINE const T *operator->() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return &node->data;
 			}
 		};

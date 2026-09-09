@@ -48,11 +48,11 @@ namespace peff {
 
 		PEFF_CONTAINERS_API PEFF_NONNULL_RET NodeBase *_remove_fix_up(PEFF_NONNULL NodeBase *node) noexcept;
 
-		PEFF_CONTAINERS_API void _verify(PEFF_NONNULL NodeBase *node, const size_t num_black, size_t black_count) const noexcept;
+		PEFF_CONTAINERS_API void _verify(PEFF_NULLABLE NodeBase *node, const size_t num_black, size_t black_count) const noexcept;
 		PEFF_CONTAINERS_API void _verify() const noexcept;
 
-		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_next_node(PEFF_IN const NodeBase *node, PEFF_NULLABLE const NodeBase *last_node) noexcept;
-		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_prev_node(PEFF_IN const NodeBase *node, PEFF_NULLABLE const NodeBase *first_node) noexcept;
+		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_next_node(PEFF_NULLABLE const NodeBase *node, PEFF_NULLABLE const NodeBase *last_node) noexcept;
+		PEFF_CONTAINERS_API PEFF_NULLABLE_RET static NodeBase *_get_prev_node(PEFF_NULLABLE const NodeBase *node, PEFF_NULLABLE const NodeBase *first_node) noexcept;
 
 		PEFF_CONTAINERS_API RBTreeBase() noexcept;
 		PEFF_CONTAINERS_API ~RBTreeBase();
@@ -577,11 +577,11 @@ namespace peff {
 			_verify();
 		}
 
-		PEFF_NULLABLE_RET static Node *get_next_node(PEFF_IN const Node *node, PEFF_IN const Node *last_node) noexcept {
+		PEFF_NULLABLE_RET static Node *get_next_node(PEFF_NULLABLE const Node *node, PEFF_NULLABLE const Node *last_node) noexcept {
 			return (Node *)_get_next_node((const NodeBase *)node, (const NodeBase *)last_node);
 		}
 
-		PEFF_NULLABLE_RET static Node *get_prev_node(PEFF_IN const Node *node, PEFF_IN const Node *first_node) noexcept {
+		PEFF_NULLABLE_RET static Node *get_prev_node(PEFF_NULLABLE const Node *node, PEFF_NULLABLE const Node *first_node) noexcept {
 			return (Node *)_get_prev_node((const NodeBase *)node, (const NodeBase *)first_node);
 		}
 
@@ -591,7 +591,7 @@ namespace peff {
 			IteratorDirection direction;
 
 			PEFF_FORCEINLINE Iterator(
-				PEFF_NONNULL Node *node,
+				PEFF_NULLABLE Node *node,
 				PEFF_NONNULL ThisType *tree,
 				IteratorDirection direction)
 				: node(node),
@@ -607,15 +607,13 @@ namespace peff {
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				node = rhs.node;
 				tree = rhs.tree;
 				return *this;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(Iterator &&rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				peff::construct_at<Iterator>(this, std::move(rhs));
 				return *this;
 			}
@@ -626,8 +624,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {
-				if (!node)
-					throw std::logic_error("Increasing the end iterator");
+				PEFF_ASSERT(node, "Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
 					node = ThisType::get_next_node(node, nullptr);
@@ -652,16 +649,14 @@ namespace peff {
 
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
-					if (node == tree->_cached_min_node)
-						throw std::logic_error("Dereasing the begin iterator");
+					PEFF_ASSERT(node != tree->_cached_min_node, "Dereasing the begin iterator");
 
 					if (!node)
 						node = (Node *)tree->_cached_max_node;
 					else
 						node = ThisType::get_prev_node(node, nullptr);
 				} else {
-					if (node == tree->_cached_max_node)
-						throw std::logic_error("Dereasing the begin iterator");
+					PEFF_ASSERT(node != tree->_cached_max_node, "Dereasing the begin iterator");
 
 					if (!node)
 						node = (Node *)tree->_cached_min_node;
@@ -689,8 +684,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &it) const {
-				if (tree != it.tree)
-					throw std::logic_error("Cannot compare iterators from different trees");
+				PEFF_ASSERT(tree == it.tree, "Cannot compare iterators from different trees");
 				return node == it.node;
 			}
 
@@ -704,8 +698,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE bool operator!=(const Iterator &it) const {
-				if (tree != it.tree)
-					throw std::logic_error("Cannot compare iterators from different trees");
+				PEFF_ASSERT(tree == it.tree, "Cannot compare iterators from different trees");
 				return node != it.node;
 			}
 
@@ -715,26 +708,22 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE T &operator*() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return node->rb_value;
 			}
 
 			PEFF_FORCEINLINE T &operator*() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return node->rb_value;
 			}
 
 			PEFF_FORCEINLINE T *operator->() {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return &node->rb_value;
 			}
 
 			PEFF_FORCEINLINE T *operator->() const {
-				if (!node)
-					throw std::logic_error("Deferencing the end iterator");
+				PEFF_ASSERT(node, "Deferencing the end iterator");
 				return &node->rb_value;
 			}
 		};

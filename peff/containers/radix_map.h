@@ -486,7 +486,7 @@ namespace peff {
 			return _size;
 		}
 
-		PEFF_FORCEINLINE bool empty() const noexcept  {
+		PEFF_FORCEINLINE bool empty() const noexcept {
 			return !_size;
 		}
 
@@ -540,8 +540,7 @@ namespace peff {
 				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
-				if (direction != rhs.direction)
-					throw std::logic_error("Incompatible iterator direction");
+				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
 				node = rhs.node;
 				tree = rhs.tree;
 				slot_index = rhs.slot_index;

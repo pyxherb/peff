@@ -20,15 +20,13 @@ namespace peff {
 			PEFF_FORCEINLINE Pair() : key_constructed(false), value_constructed(false), for_query(true) {}
 			PEFF_FORCEINLINE Pair(K &&key, V &&value, bool for_query) : key(std::move(key)), value(std::move(value)), for_query(for_query), key_constructed(true), value_constructed(true) {}
 			PEFF_FORCEINLINE Pair(Pair &&rhs) noexcept : for_query(false) {
-				if (rhs.key_constructed) {
+				if ((key_constructed = rhs.key_constructed)) {
 					key = std::move(rhs.key.get());
 					rhs.key_constructed = false;
-					key_constructed = true;
 				}
-				if (rhs.value_constructed) {
+				if ((value_constructed = rhs.value_constructed)) {
 					value = std::move(rhs.value.get());
 					rhs.value_constructed = false;
-					value_constructed = true;
 				}
 			}
 

@@ -122,7 +122,13 @@ namespace peff {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&other) {
 			clear();
-			peff::construct_at<List>(this, std::move(other));
+			_first = other._first;
+			_last = other._last;
+			_length = other._length;
+			_allocator = std::move(other._allocator);
+			other._first = nullptr;
+			other._last = nullptr;
+			other._length = 0;
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &other) = delete;

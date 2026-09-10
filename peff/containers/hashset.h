@@ -370,7 +370,7 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {
-				PEFF_ASSERT(idx_cur_bucket == SIZE_MAX, "Increasing the end iterator");
+				PEFF_ASSERT(idx_cur_bucket != SIZE_MAX, "Increasing the end iterator");
 
 				if (direction == IteratorDirection::Forward) {
 					typename Bucket::NodeHandle next_node = Bucket::next(bucket_node_handle, 1);

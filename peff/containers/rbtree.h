@@ -176,8 +176,10 @@ namespace peff {
 						} else if (result > 0) {
 							assert(_comparator(key, i->rb_value) < 0);
 							i = (Node *)i->l;
-						} else
+						} else {
+							assert(_comparator(key, i->rb_value) == 0);
 							return i;
+						}
 					} else {
 						if (_comparator(i->rb_value, key)) {
 							assert(!_comparator(key, i->rb_value));
@@ -255,8 +257,10 @@ namespace peff {
 						} else if (result > 0) {
 							assert(_comparator(key, static_cast<Node *>(*i)->rb_value) < 0);
 							i = (NodeBase **)&((*i)->l);
-						} else
+						} else {
+							assert(_comparator(key, static_cast<Node *>(*i)->rb_value) == 0);
 							return nullptr;
+						}
 					}
 				} else {
 					while (*i) {
@@ -330,8 +334,10 @@ namespace peff {
 						} else if (result > 0) {
 							assert(_comparator(data, cur_node->rb_value) < 0);
 							cur_node = (Node *)cur_node->l;
-						} else
+						} else {
+							assert(_comparator(data, cur_node->rb_value) == 0);
 							return cur_node;
+						}
 					} else {
 						if (_comparator(cur_node->rb_value, data)) {
 							assert(!_comparator(data, cur_node->rb_value));
@@ -390,8 +396,10 @@ namespace peff {
 					} else if (result > 0) {
 						assert(_comparator(parent->rb_value, node->rb_value) < 0);
 						parent->r = node;
-					} else
+					} else {
+						assert(_comparator(parent->rb_value, node->rb_value) == 0);
 						assert(false);
+					}
 				} else {
 					if (_comparator(node->rb_value, parent->rb_value))
 						parent->l = node;

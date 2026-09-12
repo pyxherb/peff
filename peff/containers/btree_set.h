@@ -138,8 +138,12 @@ namespace peff {
 				if (result < 0) {
 					assert(_cmp(rhs, lhs) > 0);
 					return true;
-				} else
+				} else if (result > 0) {
+					assert(_cmp(rhs, lhs) < 0);
 					return false;
+				}
+				assert(_cmp(rhs, lhs) == 0);
+				return false;
 			} else {
 				return _cmp(lhs, rhs);
 			}
@@ -151,8 +155,12 @@ namespace peff {
 				if (result > 0) {
 					assert(_cmp(rhs, lhs) < 0);
 					return true;
-				} else
+				} else if (result < 0) {
+					assert(_cmp(rhs, lhs) > 0);
 					return false;
+				}
+				assert(_cmp(rhs, lhs) == 0);
+				return false;
 			} else {
 				return _cmp(rhs, lhs);
 			}
@@ -168,6 +176,7 @@ namespace peff {
 					assert(_cmp(rhs, lhs) < 0);
 					return 1;
 				}
+				assert(_cmp(rhs, lhs) == 0);
 				return 0;
 			} else {
 				if (_cmp(lhs, rhs)) {

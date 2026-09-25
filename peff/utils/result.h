@@ -14,7 +14,7 @@ namespace peff {
 
 	enum class ResultIndex : uint8_t {
 		_Moved = 0,
-		Value,
+		Ok,
 		Error
 	};
 
@@ -36,7 +36,7 @@ namespace peff {
 			switch (_index) {
 				case ResultIndex::_Moved:
 					break;
-				case ResultIndex::Value:
+				case ResultIndex::Ok:
 					if (std::is_destructible_v<T>) {
 						peff::destroy_at<T>((T *)_data);
 					}
@@ -56,7 +56,7 @@ namespace peff {
 		PEFF_FORCEINLINE void set_value(T &&data) noexcept {
 			reset();
 			peff::construct_at<T>(((T *)_data), std::move(data));
-			_index = ResultIndex::Value;
+			_index = ResultIndex::Ok;
 		}
 
 		PEFF_FORCEINLINE void set_error(E &&data) noexcept {
@@ -75,49 +75,49 @@ namespace peff {
 			return _index;
 		}
 
-		PEFF_FORCEINLINE bool has_value() const noexcept {
+		PEFF_FORCEINLINE bool is_ok() const noexcept {
 			assert(_index != ResultIndex::_Moved);
-			return _index == ResultIndex::Value;
+			return _index == ResultIndex::Ok;
 		}
 
-		PEFF_FORCEINLINE bool has_error() const noexcept {
+		PEFF_FORCEINLINE bool is_error() const noexcept {
 			assert(_index != ResultIndex::_Moved);
 			return _index == ResultIndex::Error;
 		}
 
 		PEFF_FORCEINLINE explicit operator bool() const noexcept {
 			assert(_index != ResultIndex::_Moved);
-			return has_value();
+			return is_ok();
 		}
 
 		PEFF_FORCEINLINE T &value() & noexcept {
-			assert(has_value());
+			assert(is_ok());
 			return *((T *)_data);
 		}
 
 		PEFF_FORCEINLINE const T &value() const & noexcept {
-			assert(has_value());
+			assert(is_ok());
 			return *((const T *)_data);
 		}
 
 		PEFF_FORCEINLINE T value() && noexcept {
-			assert(has_value());
+			assert(is_ok());
 			_index = ResultIndex::_Moved;
 			return std::move(*((T *)_data));
 		}
 
 		PEFF_FORCEINLINE E &error() & noexcept {
-			assert(has_error());
+			assert(is_error());
 			return *((E *)_data);
 		}
 
 		PEFF_FORCEINLINE const E &error() const & noexcept {
-			assert(has_error());
+			assert(is_error());
 			return *((const E *)_data);
 		}
 
 		PEFF_FORCEINLINE E error() && noexcept {
-			assert(has_error());
+			assert(is_error());
 			_index = ResultIndex::_Moved;
 			return std::move(*((E *)_data));
 		}
@@ -144,7 +144,7 @@ namespace peff {
 				case ResultIndex::_Moved:
 					PEFF_UNREACHABLE();
 					break;
-				case ResultIndex::Value:
+				case ResultIndex::Ok:
 					set_value(std::move(*((T *)rhs._data)));
 					rhs._index = ResultIndex::_Moved;
 					break;
@@ -164,7 +164,7 @@ namespace peff {
 				case ResultIndex::_Moved:
 					PEFF_UNREACHABLE();
 					break;
-				case ResultIndex::Value:
+				case ResultIndex::Ok:
 					set_value(std::move(*((T *)rhs._data)));
 					rhs._index = ResultIndex::_Moved;
 					break;

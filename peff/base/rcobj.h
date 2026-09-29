@@ -161,6 +161,13 @@ namespace peff {
 		PEFF_FORCEINLINE PEFF_NONNULL_RET T *const *get_addr_without_release() const noexcept {
 			return &_ptr;
 		}
+
+		PEFF_FORCEINLINE T* release() noexcept {
+			T *p = _ptr;
+			_ptr = nullptr;
+			return p;
+		}
+
 		PEFF_FORCEINLINE T *operator->() const noexcept {
 			return _ptr;
 		}

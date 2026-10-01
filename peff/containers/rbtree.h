@@ -16,7 +16,9 @@
 #include <peff/base/misc.h>
 #include <peff/base/scope_guard.h>
 #include <peff/utils/fallible_cmp.h>
+#include <peff/utils/misc.h>
 #include <peff/utils/option.h>
+#include <peff/utils/result.h>
 
 namespace peff {
 	enum class RBColor {
@@ -58,6 +60,14 @@ namespace peff {
 		PEFF_CONTAINERS_API ~RBTreeBase();
 	};
 
+	/// @brief A red-black tree implementation.
+	/// @tparam T The type of the stored elements.
+	/// @tparam Comparator The type of the comparator used to order the elements.
+	/// @tparam Fallible Whether the comparator is allowed to fail.
+	/// @tparam IsThreeway Whether the comparator yields a three-way ordering. Combined with Fallible,
+	///         this means the comparator yields a peff::PartialOrd, i.e. the comparison itself may
+	///         fail with peff::PARTIAL_UNORDERED. In that case every operation that needs to compare
+	///         keys can fail and reports it through its return value, leaving the tree unmodified.
 	template <typename T,
 		typename Comparator,
 		bool Fallible,
@@ -66,6 +76,12 @@ namespace peff {
 	class RBTreeImpl final : protected RBTreeBase {
 	public:
 		static_assert(std::is_move_constructible_v<T>, "The key must be move-constructible");
+		static_assert(!(Fallible && IsThreeway) || std::is_invocable_r_v<PartialOrd, Comparator, const T &, const T &>,
+			"A fallible three-way comparator must return peff::PartialOrd");
+		static_assert(!std::is_invocable_r_v<PartialOrd, Comparator, const T &, const T &> || (Fallible && IsThreeway),
+			"A comparator returning peff::PartialOrd requires a fallible three-way tree, that is, both "
+			"Fallible and IsThreeway must be enabled");
+
 		struct Node : public RBTreeBase::NodeBase {
 			T rb_value;
 
@@ -77,12 +93,63 @@ namespace peff {
 		using ComparatorType = Comparator;
 
 	private:
-		using NodeQueryResultType = typename std::conditional<Fallible, Option<Node *>, Node *>::type;
+		/// @brief The result type of an operation that may fail to compare two keys.
+		template <typename X>
+		using Outcome = std::conditional_t<Fallible, Result<X, Unordered>, X>;
+
+		/// @brief The result type of a query that may fail to compare two keys.
+		using NodeQueryResultType = std::conditional_t<Fallible, Result<Option<Node *>, Unordered>, Node *>;
 
 		using ThisType = RBTreeImpl<T, Comparator, Fallible, IsThreeway>;
 
 		Comparator _comparator;
 		RcObjectPtr<Alloc> _allocator;
+
+		/// @brief Perform a fallible three-way comparison through the comparator.
+		/// @tparam L The type of the left-hand operand.
+		/// @tparam R The type of the right-hand operand.
+		/// @param lhs The left-hand operand.
+		/// @param rhs The right-hand operand.
+		/// @return The comparison result, or peff::PARTIAL_UNORDERED when the comparison failed,
+		///         that is, neither "result > 0", "result < 0" nor "result == 0" holds.
+		template <typename L, typename R>
+		[[nodiscard]] PEFF_FORCEINLINE PartialOrd _compare_partial(const L &lhs, const R &rhs) const {
+			const PartialOrd result = _comparator(lhs, rhs);
+
+			if (result < 0)
+				return PARTIAL_LT;
+			if (result > 0)
+				return PARTIAL_GT;
+			if (result == 0)
+				return PARTIAL_EQ;
+
+			return PARTIAL_UNORDERED;
+		}
+
+		/// @brief Build the "not found" outcome of a query.
+		[[nodiscard]] PEFF_FORCEINLINE static NodeQueryResultType _query_not_found() {
+			if constexpr (Fallible)
+				return Option<Node *>(NULLOPT);
+			else
+				return nullptr;
+		}
+
+		/// @brief Build the "found" outcome of a query.
+		/// @param node The node that has been found.
+		[[nodiscard]] PEFF_FORCEINLINE static NodeQueryResultType _query_found(PEFF_NONNULL Node *node) {
+			if constexpr (Fallible)
+				return Option<Node *>(node);
+			else
+				return node;
+		}
+
+		/// @brief Build the failure outcome of a query, that is, the comparison failed.
+		[[nodiscard]] PEFF_FORCEINLINE static NodeQueryResultType _query_failure() {
+			if constexpr (Fallible)
+				return Unordered();
+			else
+				return nullptr;
+		}
 
 		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET Node *_alloc_single_node(T &&value) {
 			Node *node = (Node *)alloc_and_construct<Node>(_allocator.get(), alignof(Node), std::move(value));
@@ -127,17 +194,16 @@ namespace peff {
 			if constexpr (Fallible) {
 				while (i) {
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(i->rb_value, key);
+						const PartialOrd result = _compare_partial(i->rb_value, key);
 
-						if (result) {
-							if (result.value() < 0)
-								i = (Node *)i->r;
-							else if (result.value() > 0)
-								i = (Node *)i->l;
-							else
-								return i;
-						} else
-							return NULLOPT;
+						if (result < 0) // The stored key is less than the queried one.
+							i = (Node *)i->r;
+						else if (result > 0) // The stored key is greater than the queried one.
+							i = (Node *)i->l;
+						else if (result == 0)
+							return _query_found(i);
+						else // The comparison failed.
+							return _query_failure();
 					} else {
 						Option<bool> result;
 
@@ -148,7 +214,7 @@ namespace peff {
 									assert(!result.value());
 									i = (Node *)i->r;
 								} else {
-									return NULLOPT;
+									return _query_failure();
 								}
 #else
 								i = (Node *)i->r;
@@ -157,12 +223,12 @@ namespace peff {
 								if (result.value()) {
 									i = (Node *)i->l;
 								} else
-									return i;
+									return _query_found(i);
 							} else {
-								return NULLOPT;
+								return _query_failure();
 							}
 						} else {
-							return NULLOPT;
+							return _query_failure();
 						}
 					}
 				}
@@ -191,10 +257,18 @@ namespace peff {
 					}
 				}
 			}
-			return nullptr;
+			return _query_not_found();
 		}
 
-		PEFF_FORCEINLINE NodeBase **_get_slot(const T &key, NodeBase *&parent_out) {
+		/// @brief Locate the insertion slot for a key.
+		/// @param key The key to look for.
+		/// @param parent_out Receives the parent of the insertion slot, or the existing node when
+		///        the key is already present.
+		/// @param unordered_out When not null, receives true if the comparison failed. Only used when
+		///        both Fallible and IsThreeway are enabled.
+		/// @return The address of the child pointer that should receive the new node, or null when
+		///         the key is already present or the comparison failed.
+		PEFF_FORCEINLINE NodeBase **_get_slot(const T &key, NodeBase *&parent_out, PEFF_NULLABLE bool *unordered_out = nullptr) {
 			NodeBase **i = (NodeBase **)&_root;
 			parent_out = nullptr;
 
@@ -203,19 +277,20 @@ namespace peff {
 					parent_out = *i;
 
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(static_cast<Node *>(*i)->rb_value, key);
+						const PartialOrd result = _compare_partial(static_cast<Node *>(*i)->rb_value, key);
 
-						if (result) {
-							if (result.value() < 0) {
-								assert(_comparator(key, static_cast<Node *>(*i)->rb_value) > 0);
-								i = (NodeBase **)&static_cast<Node *>(*i)->r;
-							} else if (result.value() > 0) {
-								assert(_comparator(key, static_cast<Node *>(*i)->rb_value) < 0);
-								i = (NodeBase **)&static_cast<Node *>(*i)->l;
-							} else
-								return nullptr;
-						} else
+						if (result < 0) // The stored key is less than the queried one.
+							i = (NodeBase **)&((*i)->r);
+						else if (result > 0) // The stored key is greater than the queried one.
+							i = (NodeBase **)&((*i)->l);
+						else if (result == 0)
 							return nullptr;
+						else {
+							// The comparison failed.
+							if (unordered_out)
+								*unordered_out = true;
+							return nullptr;
+						}
 					} else {
 						Option<bool> result;
 
@@ -286,15 +361,17 @@ namespace peff {
 			if constexpr (Fallible) {
 				while (cur_node) {
 					if constexpr (IsThreeway) {
-						auto &&result = _comparator(cur_node->rb_value, data);
+						const PartialOrd result = _compare_partial(cur_node->rb_value, data);
 
-						if (result.value() < 0) {
+						if (result < 0) { // The stored key is less than the queried one.
 							max_node = cur_node;
 							cur_node = (Node *)cur_node->r;
-						} else if (result.value() > 0)
+						} else if (result > 0) // The stored key is greater than the queried one.
 							cur_node = (Node *)cur_node->l;
-						else
-							return cur_node;
+						else if (result == 0)
+							return _query_found(cur_node);
+						else // The comparison failed.
+							return _query_failure();
 					} else {
 						Option<bool> result;
 
@@ -305,7 +382,7 @@ namespace peff {
 									assert(!result.value());
 									cur_node = (Node *)cur_node->r;
 								} else {
-									return NULLOPT;
+									return _query_failure();
 								}
 #endif
 								max_node = cur_node;
@@ -314,12 +391,12 @@ namespace peff {
 								if (result.value()) {
 									cur_node = (Node *)cur_node->l;
 								} else
-									return cur_node;
+									return _query_found(cur_node);
 							} else {
-								return NULLOPT;
+								return _query_failure();
 							}
 						} else {
-							return NULLOPT;
+							return _query_failure();
 						}
 					}
 				}
@@ -351,7 +428,7 @@ namespace peff {
 				}
 			}
 
-			return max_node;
+			return max_node ? _query_found(max_node) : _query_not_found();
 		}
 
 		PEFF_FORCEINLINE bool _insert(PEFF_NONNULL Node *parent, PEFF_NONNULL Node *node) {
@@ -366,14 +443,16 @@ namespace peff {
 
 			if constexpr (Fallible) {
 				if constexpr (IsThreeway) {
-					if (auto &&result = _comparator(node->rb_value, parent->rb_value); result.has_value()) {
-						if (result.value() < 0) {
-							parent->l = node;
-						} else if (result.value() > 0) {
-							parent->r = node;
-						} else
-							assert(false);
-					} else {
+					const PartialOrd result = _compare_partial(node->rb_value, parent->rb_value);
+
+					if (result < 0) // The new key is less than the parent key.
+						parent->l = node;
+					else if (result > 0) // The new key is greater than the parent key.
+						parent->r = node;
+					else {
+						// Either the comparison failed (peff::PARTIAL_UNORDERED) or the caller
+						// provided a duplicate key (peff::PARTIAL_EQ). Nothing has been linked
+						// to the tree so far, so the tree stays untouched.
 						return false;
 					}
 				} else {
@@ -490,7 +569,10 @@ namespace peff {
 
 		template <typename U>
 		PEFF_FORCEINLINE NodeQueryResultType get_alt(const U &key) const {
-			if constexpr (IsThreeway) {
+			if constexpr (Fallible && IsThreeway) {
+				static_assert(std::is_invocable_r_v<PartialOrd, Comparator, const T &, const U &>,
+					"The query type is not comparable with the key in the fallible three-way mode");
+			} else if constexpr (IsThreeway) {
 				static_assert(std::is_invocable_v<Comparator, const T &, const U &>, "The query type is not comparable with the key");
 			} else {
 				static_assert(
@@ -504,10 +586,19 @@ namespace peff {
 
 		/// @brief Insert a node into the tree.
 		/// @param node Node to be inserted.
-		/// @return Whether the node is inserted successfully, false if node with the same key presents.
-		[[nodiscard]] PEFF_FORCEINLINE T *insert(PEFF_NONNULL Node *node) {
+		/// @return The pointer to the stored key on success. On failure it is either a null pointer
+		///         (out of memory, or the key is already present) or, in the fallible mode, an
+		///         Unordered error when the comparison failed. In the latter two cases the tree is
+		///         left unmodified and the caller keeps the ownership of the node.
+		[[nodiscard]] PEFF_FORCEINLINE Outcome<T *> insert(PEFF_NONNULL Node *node) {
 			NodeBase *parent = nullptr;
-			NodeBase **slot = _get_slot(node->rb_value, parent);
+			bool unordered = false;
+			NodeBase **slot = _get_slot(node->rb_value, parent, &unordered);
+
+			if constexpr (Fallible) {
+				if (unordered) // The comparison failed.
+					return Unordered();
+			}
 
 			assert(slot);
 
@@ -516,8 +607,19 @@ namespace peff {
 			return nullptr;
 		}
 
-		[[nodiscard]] PEFF_FORCEINLINE PEFF_NULLABLE_RET Node *insert(T &&key) {
-			NodeBase *parent = nullptr, **slot = _get_slot(key, parent);
+		/// @brief Insert a key into the tree.
+		/// @param key Key to be inserted.
+		/// @return The inserted (or already present) node on success, a null pointer when out of
+		///         memory, or, in the fallible mode, an Unordered error when the comparison failed.
+		[[nodiscard]] PEFF_FORCEINLINE Outcome<Node *> insert(T &&key) {
+			NodeBase *parent = nullptr;
+			bool unordered = false;
+			NodeBase **slot = _get_slot(key, parent, &unordered);
+
+			if constexpr (Fallible) {
+				if (unordered) // The comparison failed, the tree is left unmodified.
+					return Unordered();
+			}
 
 			if (!slot) {
 				Node *node = static_cast<Node *>(parent);
@@ -528,9 +630,27 @@ namespace peff {
 			Node *node = _alloc_single_node(std::move(key));
 			if (!node)
 				return nullptr;
-			if (!insert(node)) {
-				_delete_single_node(node);
-				return nullptr;
+
+			if constexpr (Fallible) {
+				Outcome<T *> inserted = insert(node);
+
+				if (inserted.is_error()) {
+					// The comparison failed while linking the node: roll it back.
+					_delete_single_node(node);
+					return Unordered();
+				}
+
+				if (!inserted.value()) {
+					// The key turned out to be duplicated: roll the freshly allocated node back.
+					_delete_single_node(node);
+					return nullptr;
+				}
+			} else {
+				if (!insert(node)) {
+					// The key turned out to be duplicated: roll the freshly allocated node back.
+					_delete_single_node(node);
+					return nullptr;
+				}
 			}
 
 			return node;
@@ -860,8 +980,19 @@ namespace peff {
 		}
 	};
 
+	/// @brief A red-black tree with a strict comparator.
+	/// @tparam T The type of the stored elements.
+	/// @tparam Comparator The type of the comparator used to order the elements.
+	/// @tparam IsThreeway Whether the comparator yields a three-way (but never failing) ordering.
 	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false>
 	using RBTree = RBTreeImpl<T, Comparator, false, IsThreeway>;
+
+	/// @brief A red-black tree with a comparator that is allowed to fail.
+	/// @tparam T The type of the stored elements.
+	/// @tparam Comparator The type of the comparator used to order the elements.
+	/// @tparam IsThreeway Whether the comparator yields a three-way ordering. When enabled, the
+	///         comparator must return peff::PartialOrd and every key comparison may fail with
+	///         peff::PARTIAL_UNORDERED, so that the tree is ordered by a partial order.
 	template <typename T, typename Comparator = peff::FallibleLt<T>, bool IsThreeway = false>
 	using FallibleRBTree = RBTreeImpl<T, Comparator, true, IsThreeway>;
 }

@@ -4,7 +4,16 @@
 #include "set.h"
 
 namespace peff {
-	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false>
+	/// @brief An ordered map backed by a red-black tree.
+	/// @tparam K The type of the keys.
+	/// @tparam V The type of the values.
+	/// @tparam Lt The type of the comparator used to order the keys.
+	/// @tparam IsThreeway Whether the comparator yields a three-way ordering.
+	/// @tparam Fallible Whether the comparator is allowed to fail. When enabled together with
+	///         IsThreeway, the comparator must return peff::PartialOrd, and every operation that
+	///         compares keys may fail with peff::Unordered, which is reported through the returned
+	///         peff::Result.
+	template <typename K, typename V, typename Lt = std::less<K>, bool IsThreeway = false, bool Fallible = false>
 	class Map final {
 	private:
 		static_assert(std::is_move_constructible_v<K>, "The key must be move-constructible");
@@ -69,16 +78,40 @@ namespace peff {
 			}
 		};
 
-		using SetType = Set<Pair, PairComparator, IsThreeway>;
+		using SetType = Set<Pair, PairComparator, IsThreeway, Fallible>;
 
 		SetType _set;
 
-		using ThisType = Map<K, V, Lt, IsThreeway>;
+		using ThisType = Map<K, V, Lt, IsThreeway, Fallible>;
+
+		/// @brief Convert an optionally removed pair into the public pair type.
+		/// @param opt The optional pair produced by a removal.
+		/// @return The removed key and value, or an empty option when nothing was removed.
+		[[nodiscard]] PEFF_FORCEINLINE static Option<std::pair<K, V>> _into_public_pair(Option<Pair> &&opt) {
+			if (!opt.has_value())
+				return NULLOPT;
+
+			Pair pair = std::move(opt).value();
+			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
+		}
 
 	public:
 		using NodeType = typename SetType::NodeType;
 
-		PEFF_FORCEINLINE Map(PEFF_NONNULL Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {}
+		/// @brief The result of an operation that may fail to compare two keys. In the fallible mode
+		///        it is a peff::Result whose error type is peff::Unordered, otherwise it is the plain
+		///        value type of the operation.
+		template <typename X>
+		using Outcome = std::conditional_t<Fallible, Result<X, Unordered>, X>;
+
+		/// @brief The result of a lookup that yields a reference to the value.
+		using AtResult = std::conditional_t<Fallible, Result<V *, Unordered>, V &>;
+
+		/// @brief The result of a lookup that yields an immutable reference to the value.
+		using ConstAtResult = std::conditional_t<Fallible, Result<const V *, Unordered>, const V &>;
+
+		PEFF_FORCEINLINE Map(PEFF_NONNULL Alloc *allocator, Lt &&comparator = {}) : _set(allocator, PairComparator(std::move(comparator))) {
+		}
 		PEFF_FORCEINLINE Map(ThisType &&rhs) : _set(std::move(rhs._set)) {
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
@@ -87,84 +120,137 @@ namespace peff {
 			return *this;
 		}
 
-		/// @brief Insert a key-value pair to the map.
-		/// @param key Key of the key-value pair to be inserted into the map, must be an rvalue.
-		/// @param value Value of the key-value pair to be inserted into the map, must be an rvalue.
-		/// @return true The key and value were inserted successfully.
-		/// @return false Failed to insert the key and value due to out of memory.
-		PEFF_FORCEINLINE bool insert(K &&key, V &&value) {
+		/// @brief Insert a key-value pair into the map.
+		/// @param key Key of the key-value pair to be inserted, must be an rvalue.
+		/// @param value Value of the key-value pair to be inserted, must be an rvalue.
+		/// @return true when the key and value were inserted or an existing pair was updated. On
+		///         failure it is false (out of memory) or, in the fallible mode, an Unordered error.
+		[[nodiscard]] PEFF_FORCEINLINE Outcome<bool> insert(K &&key, V &&value) {
 			Pair pair = Pair(std::move(key), std::move(value), false);
-			return _set.insert(std::move(pair));
+
+			if constexpr (Fallible) {
+				auto result = _set.insert(std::move(pair));
+
+				if (result.is_error())
+					return Unordered();
+
+				return result.value() != nullptr;
+			} else {
+				return _set.insert(std::move(pair)) != nullptr;
+			}
 		}
 
 		/// @brief Remove a key-value pair using a key.
 		/// @param key Key associated to the pair to be removed.
-		/// @return Removed pair containing the key and the value stored in the map previously.
-		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove(const K &key) {
-			auto opt = _set.remove(QueryPair(&key));
-			if (!opt.has_value())
-				return peff::NULLOPT;
-			auto pair = std::move(opt).value();
-			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
+		/// @return Removed pair containing the key and the value stored in the map previously, or, in
+		///         the fallible mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<Option<std::pair<K, V>>> remove(const K &key) {
+			return remove_alt<K>(key);
 		}
 
 		/// @brief Remove a key-value pair using an alternative-typed key.
 		/// @param key Alternative-typed key associated to the pair to be removed.
-		/// @return Removed pair containing the key and the value stored in the map previously.
+		/// @return Removed pair containing the key and the value stored in the map previously, or, in
+		///         the fallible mode, an Unordered error when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE peff::Option<std::pair<K, V>> remove_alt(const U &key) {
-			auto opt = _set.template remove_alt<U>(key);
-			if (!opt.has_value())
-				return peff::NULLOPT;
-			auto pair = std::move(opt).value();
-			return std::pair<K, V>{ pair.key.release(), pair.value.release() };
+		PEFF_FORCEINLINE Outcome<Option<std::pair<K, V>>> remove_alt(const U &key) {
+			if constexpr (Fallible) {
+				auto opt = _set.template remove_alt<U>(key);
+
+				if (opt.is_error())
+					return Unordered();
+
+				return _into_public_pair(std::move(opt).value());
+			} else {
+				return _into_public_pair(_set.template remove_alt<U>(key));
+			}
 		}
 
 		/// @brief Check if a key is already associated with a key-value pair.
 		/// @param key Key of the pair to be checked.
-		/// @return true Corresponding key-value pair is already contained in this map.
-		/// @return false Corresponding key-value pair was not in this map.
-		PEFF_FORCEINLINE bool contains(const K &key) const {
+		/// @return true when the key is associated with a pair, false otherwise, or, in the fallible
+		///         mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<bool> contains(const K &key) const {
 			return _set.contains(QueryPair(&key));
 		}
 
 		/// @brief Check if an alternative-typed key is already associated with a key-value pair.
 		/// @param key Alternative-typed key of the pair to be checked.
-		/// @return true Corresponding key-value pair is already contained in this map.
-		/// @return false Corresponding key-value pair was not in this map.
+		/// @return true when the key is associated with a pair, false otherwise, or, in the fallible
+		///         mode, an Unordered error when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE bool contains_alt(const U &key) const {
+		PEFF_FORCEINLINE Outcome<bool> contains_alt(const U &key) const {
 			return _set.template contains_alt<U>(key);
 		}
 
 		/// @brief Get reference to the value that is associated to a key.
 		/// @param key Key to the key-value pair.
-		/// @return Reference to the value of the key-value pair in the map.
-		PEFF_FORCEINLINE V &at(const K &key) {
-			return _set.at(QueryPair(&key)).value.get();
+		/// @return Reference to the value, or, in the fallible mode, an Unordered error when the
+		///         comparison failed.
+		PEFF_FORCEINLINE AtResult at(const K &key) {
+			if constexpr (Fallible) {
+				auto result = _set.at(QueryPair(&key));
+
+				if (result.is_error())
+					return Unordered();
+
+				return &result.value()->value.get();
+			} else {
+				return _set.at(QueryPair(&key)).value.get();
+			}
 		}
 
 		/// @brief Get immutable reference to the value that is associated to a key.
 		/// @param key Key to the key-value pair.
-		/// @return Immutable reference to the value of the key-value pair in the map.
-		PEFF_FORCEINLINE const V &at(const K &key) const {
-			return _set.at(QueryPair(&key)).value.get();
+		/// @return Immutable reference to the value, or, in the fallible mode, an Unordered error
+		///         when the comparison failed.
+		PEFF_FORCEINLINE ConstAtResult at(const K &key) const {
+			if constexpr (Fallible) {
+				auto result = _set.at(QueryPair(&key));
+
+				if (result.is_error())
+					return Unordered();
+
+				return &result.value()->value.get();
+			} else {
+				return _set.at(QueryPair(&key)).value.get();
+			}
 		}
 
 		/// @brief Get reference to the value that is associated to a key, using an alternative-typed key.
 		/// @param key Key to the key-value pair.
-		/// @return Reference to the value of the key-value pair in the map.
+		/// @return Reference to the value, or, in the fallible mode, an Unordered error when the
+		///         comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE V &at_alt(const U &key) {
-			return _set.template at_alt<U>(key).value.get();
+		PEFF_FORCEINLINE AtResult at_alt(const U &key) {
+			if constexpr (Fallible) {
+				auto result = _set.template at_alt<U>(key);
+
+				if (result.is_error())
+					return Unordered();
+
+				return &result.value()->value.get();
+			} else {
+				return _set.template at_alt<U>(key).value.get();
+			}
 		}
 
 		/// @brief Get immutable reference to the value that is associated to a key, using an alternative-typed key.
 		/// @param key Key to the key-value pair.
-		/// @return Immutable reference to the value of the key-value pair in the map.
+		/// @return Immutable reference to the value, or, in the fallible mode, an Unordered error
+		///         when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE const V &at_alt(const U &key) const {
-			return _set.template at_alt<U>(key).value.get();
+		PEFF_FORCEINLINE ConstAtResult at_alt(const U &key) const {
+			if constexpr (Fallible) {
+				auto result = _set.template at_alt<U>(key);
+
+				if (result.is_error())
+					return Unordered();
+
+				return &result.value()->value.get();
+			} else {
+				return _set.template at_alt<U>(key).value.get();
+			}
 		}
 
 		/// @brief Get allocator of the container.
@@ -361,62 +447,142 @@ namespace peff {
 
 		/// @brief Find a key-value pair associated to the given key.
 		/// @param key Key to be found.
-		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
-		PEFF_FORCEINLINE ConstIterator find(const K &key) const {
-			return const_cast<ThisType *>(this)->find(key);
+		/// @return Immutable iterator to the key-value pair, an end iterator when it is not present,
+		///         or, in the fallible mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<ConstIterator> find(const K &key) const {
+			if constexpr (Fallible) {
+				auto found = const_cast<ThisType *>(this)->find(key);
+
+				if (found.is_error())
+					return Unordered();
+
+				return ConstIterator(std::move(found.value()));
+			} else {
+				return ConstIterator(const_cast<ThisType *>(this)->find(key));
+			}
 		}
 
 		/// @brief Find a key-value pair associated to the given alternative-typed key.
 		/// @param key Alternative-typed key to be found.
-		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
+		/// @return Immutable iterator to the key-value pair, an end iterator when it is not present,
+		///         or, in the fallible mode, an Unordered error when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE ConstIterator find_alt(const U &key) const {
-			return const_cast<ThisType *>(this)->template find_alt<U>(key);
+		PEFF_FORCEINLINE Outcome<ConstIterator> find_alt(const U &key) const {
+			if constexpr (Fallible) {
+				auto found = const_cast<ThisType *>(this)->template find_alt<U>(key);
+
+				if (found.is_error())
+					return Unordered();
+
+				return ConstIterator(std::move(found.value()));
+			} else {
+				return ConstIterator(const_cast<ThisType *>(this)->template find_alt<U>(key));
+			}
 		}
 
 		/// @brief Find a key-value pair associated to the given key.
 		/// @param key Key to be found.
-		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
-		PEFF_FORCEINLINE Iterator find(const K &key) {
-			return Iterator(_set.find(QueryPair(&key)));
+		/// @return Iterator to the key-value pair, an end iterator when it is not present, or, in
+		///         the fallible mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<Iterator> find(const K &key) {
+			if constexpr (Fallible) {
+				auto found = _set.find(QueryPair(&key));
+
+				if (found.is_error())
+					return Unordered();
+
+				return Iterator(std::move(found.value()));
+			} else {
+				return Iterator(_set.find(QueryPair(&key)));
+			}
 		}
 
 		/// @brief Find a key-value pair associated to the given alternative-typed key.
 		/// @param key Alternative-typed key to be found.
-		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
+		/// @return Iterator to the key-value pair, an end iterator when it is not present, or, in
+		///         the fallible mode, an Unordered error when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE Iterator find_alt(const U &key) {
-			return Iterator(_set.template find_alt<U>(key));
+		PEFF_FORCEINLINE Outcome<Iterator> find_alt(const U &key) {
+			if constexpr (Fallible) {
+				auto found = _set.template find_alt<U>(key);
+
+				if (found.is_error())
+					return Unordered();
+
+				return Iterator(std::move(found.value()));
+			} else {
+				return Iterator(_set.template find_alt<U>(key));
+			}
 		}
 
 		/// @brief Find the key-value pair that is with the greatest key which is less than the given key.
 		/// @param key Key for query.
-		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
-		PEFF_FORCEINLINE ConstIterator find_max_lteq(const K &key) const {
-			return const_cast<ThisType *>(this)->find_max_lteq(key);
+		/// @return Immutable iterator to the key-value pair, an end iterator when there is none, or,
+		///         in the fallible mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<ConstIterator> find_max_lteq(const K &key) const {
+			if constexpr (Fallible) {
+				auto found = const_cast<ThisType *>(this)->find_max_lteq(key);
+
+				if (found.is_error())
+					return Unordered();
+
+				return ConstIterator(std::move(found.value()));
+			} else {
+				return ConstIterator(const_cast<ThisType *>(this)->find_max_lteq(key));
+			}
 		}
 
 		/// @brief Find the key-value pair that is with the greatest key which is less than the given alternative-typed key.
 		/// @param key Alternative-typed key for query.
-		/// @return Immutable iterator to the key-value pair, an end iterator will be returned if not found.
+		/// @return Immutable iterator to the key-value pair, an end iterator when there is none, or,
+		///         in the fallible mode, an Unordered error when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE ConstIterator find_max_lteq_alt(const U &key) const {
-			return const_cast<ThisType *>(this)->find_max_lteq_alt<U>(key);
+		PEFF_FORCEINLINE Outcome<ConstIterator> find_max_lteq_alt(const U &key) const {
+			if constexpr (Fallible) {
+				auto found = const_cast<ThisType *>(this)->template find_max_lteq_alt<U>(key);
+
+				if (found.is_error())
+					return Unordered();
+
+				return ConstIterator(std::move(found.value()));
+			} else {
+				return ConstIterator(const_cast<ThisType *>(this)->template find_max_lteq_alt<U>(key));
+			}
 		}
 
 		/// @brief Find the key-value pair that is with the greatest key which is less than the given key.
 		/// @param key Key for query.
-		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
-		PEFF_FORCEINLINE Iterator find_max_lteq(const K &key) {
-			return Iterator(_set.find_max_lteq(QueryPair(&key)));
+		/// @return Iterator to the key-value pair, an end iterator when there is none, or, in the
+		///         fallible mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<Iterator> find_max_lteq(const K &key) {
+			if constexpr (Fallible) {
+				auto found = _set.find_max_lteq(QueryPair(&key));
+
+				if (found.is_error())
+					return Unordered();
+
+				return Iterator(std::move(found.value()));
+			} else {
+				return Iterator(_set.find_max_lteq(QueryPair(&key)));
+			}
 		}
 
 		/// @brief Find the key-value pair that is with the greatest key which is less than the given alternative-typed key.
 		/// @param key Alternative-typed key for query.
-		/// @return Iterator to the key-value pair, an end iterator will be returned if not found.
+		/// @return Iterator to the key-value pair, an end iterator when there is none, or, in the
+		///         fallible mode, an Unordered error when the comparison failed.
 		template <typename U>
-		PEFF_FORCEINLINE Iterator find_max_lteq_alt(const U &key) {
-			return Iterator(_set.template find_max_lteq_alt<U>(key));
+		PEFF_FORCEINLINE Outcome<Iterator> find_max_lteq_alt(const U &key) {
+			if constexpr (Fallible) {
+				auto found = _set.template find_max_lteq_alt<U>(key);
+
+				if (found.is_error())
+					return Unordered();
+
+				return Iterator(std::move(found.value()));
+			} else {
+				return Iterator(_set.template find_max_lteq_alt<U>(key));
+			}
 		}
 
 		/// @brief Remove the key-value pair associated to the iterator from the map.

@@ -5,6 +5,7 @@
 #include <peff/base/misc.h>
 #include <peff/utils/misc.h>
 #include <peff/utils/option.h>
+#include <peff/utils/result.h>
 #include <peff/base/alloc.h>
 
 namespace peff {
@@ -21,10 +22,30 @@ namespace peff {
 		return num / 2 < 2 ? 2 : num / 2;
 	}
 
-	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false, size_t Degree = _calc_btree_default_node_deg<T>()>
+	/// @brief An ordered set backed by a B-tree.
+	/// @tparam T The type of the stored elements.
+	/// @tparam Comparator The type of the comparator used to order the elements.
+	/// @tparam IsThreeway Whether the comparator yields a three-way ordering.
+	/// @tparam Degree The degree of the B-tree.
+	/// @tparam Fallible Whether the comparator is allowed to fail. When enabled together with
+	///         IsThreeway, the comparator must return peff::PartialOrd, and every operation that
+	///         compares keys may fail with peff::Unordered, which is reported through the returned
+	///         peff::Result. In that case the tree is left unmodified when the comparison fails.
+	template <typename T, typename Comparator = std::less<T>, bool IsThreeway = false, size_t Degree = _calc_btree_default_node_deg<T>(), bool Fallible = false>
 	class BTreeSet final {
 	private:
-		using ThisType = BTreeSet<T, Comparator, IsThreeway, Degree>;
+		using ThisType = BTreeSet<T, Comparator, IsThreeway, Degree, Fallible>;
+
+		static_assert(!Fallible || IsThreeway,
+			"The fallible mode of BTreeSet requires a three-way comparator that returns peff::PartialOrd");
+
+		/// @brief Whether the comparator yields a fallible three-way ordering, i.e. a peff::PartialOrd.
+		static constexpr bool _is_partial_ordered = Fallible && IsThreeway;
+
+		/// @brief Whether an alternative-typed key can be compared with the stored keys.
+		template <typename U>
+		static constexpr bool _is_alt_queryable =
+			std::is_invocable_v<Comparator, const T &, const U &> && std::is_invocable_v<Comparator, const U &, const T &>;
 
 	public:
 		struct Node : public BTreeNodeBase {
@@ -118,6 +139,20 @@ namespace peff {
 			PEFF_FORCEINLINE bool is_leaf() const noexcept { return !num_children; }
 		};
 
+		using NodeType = Node;
+
+		/// @brief The result of an operation that may fail to compare two keys. In the fallible mode
+		///        it is a peff::Result whose error type is peff::Unordered, otherwise it is the plain
+		///        value type of the operation.
+		template <typename X>
+		using Outcome = std::conditional_t<Fallible, Result<X, Unordered>, X>;
+
+		/// @brief The result of a lookup that yields a reference to the stored element.
+		using AtResult = std::conditional_t<Fallible, Result<T *, Unordered>, T &>;
+
+		/// @brief The result of a lookup that yields an immutable reference to the stored element.
+		using ConstAtResult = std::conditional_t<Fallible, Result<const T *, Unordered>, const T &>;
+
 	private:
 		Node *_root = nullptr;
 		size_t _num_elements = 0;
@@ -130,6 +165,42 @@ namespace peff {
 
 		PEFF_FORCEINLINE void _dealloc_node(Node *node) const noexcept {
 			peff::destroy_and_release<Node>(_allocator.get(), node, alignof(Node));
+		}
+
+		/// @brief Release every node of the tree.
+		PEFF_FORCEINLINE void _destroy_tree() noexcept {
+			if (!_root)
+				return;
+
+			Node *cur = _root;
+			_root->undo_index = 0;
+
+			while (cur) {
+				if (cur->is_leaf()) {
+					Node *parent = static_cast<Node *>(cur->parent);
+					if (parent) {
+						parent->undo_index++;
+					}
+					_dealloc_node(cur);
+					cur = parent;
+				} else {
+					if (cur->undo_index < cur->num_children) {
+						Node *child = cur->children[cur->undo_index];
+						child->undo_index = 0;
+						cur = child;
+					} else {
+						Node *parent = static_cast<Node *>(cur->parent);
+						if (parent) {
+							parent->undo_index++;
+						}
+						_dealloc_node(cur);
+						cur = parent;
+					}
+				}
+			}
+
+			_root = nullptr;
+			_num_elements = 0;
 		}
 
 		PEFF_FORCEINLINE bool _lt(const T &lhs, const T &rhs) const noexcept {
@@ -166,7 +237,15 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE int _compare(const T &lhs, const T &rhs) const noexcept {
+		/// @brief Compare two keys, yielding a negative, zero or positive value.
+		/// @tparam L The type of the left-hand operand.
+		/// @tparam R The type of the right-hand operand.
+		/// @param lhs The left-hand operand.
+		/// @param rhs The right-hand operand.
+		/// @return A negative value when lhs precedes rhs, zero when they are equivalent, and a
+		///         positive value when lhs follows rhs.
+		template <typename L, typename R>
+		PEFF_FORCEINLINE int _compare(const L &lhs, const R &rhs) const noexcept {
 			if constexpr (IsThreeway) {
 				auto result = _cmp(lhs, rhs);
 				if (result < 0) {
@@ -189,32 +268,145 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE size_t _bsearch_lower_bound(const Node *node, const T &key) const noexcept {
+		/// @brief Perform a fallible three-way comparison through the comparator.
+		/// @tparam L The type of the left-hand operand.
+		/// @tparam R The type of the right-hand operand.
+		/// @param lhs The left-hand operand.
+		/// @param rhs The right-hand operand.
+		/// @return The comparison result, or peff::PARTIAL_UNORDERED when the comparison failed,
+		///         that is, neither "result > 0", "result < 0" nor "result == 0" holds.
+		template <typename L, typename R>
+		PEFF_FORCEINLINE PartialOrd _compare_partial(const L &lhs, const R &rhs) const noexcept {
+			const PartialOrd result = _cmp(lhs, rhs);
+
+			if (result < 0)
+				return PARTIAL_LT;
+			if (result > 0)
+				return PARTIAL_GT;
+			if (result == 0)
+				return PARTIAL_EQ;
+
+			return PARTIAL_UNORDERED;
+		}
+
+		/// @brief Locate the lower bound of a key within a node.
+		/// @tparam U The type of the key to search for.
+		/// @param node The node to search in.
+		/// @param key The key to search for.
+		/// @param idx_out Receives the index of the key when it is present, or of its insertion
+		///        point otherwise.
+		/// @param found_out Receives true when the key is present in the node.
+		/// @return false when the comparison failed, true otherwise.
+		template <typename U>
+		PEFF_FORCEINLINE bool _bsearch_lower_bound(const Node *node, const U &key, size_t &idx_out, bool &found_out) const noexcept {
 			size_t lo = 0, hi = node->num_keys;
 			while (lo < hi) {
 				size_t mid = lo + (hi - lo) / 2;
-				int result = _compare(key, node->key(mid));
-				if (result < 0)
-					hi = mid;
-				else if (result > 0)
-					lo = mid + 1;
-				else
-					return mid;
+
+				if constexpr (_is_partial_ordered) {
+					const PartialOrd result = _compare_partial(key, node->key(mid));
+
+					if (result < 0)
+						hi = mid;
+					else if (result > 0)
+						lo = mid + 1;
+					else if (result == 0) {
+						idx_out = mid;
+						found_out = true;
+						return true;
+					} else
+						return false;
+				} else {
+					int result = _compare(key, node->key(mid));
+
+					if (result < 0)
+						hi = mid;
+					else if (result > 0)
+						lo = mid + 1;
+					else {
+						idx_out = mid;
+						found_out = true;
+						return true;
+					}
+				}
 			}
-			return lo;
+			idx_out = lo;
+			found_out = false;
+			return true;
 		}
 
-		inline std::pair<Node *, size_t> _find(const T &key, Node *node) const noexcept {
+		/// @brief Find a key within the subtree rooted at a node.
+		/// @tparam U The type of the key to find.
+		/// @param key The key to find.
+		/// @param node The node to start the search from.
+		/// @param node_out Receives the node that contains the key, or null when it is not present.
+		/// @param idx_out Receives the index of the key within the node.
+		/// @return false when the comparison failed, true otherwise.
+		template <typename U>
+		inline bool _find(const U &key, Node *node, Node *&node_out, size_t &idx_out) const noexcept {
 		recurse:
-			size_t i = _bsearch_lower_bound(node, key);
-			if ((i < node->num_keys) && (!this->_compare(key, node->key(i)))) {
-				return { node, i };
-			} else if (node->is_leaf())
-				return { nullptr, 0 };
-			else {
-				node = node->child_node(i);
-				goto recurse;
+			size_t i;
+			bool found;
+
+			if (!_bsearch_lower_bound(node, key, i, found))
+				return false;
+
+			if (found) {
+				node_out = node;
+				idx_out = i;
+				return true;
 			}
+
+			if (node->is_leaf()) {
+				node_out = nullptr;
+				return true;
+			}
+
+			node = node->child_node(i);
+			goto recurse;
+		}
+
+		/// @brief Find the greatest key that is not greater than the given key within a subtree.
+		/// @tparam U The type of the key to query.
+		/// @param key The key to query.
+		/// @param node The node to start the search from.
+		/// @param node_out Receives the node that contains the key, or null when there is none.
+		/// @param idx_out Receives the index of the key within the node.
+		/// @return false when the comparison failed, true otherwise.
+		template <typename U>
+		PEFF_FORCEINLINE bool _find_max_lteq(const U &key, Node *node, Node *&node_out, size_t &idx_out) const noexcept {
+			node_out = nullptr;
+			idx_out = 0;
+
+			Node *cur = node;
+
+			while (cur) {
+				size_t i;
+				bool found;
+
+				if (!_bsearch_lower_bound(cur, key, i, found))
+					return false;
+
+				if (found) {
+					node_out = cur;
+					idx_out = i;
+					return true;
+				}
+
+				// Every key from the insertion point on is greater than the queried one, so the
+				// best candidate within this node is the key right before it.
+				if (i > 0) {
+					node_out = cur;
+					idx_out = i - 1;
+				}
+
+				if (cur->is_leaf())
+					return true;
+
+				cur = cur->child_node(i);
+			}
+
+			return true;
 		}
 
 		PEFF_FORCEINLINE static Node *_min_node(Node *node) noexcept {
@@ -308,6 +500,127 @@ namespace peff {
 			}
 		}
 
+		/// @brief Merge a node with its right sibling, moving the separator key down.
+		/// @param left_child The left node that receives the keys.
+		/// @param right_child The right node that is drained and released.
+		/// @param parent The common parent of the two nodes.
+		/// @param index The index of the separator key within the parent.
+		/// @note Unlike _merge, the parent is allowed to underflow; the caller rebalances upwards.
+		PEFF_FORCEINLINE void _merge_up(Node *left_child, Node *right_child, Node *parent, size_t index) noexcept {
+			left_child->push_key(std::move(parent->key(index)));
+
+			// A node being rebalanced upwards may hold fewer than Degree - 1 keys, so move exactly
+			// as many keys and children as the right node actually has.
+			const size_t right_keys = right_child->num_keys;
+			for (size_t i = 0; i < right_keys; ++i)
+				left_child->push_key(std::move(right_child->key(i)));
+
+			if (!left_child->is_leaf()) {
+				const size_t right_children = right_child->num_children;
+				for (size_t i = 0; i < right_children; ++i)
+					left_child->push_child_node(right_child->child_node(i));
+			}
+
+			_dealloc_node(right_child);
+
+			parent->remove_key(index);
+			parent->remove_child_node(index + 1);
+		}
+
+		/// @brief Restore the B-tree invariants after a key has been removed from a leaf.
+		/// @param node The leaf a key has just been removed from.
+		PEFF_FORCEINLINE void _rebalance_up(Node *node) noexcept {
+			while (node && node->num_keys < Degree - 1) {
+				Node *parent = static_cast<Node *>(node->parent);
+
+				if (!parent) {
+					// The root may hold fewer keys, but an empty root is collapsed.
+					if (!node->num_keys) {
+						if (node->is_leaf()) {
+							_dealloc_node(node);
+							_root = nullptr;
+						} else {
+							Node *new_root = node->child_node(0);
+							new_root->parent = nullptr;
+							_dealloc_node(node);
+							_root = new_root;
+						}
+					}
+					return;
+				}
+
+				size_t idx = 0;
+				while (idx <= parent->num_keys && parent->child_node(idx) != node)
+					++idx;
+
+				PEFF_ASSERT(idx <= parent->num_keys, "The node must be a child of its parent");
+
+				Node *left_sib = (idx > 0) ? parent->child_node(idx - 1) : nullptr;
+				Node *right_sib = (idx < parent->num_keys) ? parent->child_node(idx + 1) : nullptr;
+
+				if (left_sib && left_sib->num_keys >= Degree) {
+					node->insert_key(0, std::move(parent->key(idx - 1)));
+					if (!node->is_leaf())
+						node->insert_child_node(0, left_sib->child_node(left_sib->num_children - 1));
+
+					peff::move_assign_or_move_construct(parent->key(idx - 1), std::move(left_sib->key(left_sib->num_keys - 1)));
+					left_sib->remove_key(left_sib->num_keys - 1);
+
+					if (!left_sib->is_leaf())
+						left_sib->remove_child_node(left_sib->num_children - 1);
+
+					return;
+				}
+
+				if (right_sib && right_sib->num_keys >= Degree) {
+					node->push_key(std::move(parent->key(idx)));
+					if (!node->is_leaf())
+						node->push_child_node(right_sib->child_node(0));
+
+					peff::move_assign_or_move_construct(parent->key(idx), std::move(right_sib->key(0)));
+					right_sib->remove_key(0);
+
+					if (!right_sib->is_leaf())
+						right_sib->remove_child_node(0);
+
+					return;
+				}
+
+				if (left_sib)
+					_merge_up(left_sib, node, parent, idx - 1);
+				else if (right_sib)
+					_merge_up(node, right_sib, parent, idx);
+				else {
+					PEFF_ASSERT(false, "A non-root node must have a sibling");
+					return;
+				}
+
+				node = parent;
+			}
+		}
+
+		/// @brief Extract the key at a position and restore the tree upwards.
+		/// @param node The node that contains the key.
+		/// @param idx The index of the key within the node.
+		/// @return The extracted key.
+		PEFF_FORCEINLINE T _extract(Node *node, size_t idx) noexcept {
+			T removed = std::move(node->key(idx));
+
+			if (!node->is_leaf()) {
+				// Replace the key with its predecessor, which always lives in a leaf.
+				auto pred = _predecessor(node, idx);
+				peff::move_assign_or_move_construct(node->key(idx), std::move(pred.first->key(pred.second)));
+				node = pred.first;
+				idx = pred.second;
+			}
+
+			node->remove_key(idx);
+			--_num_elements;
+			_rebalance_up(node);
+
+			return removed;
+		}
+
 		PEFF_FORCEINLINE void _rollback_insert(Node *start_node) {
 			Node *cur = start_node;
 			while (cur) {
@@ -325,9 +638,25 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE T *_insert_nonfull(Node *node, T &&key) noexcept {
+		/// @brief Insert a key into a node that is guaranteed to have room for it.
+		/// @param node The node to start the insertion from.
+		/// @param key The key to be inserted, must be an rvalue.
+		/// @return The pointer to the inserted key. On failure it is either a null pointer (out of
+		///         memory) or, in the fallible mode, an Unordered error when the comparison failed.
+		///         Any structural change performed on the way down is rolled back before returning.
+		PEFF_FORCEINLINE Outcome<T *> _insert_nonfull(Node *node, T &&key) noexcept {
 		recurse:
-			size_t i = _bsearch_lower_bound(node, key);
+			size_t i;
+			bool found;
+
+			if (!_bsearch_lower_bound(node, key, i, found)) {
+				// The comparison failed: roll back every split performed on the way down.
+				_rollback_insert(node);
+				if constexpr (Fallible)
+					return Unordered();
+				else
+					return nullptr;
+			}
 
 			if (node->is_leaf()) {
 				node->insert_key(i, std::move(key));
@@ -348,11 +677,31 @@ namespace peff {
 					_rollback_insert(node);
 					return nullptr;
 				}
-				if (_gt(key, node->key(i)))
+
+				if constexpr (_is_partial_ordered) {
+					const PartialOrd result = _compare_partial(key, node->key(i));
+
+					if (result > 0)
+						++i;
+					else if (!(result < 0) && !(result == 0)) {
+						// The comparison failed: roll the split back and report it.
+						_rollback_insert(node);
+						return Unordered();
+					}
+				} else if (_gt(key, node->key(i)))
 					++i;
 			}
 			node = node->child_node(i);
 			goto recurse;
+		}
+
+		/// @brief Whether an insertion outcome stands for a failure.
+		/// @param result The outcome to check.
+		[[nodiscard]] PEFF_FORCEINLINE static bool _is_insert_failure(const Outcome<T *> &result) noexcept {
+			if constexpr (Fallible)
+				return result.is_error() || !result.value();
+			else
+				return !result;
 		}
 
 		PEFF_FORCEINLINE T delete_max(Node *node) {
@@ -427,42 +776,28 @@ namespace peff {
 			other._num_elements = 0;
 		}
 
-		PEFF_FORCEINLINE ~BTreeSet() noexcept {
-			if (!_root) return;
+		PEFF_FORCEINLINE ThisType &operator=(ThisType &&rhs) noexcept {
+			if (this == &rhs)
+				return *this;
 
-			Node *cur = _root;
-			_root->undo_index = 0;
+			clear();
 
-			while (cur) {
-				if (cur->is_leaf()) {
-					Node *parent = static_cast<Node *>(cur->parent);
-					if (parent) {
-						parent->undo_index++;
-					}
-					_dealloc_node(cur);
-					cur = parent;
-				} else {
-					if (cur->undo_index < cur->num_children) {
-						Node *child = cur->children[cur->undo_index];
-						child->undo_index = 0;
-						cur = child;
-					} else {
-						Node *parent = static_cast<Node *>(cur->parent);
-						if (parent) {
-							parent->undo_index++;
-						}
-						_dealloc_node(cur);
-						cur = parent;
-					}
-				}
-			}
+			_allocator = std::move(rhs._allocator);
+			_cmp = std::move(rhs._cmp);
+			_root = rhs._root;
+			_num_elements = rhs._num_elements;
 
-			_root = nullptr;
+			rhs._root = nullptr;
+			rhs._num_elements = 0;
+
+			return *this;
 		}
 
-		inline T *insert(T &&key) noexcept {
-			T *ptr;
+		PEFF_FORCEINLINE ~BTreeSet() noexcept {
+			_destroy_tree();
+		}
 
+		inline Outcome<T *> insert(T &&key) noexcept {
 			if (!_root) {
 				Node *new_node = _alloc_node();
 
@@ -473,151 +808,268 @@ namespace peff {
 					_dealloc_node(new_node);
 				});
 
-				if (!(ptr = _insert_nonfull(new_node, std::move(key))))
-					return nullptr;
+				Outcome<T *> result = _insert_nonfull(new_node, std::move(key));
+
+				if (_is_insert_failure(result))
+					return result;
 
 				sg.release();
 
 				_root = new_node;
-			} else {
-				PEFF_ASSERT(_root->num_keys <= 2 * Degree - 1, "Invalid key number detected");
-				if (_root->num_keys == 2 * Degree - 1) {
-					Node *new_node = _alloc_node();
-
-					if (!new_node)
-						return nullptr;
-
-					new_node->push_child_node(_root);
-
-					peff::ScopeGuard sg([this, new_node]() noexcept {
-						_dealloc_node(new_node);
-						_root->parent = nullptr;
-					});
-
-					if (!_split(new_node, 0))
-						return nullptr;
-
-					peff::ScopeGuard undo_sg([this, new_node]() noexcept {
-						_rollback_insert(new_node);
-					});
-
-					if (!(ptr = _insert_nonfull(new_node, std::move(key))))
-						return nullptr;
-
-					undo_sg.release();
-					sg.release();
-
-					{
-						Node *cur = static_cast<Node *>(new_node->parent);
-						while (cur) {
-							cur->has_undo = false;
-							cur = static_cast<Node *>(cur->parent);
-						}
-					}
-
-					_root = new_node;
-				} else {
-					if (!(ptr = _insert_nonfull(_root, std::move(key))))
-						return nullptr;
-				}
+				++_num_elements;
+				return result;
 			}
+
+			PEFF_ASSERT(_root->num_keys <= 2 * Degree - 1, "Invalid key number detected");
+
+			if (_root->num_keys == 2 * Degree - 1) {
+				Node *new_node = _alloc_node();
+
+				if (!new_node)
+					return nullptr;
+
+				new_node->push_child_node(_root);
+
+				peff::ScopeGuard sg([this, new_node]() noexcept {
+					_dealloc_node(new_node);
+					_root->parent = nullptr;
+				});
+
+				if (!_split(new_node, 0))
+					return nullptr;
+
+				peff::ScopeGuard undo_sg([this, new_node]() noexcept {
+					_rollback_insert(new_node);
+				});
+
+				Outcome<T *> result = _insert_nonfull(new_node, std::move(key));
+
+				if (_is_insert_failure(result))
+					return result;
+
+				undo_sg.release();
+				sg.release();
+
+				{
+					Node *cur = static_cast<Node *>(new_node->parent);
+					while (cur) {
+						cur->has_undo = false;
+						cur = static_cast<Node *>(cur->parent);
+					}
+				}
+
+				_root = new_node;
+				++_num_elements;
+				return result;
+			}
+
+			Outcome<T *> result = _insert_nonfull(_root, std::move(key));
+
+			if (_is_insert_failure(result))
+				return result;
 
 			++_num_elements;
-
-			return ptr;
+			return result;
 		}
 
-		inline void remove(const T &key) noexcept {
-			Node *node = _root;
-		recurse:
-			if (!node)
-				return;
+		/// @brief Remove an element from the set.
+		/// @param key The key of the element to be removed.
+		/// @return The removed element, an empty option when there is no such element, or, in the
+		///         fallible mode, an Unordered error when the comparison failed. In the latter two
+		///         cases the tree is left unmodified.
+		inline Outcome<Option<T>> remove(const T &key) noexcept {
+			return remove_alt<T>(key);
+		}
 
-			size_t idx = _bsearch_lower_bound(node, key);
+		/// @brief Remove an element from the set, using an alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key The key of the element to be removed.
+		/// @return The removed element, an empty option when there is no such element, or, in the
+		///         fallible mode, an Unordered error when the comparison failed. In the latter two
+		///         cases the tree is left unmodified.
+		template <typename U>
+		inline Outcome<Option<T>> remove_alt(const U &key) noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
 
-			if (idx < node->num_keys && !_compare(key, node->key(idx))) {
-				if (node->is_leaf()) {
-					node->remove_key(idx);
-					--_num_elements;
+			if constexpr (_is_partial_ordered) {
+				// A failed comparison must leave the tree untouched, so the whole descent is done
+				// before any structural change takes place.
+				Node *found_node = nullptr;
+				size_t found_idx = 0;
 
-					if (!node->num_keys) {
-						_dealloc_node(node);
-						_root = nullptr;
+				if (_root && !_find(key, _root, found_node, found_idx))
+					return Unordered();
+
+				if (!found_node)
+					return Option<T>(NULLOPT);
+
+				return Option<T>(std::move(_extract(found_node, found_idx)));
+			} else {
+				Node *node = _root;
+
+			recurse:
+				if (!node)
+					return Option<T>(NULLOPT);
+
+				size_t idx;
+				bool found;
+
+				_bsearch_lower_bound(node, key, idx, found);
+
+				if (found) {
+					if (node->is_leaf()) {
+						T removed = std::move(node->key(idx));
+						node->remove_key(idx);
+						--_num_elements;
+
+						if (!node->num_keys) {
+							_dealloc_node(node);
+							_root = nullptr;
+						}
+						return Option<T>(std::move(removed));
 					}
-					return;
+
+					Node *left_child = node->child_node(idx);
+					Node *right_child = node->child_node(idx + 1);
+
+					if (left_child->num_keys >= Degree) {
+						T removed = std::move(node->key(idx));
+						peff::move_assign_or_move_construct(node->key(idx), delete_max(left_child));
+						--_num_elements;
+						return Option<T>(std::move(removed));
+					}
+					if (right_child->num_keys >= Degree) {
+						T removed = std::move(node->key(idx));
+						peff::move_assign_or_move_construct(node->key(idx), delete_min(right_child));
+						--_num_elements;
+						return Option<T>(std::move(removed));
+					}
+					_merge(left_child, right_child, node, idx);
+					node = left_child;
+					goto recurse;
 				}
 
-				Node *left_child = node->child_node(idx);
-				Node *right_child = node->child_node(idx + 1);
-				if (left_child->num_keys >= Degree) {
-					peff::move_assign_or_move_construct(node->key(idx), delete_max(left_child));
-					--_num_elements;
-					return;
+				if (node->is_leaf())
+					return Option<T>(NULLOPT);
+
+				Node *child = node->child_node(idx);
+
+				PEFF_ASSERT(child, "child should be non-null!");
+
+				if (child->num_keys == Degree - 1) {
+					Node *left_sib = (idx > 0) ? node->child_node(idx - 1) : nullptr;
+					Node *right_sib = (idx < node->num_keys) ? node->child_node(idx + 1) : nullptr;
+
+					if (left_sib && left_sib->num_keys >= Degree) {
+						child->insert_key(0, std::move(node->key(idx - 1)));
+						if (!child->is_leaf())
+							child->insert_child_node(0, left_sib->child_node(left_sib->num_children - 1));
+
+						peff::move_assign_or_move_construct(node->key(idx - 1), std::move(left_sib->key(left_sib->num_keys - 1)));
+						left_sib->remove_key(left_sib->num_keys - 1);
+						if (!left_sib->is_leaf())
+							left_sib->remove_child_node(left_sib->num_children - 1);
+					} else if (right_sib && right_sib->num_keys >= Degree) {
+						child->push_key(std::move(node->key(idx)));
+						if (!child->is_leaf())
+							child->push_child_node(right_sib->child_node(0));
+
+						peff::move_assign_or_move_construct(node->key(idx), std::move(right_sib->key(0)));
+						right_sib->remove_key(0);
+						if (!right_sib->is_leaf())
+							right_sib->remove_child_node(0);
+					} else {
+						if (left_sib) {
+							_merge(left_sib, child, node, idx - 1);
+							child = left_sib;
+						} else if (right_sib) {
+							_merge(child, right_sib, node, idx);
+						}
+					}
 				}
-				if (right_child->num_keys >= Degree) {
-					peff::move_assign_or_move_construct(node->key(idx), delete_min(right_child));
-					--_num_elements;
-					return;
-				}
-				_merge(left_child, right_child, node, idx);
-				node = left_child;
+				node = child;
 				goto recurse;
 			}
+		}
 
-			if (node->is_leaf())
-				return;
+		/// @brief Get reference to the element that is associated to a key.
+		/// @param key Key to the element.
+		/// @return Reference to the stored element, or, in the fallible mode, an Unordered error
+		///         when the comparison failed.
+		PEFF_FORCEINLINE AtResult at(const T &key) noexcept {
+			return at_alt<T>(key);
+		}
 
-			Node *child = node->child_node(idx);
+		/// @brief Get reference to the element that is associated to an alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key to the element.
+		/// @return Reference to the stored element, or, in the fallible mode, an Unordered error
+		///         when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE AtResult at_alt(const U &key) noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
 
-			PEFF_ASSERT(child, "child should be non-null!");
+			if constexpr (Fallible) {
+				Node *node = nullptr;
+				size_t idx = 0;
 
-			if (child->num_keys == Degree - 1) {
-				Node *left_sib = (idx > 0) ? node->child_node(idx - 1) : nullptr;
-				Node *right_sib = (idx < node->num_keys) ? node->child_node(idx + 1) : nullptr;
+				if (_root && !_find(key, _root, node, idx))
+					return Unordered();
 
-				if (left_sib && left_sib->num_keys >= Degree) {
-					child->insert_key(0, std::move(node->key(idx - 1)));
-					if (!child->is_leaf())
-						child->insert_child_node(0, left_sib->child_node(left_sib->num_children - 1));
+				PEFF_ASSERT(node, "Corresponding element not found");
 
-					peff::move_assign_or_move_construct(node->key(idx - 1), std::move(left_sib->key(left_sib->num_keys - 1)));
-					left_sib->remove_key(left_sib->num_keys - 1);
-					if (!left_sib->is_leaf())
-						left_sib->remove_child_node(left_sib->num_children - 1);
-				} else if (right_sib && right_sib->num_keys >= Degree) {
-					child->push_key(std::move(node->key(idx)));
-					if (!child->is_leaf())
-						child->push_child_node(right_sib->child_node(0));
+				return node ? &node->key(idx) : nullptr;
+			} else {
+				PEFF_ASSERT(_root, "The set is empty");
 
-					peff::move_assign_or_move_construct(node->key(idx), std::move(right_sib->key(0)));
-					right_sib->remove_key(0);
-					if (!right_sib->is_leaf())
-						right_sib->remove_child_node(0);
-				} else {
-					if (left_sib) {
-						_merge(left_sib, child, node, idx - 1);
-						child = left_sib;
-					} else if (right_sib) {
-						_merge(child, right_sib, node, idx);
-					}
-				}
+				Node *node = nullptr;
+				size_t idx = 0;
+				_find(key, _root, node, idx);
+
+				PEFF_ASSERT(node, "Corresponding element not found");
+
+				return node->key(idx);
 			}
-			node = child;
-			goto recurse;
 		}
 
-		PEFF_FORCEINLINE T &at(const T &key) noexcept {
-			PEFF_ASSERT(_root, "The set is empty");
-			auto result = _find(key, _root);
-			PEFF_ASSERT(result.first, "Corresponding element not found");
-			return result.first->key(result.second);
+		/// @brief Get immutable reference to the element that is associated to a key.
+		/// @param key Key to the element.
+		/// @return Immutable reference to the stored element, or, in the fallible mode, an Unordered
+		///         error when the comparison failed.
+		PEFF_FORCEINLINE ConstAtResult at(const T &key) const noexcept {
+			return at_alt<T>(key);
 		}
 
-		PEFF_FORCEINLINE const T &at(const T &key) const noexcept {
-			PEFF_ASSERT(_root, "The set is empty");
-			auto result = _find(key, _root);
-			PEFF_ASSERT(result.first, "Corresponding element not found");
-			return result.first->key(result.second);
+		/// @brief Get immutable reference to the element that is associated to an alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key to the element.
+		/// @return Immutable reference to the stored element, or, in the fallible mode, an Unordered
+		///         error when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE ConstAtResult at_alt(const U &key) const noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
+
+			if constexpr (Fallible) {
+				Node *node = nullptr;
+				size_t idx = 0;
+
+				if (_root && !_find(key, _root, node, idx))
+					return Unordered();
+
+				PEFF_ASSERT(node, "Corresponding element not found");
+
+				return node ? &node->key(idx) : nullptr;
+			} else {
+				PEFF_ASSERT(_root, "The set is empty");
+
+				Node *node = nullptr;
+				size_t idx = 0;
+				_find(key, _root, node, idx);
+
+				PEFF_ASSERT(node, "Corresponding element not found");
+
+				return node->key(idx);
+			}
 		}
 
 		PEFF_FORCEINLINE size_t size() const noexcept {
@@ -628,20 +1080,220 @@ namespace peff {
 			return !_num_elements;
 		}
 
-		PEFF_FORCEINLINE bool contains(const T &key) const noexcept {
+		/// @brief Release every element of the set.
+		PEFF_FORCEINLINE void clear() noexcept {
+			_destroy_tree();
+		}
+
+		/// @brief Get the allocator of the container.
+		/// @return Allocator of the container.
+		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const noexcept {
+			return _allocator.get();
+		}
+
+		/// @brief Replace the allocator of the container.
+		/// @param rhs Allocator for replacement.
+		PEFF_FORCEINLINE void replace_allocator(PEFF_NONNULL Alloc *rhs) noexcept {
+			verify_replaceable(_allocator.get(), rhs);
+			_allocator = rhs;
+		}
+
+		/// @brief Get the comparator of the container.
+		/// @return Reference to the comparator of the container.
+		PEFF_FORCEINLINE Comparator &comparator() noexcept {
+			return _cmp;
+		}
+
+		/// @brief Get the immutable comparator of the container.
+		/// @return Immutable reference to the comparator of the container.
+		PEFF_FORCEINLINE const Comparator &comparator() const noexcept {
+			return _cmp;
+		}
+
+		/// @brief Verify the invariants of the B-tree.
+		PEFF_FORCEINLINE void verify() const noexcept {
 			if (!_root)
-				return false;
-			auto result = _find(key, _root);
-			return result.first;
+				return;
+
+			PEFF_ASSERT(_root->parent == nullptr, "The root must not have a parent");
+
+			size_t leaf_depth = (size_t)-1;
+			size_t total = 0;
+
+			// The traversal is iterative so that the call stack depth never depends on the tree height.
+			const Node *cur = _root;
+			size_t depth = 0;
+			size_t next_child = 0;
+			bool entered = true;
+
+			while (cur) {
+				if (entered) {
+					PEFF_ASSERT(cur->num_keys <= 2 * Degree - 1, "Key capacity exceeded");
+
+					if (cur->parent)
+						PEFF_ASSERT(cur->num_keys >= Degree - 1, "Key number underflow");
+
+					PEFF_ASSERT(
+						(cur->is_leaf() && cur->num_children == 0) || cur->num_children == cur->num_keys + 1,
+						"Invalid child number");
+
+					for (size_t i = 1; i < cur->num_keys; ++i) {
+						if constexpr (_is_partial_ordered) {
+							const PartialOrd result = _compare_partial(cur->key(i - 1), cur->key(i));
+							PEFF_ASSERT(result < 0, "The keys must be strictly ascending");
+						} else {
+							PEFF_ASSERT(_lt(cur->key(i - 1), cur->key(i)), "The keys must be strictly ascending");
+						}
+					}
+
+					total += cur->num_keys;
+
+					if (cur->is_leaf()) {
+						if (leaf_depth == (size_t)-1)
+							leaf_depth = depth;
+						else
+							PEFF_ASSERT(leaf_depth == depth, "Every leaf must be on the same depth");
+					}
+				}
+
+				if (next_child < cur->num_children) {
+					cur = cur->child_node(next_child);
+					++depth;
+					next_child = 0;
+					entered = true;
+				} else {
+					const Node *parent = static_cast<const Node *>(cur->parent);
+
+					if (!parent) {
+						PEFF_ASSERT(depth == 0, "The traversal must end at the root");
+						break;
+					}
+
+					size_t idx = 0;
+					while (idx < parent->num_children && parent->child_node(idx) != cur)
+						++idx;
+
+					PEFF_ASSERT(idx < parent->num_children, "The node must be a child of its parent");
+
+					cur = parent;
+					--depth;
+					next_child = idx + 1;
+					entered = false;
+				}
+			}
+
+			PEFF_ASSERT(total == _num_elements, "The number of elements mismatch");
+		}
+
+		PEFF_FORCEINLINE Outcome<bool> contains(const T &key) const noexcept {
+			return contains_alt<T>(key);
+		}
+
+		/// @brief Check if an element is already contained in the set, using an alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key of the element to be checked.
+		/// @return true when the element is contained, false otherwise, or, in the fallible mode, an
+		///         Unordered error when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE Outcome<bool> contains_alt(const U &key) const noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
+
+			if constexpr (Fallible) {
+				Node *node = nullptr;
+				size_t idx = 0;
+
+				if (_root && !_find(key, _root, node, idx))
+					return Unordered();
+
+				return node != nullptr;
+			} else {
+				if (!_root)
+					return false;
+
+				Node *node = nullptr;
+				size_t idx = 0;
+				_find(key, _root, node, idx);
+
+				return node != nullptr;
+			}
 		}
 
 		class Iterator {
 		private:
 			Node *_node;
 			size_t _idx;
+			bool _reversed;
+
+			/// @brief Move to the next element in ascending order.
+			PEFF_FORCEINLINE void _step_forward() noexcept {
+				if (!_node->is_leaf()) {
+					Node *child = _node->child_node(_idx + 1);
+					while (!child->is_leaf())
+						child = child->child_node(0);
+					_node = child;
+					_idx = 0;
+					return;
+				}
+
+				if (_idx + 1 < _node->num_keys) {
+					++_idx;
+					return;
+				}
+
+				Node *child = _node;
+				Node *parent = static_cast<Node *>(child->parent);
+				while (parent != nullptr) {
+					size_t i = 0;
+					while (i <= parent->num_keys && parent->child_node(i) != child)
+						++i;
+					if (i < parent->num_keys) {
+						_node = parent;
+						_idx = i;
+						return;
+					}
+					child = parent;
+					parent = static_cast<Node *>(parent->parent);
+				}
+				_node = nullptr;
+				_idx = 0;
+			}
+
+			/// @brief Move to the next element in descending order.
+			PEFF_FORCEINLINE void _step_backward() noexcept {
+				if (!_node->is_leaf()) {
+					Node *child = _node->child_node(_idx);
+					while (!child->is_leaf())
+						child = child->child_node(child->num_children - 1);
+					_node = child;
+					_idx = child->num_keys - 1;
+					return;
+				}
+
+				if (_idx > 0) {
+					--_idx;
+					return;
+				}
+
+				Node *child = _node;
+				Node *parent = static_cast<Node *>(child->parent);
+				while (parent != nullptr) {
+					size_t i = 0;
+					while (i <= parent->num_keys && parent->child_node(i) != child)
+						++i;
+					if (i > 0) {
+						_node = parent;
+						_idx = i - 1;
+						return;
+					}
+					child = parent;
+					parent = static_cast<Node *>(parent->parent);
+				}
+				_node = nullptr;
+				_idx = 0;
+			}
 
 		public:
-			PEFF_FORCEINLINE Iterator(Node *node, size_t idx) : _node(node), _idx(idx) {}
+			PEFF_FORCEINLINE Iterator(Node *node, size_t idx, bool reversed = false) : _node(node), _idx(idx), _reversed(reversed) {}
 
 			PEFF_FORCEINLINE const T &operator*() const {
 				return _node->key(_idx);
@@ -652,38 +1304,35 @@ namespace peff {
 			}
 
 			PEFF_FORCEINLINE Iterator &operator++() {
-				if (!_node)
-					return *this;
-
-				if (!_node->is_leaf()) {
-					Node *child = _node->child_node(_idx + 1);
-					while (!child->is_leaf())
-						child = child->child_node(0);
-					_node = child;
-					_idx = 0;
-				} else {
-					if (_idx + 1 < _node->num_keys) {
-						++_idx;
-					} else {
-						Node *child = _node;
-						Node *parent = static_cast<Node *>(child->parent);
-						while (parent != nullptr) {
-							size_t i = 0;
-							while (i <= parent->num_keys && parent->child_node(i) != child)
-								++i;
-							if (i < parent->num_keys) {
-								_node = parent;
-								_idx = i;
-								return *this;
-							}
-							child = parent;
-							parent = static_cast<Node *>(parent->parent);
-						}
-						_node = nullptr;
-						_idx = 0;
-					}
+				if (_node) {
+					if (_reversed)
+						_step_backward();
+					else
+						_step_forward();
 				}
 				return *this;
+			}
+
+			PEFF_FORCEINLINE Iterator operator++(int) {
+				Iterator it = *this;
+				++(*this);
+				return it;
+			}
+
+			PEFF_FORCEINLINE Iterator &operator--() {
+				if (_node) {
+					if (_reversed)
+						_step_forward();
+					else
+						_step_backward();
+				}
+				return *this;
+			}
+
+			PEFF_FORCEINLINE Iterator operator--(int) {
+				Iterator it = *this;
+				--(*this);
+				return it;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &other) const {
@@ -733,6 +1382,23 @@ namespace peff {
 				ConstIterator iterator = *this;
 
 				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator--() {
+				--_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator operator--(int) {
+				ConstIterator it = *this;
+				--(*this);
+				return it;
+			}
+
+			PEFF_FORCEINLINE ConstIterator prev() {
+				ConstIterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const ConstIterator &it) const {
@@ -785,22 +1451,180 @@ namespace peff {
 			return ConstIterator(Iterator(nullptr, 0));
 		}
 
-		PEFF_FORCEINLINE Iterator find(const T &key) noexcept {
+		PEFF_FORCEINLINE Iterator rbegin() noexcept {
 			if (!_root)
-				return end();
-			auto result = _find(key, _root);
-			if (!result.first)
-				return end();
-			return Iterator(result.first, result.second);
+				return rend();
+
+			Node *node = _max_node(_root);
+			return Iterator(node, node->num_keys - 1, true);
 		}
 
-		PEFF_FORCEINLINE ConstIterator find(const T &key) const noexcept {
+		PEFF_FORCEINLINE Iterator rend() noexcept {
+			return Iterator(nullptr, 0, true);
+		}
+
+		PEFF_FORCEINLINE ConstIterator crbegin() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rbegin());
+		}
+
+		PEFF_FORCEINLINE ConstIterator cend_reversed() const noexcept {
+			return ConstIterator(const_cast<ThisType *>(this)->rend());
+		}
+
+		PEFF_FORCEINLINE Outcome<Iterator> find(const T &key) noexcept {
+			return find_alt<T>(key);
+		}
+
+		/// @brief Find an element in the set, using an alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key of the element to be found.
+		/// @return Iterator to the element, an end iterator when it is not present, or, in the
+		///         fallible mode, an Unordered error when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE Outcome<Iterator> find_alt(const U &key) noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
+
+			if constexpr (Fallible) {
+				Node *node = nullptr;
+				size_t idx = 0;
+
+				if (_root && !_find(key, _root, node, idx))
+					return Unordered();
+
+				if (!node)
+					return end();
+				return Iterator(node, idx);
+			} else {
+				if (!_root)
+					return end();
+
+				Node *node = nullptr;
+				size_t idx = 0;
+				_find(key, _root, node, idx);
+
+				if (!node)
+					return end();
+				return Iterator(node, idx);
+			}
+		}
+
+		PEFF_FORCEINLINE Outcome<ConstIterator> find(const T &key) const noexcept {
+			return find_alt<T>(key);
+		}
+
+		/// @brief Find an element in the set, using an alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key of the element to be found.
+		/// @return Immutable iterator to the element, an end iterator when it is not present, or, in
+		///         the fallible mode, an Unordered error when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE Outcome<ConstIterator> find_alt(const U &key) const noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
+
+			if constexpr (Fallible) {
+				Node *node = nullptr;
+				size_t idx = 0;
+
+				if (_root && !_find(key, _root, node, idx))
+					return Unordered();
+
+				if (!node)
+					return end();
+				return ConstIterator(Iterator(node, idx));
+			} else {
+				if (!_root)
+					return end();
+
+				Node *node = nullptr;
+				size_t idx = 0;
+				_find(key, _root, node, idx);
+
+				if (!node)
+					return end();
+				return ConstIterator(Iterator(node, idx));
+			}
+		}
+
+		/// @brief Find the element with the greatest key that is not greater than the given key.
+		/// @param key Key for query.
+		/// @return Iterator to the element, an end iterator when there is none, or, in the fallible
+		///         mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<Iterator> find_max_lteq(const T &key) noexcept {
+			return find_max_lteq_alt<T>(key);
+		}
+
+		/// @brief Find the element with the greatest key that is not greater than the given
+		///        alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key for query.
+		/// @return Iterator to the element, an end iterator when there is none, or, in the fallible
+		///         mode, an Unordered error when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE Outcome<Iterator> find_max_lteq_alt(const U &key) noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
+
 			if (!_root)
 				return end();
-			auto result = _find(key, _root);
-			if (!result.first)
+
+			Node *node = nullptr;
+			size_t idx = 0;
+
+			if constexpr (Fallible) {
+				if (!_find_max_lteq(key, _root, node, idx))
+					return Unordered();
+			} else {
+				_find_max_lteq(key, _root, node, idx);
+			}
+
+			if (!node)
 				return end();
-			return ConstIterator(Iterator(result.first, result.second));
+
+			return Iterator(node, idx);
+		}
+
+		/// @brief Find the element with the greatest key that is not greater than the given key.
+		/// @param key Key for query.
+		/// @return Immutable iterator to the element, an end iterator when there is none, or, in the
+		///         fallible mode, an Unordered error when the comparison failed.
+		PEFF_FORCEINLINE Outcome<ConstIterator> find_max_lteq(const T &key) const noexcept {
+			return find_max_lteq_alt<T>(key);
+		}
+
+		/// @brief Find the element with the greatest key that is not greater than the given
+		///        alternative-typed key.
+		/// @tparam U The type of the key.
+		/// @param key Key for query.
+		/// @return Immutable iterator to the element, an end iterator when there is none, or, in the
+		///         fallible mode, an Unordered error when the comparison failed.
+		template <typename U>
+		PEFF_FORCEINLINE Outcome<ConstIterator> find_max_lteq_alt(const U &key) const noexcept {
+			static_assert(_is_alt_queryable<U>, "The query type is not comparable with the key");
+
+			if (!_root)
+				return end();
+
+			Node *node = nullptr;
+			size_t idx = 0;
+
+			if constexpr (Fallible) {
+				if (!_find_max_lteq(key, _root, node, idx))
+					return Unordered();
+			} else {
+				_find_max_lteq(key, _root, node, idx);
+			}
+
+			if (!node)
+				return end();
+
+			return ConstIterator(Iterator(node, idx));
+		}
+
+		/// @brief Remove the element pointed to by an iterator from the set.
+		/// @param iterator Iterator to the element to be removed.
+		/// @return The removed element.
+		PEFF_FORCEINLINE Option<T> remove(const Iterator &iterator) noexcept {
+			PEFF_ASSERT(iterator._node, "Cannot remove the end iterator");
+			return Option<T>(std::move(_extract(iterator._node, iterator._idx)));
 		}
 	};
 }

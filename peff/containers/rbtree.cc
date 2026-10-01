@@ -244,6 +244,8 @@ PEFF_CONTAINERS_API PEFF_NONNULL_RET RBTreeBase::NodeBase *RBTreeBase::_remove_f
 }
 
 PEFF_CONTAINERS_API void RBTreeBase::_verify(PEFF_NULLABLE NodeBase *node, const size_t num_black, size_t black_count) const noexcept {
+	// The traversal is iterative, using the parent pointers, so that the call stack depth never
+	// depends on the tree height.
 	if (!node) {
 		// We have reached a terminal node.
 		if (num_black != black_count)
@@ -252,15 +254,65 @@ PEFF_CONTAINERS_API void RBTreeBase::_verify(PEFF_NULLABLE NodeBase *node, const
 		return;
 	}
 
-	if (_is_red(node) && _is_red(node->p))
-		// Connected red nodes detected
+	NodeBase *cur = node;
+	NodeBase *prev = node->p;
+	size_t visited = 0;
+
+	while (cur) {
+		if (prev == cur->p) {
+			// Entering the node from its parent, or starting at the root.
+			++visited;
+
+			if (_is_red(cur) && _is_red(cur->p))
+				// Connected red nodes detected
+				std::terminate();
+
+			if (_is_black(cur))
+				++black_count;
+
+			// The terminal nodes behind the missing children must share the same black count.
+			if (!cur->l && black_count != num_black)
+				// Inequal black node counts detected
+				std::terminate();
+			if (!cur->r && black_count != num_black)
+				// Inequal black node counts detected
+				std::terminate();
+
+			prev = cur;
+
+			if (cur->l) {
+				cur = cur->l;
+			} else if (cur->r) {
+				cur = cur->r;
+			} else {
+				// We have reached a leaf: leave it.
+				if (_is_black(cur))
+					--black_count;
+				cur = cur->p;
+			}
+		} else if (prev == cur->l) {
+			// Returning from the left child.
+			if (cur->r) {
+				prev = cur;
+				cur = cur->r;
+			} else {
+				if (_is_black(cur))
+					--black_count;
+				prev = cur;
+				cur = cur->p;
+			}
+		} else {
+			// Returning from the right child.
+			if (_is_black(cur))
+				--black_count;
+			prev = cur;
+			cur = cur->p;
+		}
+	}
+
+	if (visited != _num_nodes)
+		// Node count mismatch: the traversal did not cover the whole tree
 		std::terminate();
-
-	if (_is_black(node))
-		++black_count;
-
-	_verify(node->l, num_black, black_count);
-	_verify(node->r, num_black, black_count);
 }
 
 PEFF_CONTAINERS_API void RBTreeBase::_verify() const noexcept {

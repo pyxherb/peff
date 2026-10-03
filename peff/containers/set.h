@@ -22,13 +22,6 @@ namespace peff {
 		Tree _tree;
 		using ThisType = Set<T, Comparator, IsThreeway, Fallible>;
 
-		/// @brief Extract the raw node pointer from an optional node.
-		/// @param opt The optional node produced by a query.
-		/// @return The node pointer, or null when there is none.
-		[[nodiscard]] PEFF_FORCEINLINE static PEFF_NULLABLE_RET typename Tree::Node *_unwrap(PEFF_IN const Option<typename Tree::Node *> &opt) noexcept {
-			return opt.has_value() ? opt.value() : nullptr;
-		}
-
 	public:
 		using NodeType = typename Tree::NodeType;
 
@@ -97,7 +90,7 @@ namespace peff {
 				if (found.is_error())
 					return Unordered();
 
-				typename Tree::Node *node = _unwrap(found.value());
+				typename Tree::Node *node = found.value().unwrap();
 
 				if (node)
 					return _tree.remove(node);
@@ -164,7 +157,7 @@ namespace peff {
 				if (found.is_error())
 					return Unordered();
 
-				typename Tree::Node *node = _unwrap(found.value());
+				typename Tree::Node *node = found.value().unwrap();
 
 				PEFF_ASSERT(node, "Corresponding element not found!");
 
@@ -199,7 +192,7 @@ namespace peff {
 				if (found.is_error())
 					return Unordered();
 
-				typename Tree::Node *node = _unwrap(found.value());
+				typename Tree::Node *node = found.value().unwrap();
 
 				PEFF_ASSERT(node, "Corresponding element not found!");
 
@@ -397,7 +390,7 @@ namespace peff {
 				if (found.is_error())
 					return Unordered();
 
-				return _unwrap(found.value()) != nullptr;
+				return found.value().unwrap() != nullptr;
 			} else {
 				return _tree.template get_alt<U>(key);
 			}
@@ -423,7 +416,7 @@ namespace peff {
 				if (found.is_error())
 					return Unordered();
 
-				typename Tree::Node *node = _unwrap(found.value());
+				typename Tree::Node *node = found.value().unwrap();
 
 				if (node)
 					return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));
@@ -482,7 +475,7 @@ namespace peff {
 				if (found.is_error())
 					return Unordered();
 
-				typename Tree::Node *node = _unwrap(found.value());
+				typename Tree::Node *node = found.value().unwrap();
 
 				if (node)
 					return Iterator(typename Tree::Iterator(node, &_tree, IteratorDirection::Forward));

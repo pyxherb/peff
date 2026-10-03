@@ -11,6 +11,8 @@ namespace peff {
 
 	constexpr static NullOption NULLOPT;
 
+	/// @brief The type used for containing an optional value or @c peff::NULLOPT.
+	/// @tparam T Type of the optional value.
 	template <typename T>
 	class Option final {
 	private:
@@ -65,7 +67,7 @@ namespace peff {
 			return std::move(*((T *)_data));
 		}
 
-		PEFF_FORCEINLINE T move() noexcept {
+		PEFF_FORCEINLINE T unwrap() noexcept {
 			assert(has_value());
 			_has_value = false;
 			return std::move(*((T *)_data));
@@ -186,7 +188,7 @@ namespace peff {
 			return *((const V *)_data);
 		}
 
-		PEFF_FORCEINLINE V move() noexcept {
+		PEFF_FORCEINLINE V unwrap() noexcept {
 			assert(has_value());
 			V v = std::move(*_data);
 			_data = nullptr;
@@ -292,7 +294,7 @@ namespace peff {
 			return *((V *)_data);
 		}
 
-		PEFF_FORCEINLINE V move() noexcept {
+		PEFF_FORCEINLINE V unwrap() noexcept {
 			assert(has_value());
 			V v = std::move(*_data);
 			_data = nullptr;

@@ -1224,6 +1224,8 @@ namespace peff {
 			size_t _idx;
 			bool _reversed;
 
+			friend ThisType;
+
 			/// @brief Move to the next element in ascending order.
 			PEFF_FORCEINLINE void _step_forward() noexcept {
 				if (!_node->is_leaf()) {

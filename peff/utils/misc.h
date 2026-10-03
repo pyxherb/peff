@@ -3,8 +3,8 @@
 
 #include "basedefs.h"
 #include <type_traits>
-#include <functional>
-#include <climits>
+#include <compare>
+#include <peff/base/assert.h>
 #include <cstdint>
 
 namespace peff {
@@ -79,7 +79,7 @@ namespace peff {
 		}
 
 #if PEFF_CPLUSPLUS >= 202002L
-		PEFF_FORCEINLINE constexpr operator std::partial_ordering() const noexcept {
+		PEFF_FORCEINLINE explicit constexpr operator std::partial_ordering() const noexcept {
 			switch (_kind) {
 				case _PartialOrdKind::Lt:
 					return std::partial_ordering::less;
@@ -92,7 +92,7 @@ namespace peff {
 			}
 		}
 
-		PEFF_FORCEINLINE constexpr PartialOrd(std::partial_ordering ord) noexcept {
+		PEFF_FORCEINLINE explicit constexpr PartialOrd(std::partial_ordering ord) noexcept {
 			if (ord == std::partial_ordering::less)
 				_kind = _PartialOrdKind::Lt;
 			else if (ord == std::partial_ordering::greater)

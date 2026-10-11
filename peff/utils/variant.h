@@ -102,103 +102,46 @@ namespace peff {
 		static_assert(sizeof(TagType) <= sizeof(size_t), "Too many elements to the variant");
 		constexpr static TagType _INVALID_TAG_VALUE = static_cast<TagType>(sizeof...(Ts));
 
-	protected:
-		char _storage[MaxSizeOf<Ts...>::value] alignas(MaxAlignOf<Ts...>::value);
-		TagType _tag;
-
-	public:
-		static_assert(std::is_trivial_v<_VariantStorageBase>);
-	};
-
-	template <typename... Ts>
-	struct _VariantStorage<true, false, Ts...> {
-	public:
-		using TagType = AutoSizeUInteger<sizeof...(Ts) + 1>::type;
-		static_assert(sizeof(TagType) <= sizeof(size_t), "Too many elements to the variant");
-		constexpr static TagType _INVALID_TAG_VALUE = static_cast<TagType>(sizeof...(Ts));
-
 		template <typename T>
 		constexpr static TagType _TAG_OF = _VariantTagOf<0, T, Ts...>::value;
 
-	private:
-		using ThisType = _VariantStorage<true, false, Ts...>;
 		char _storage[MaxSizeOf<Ts...>::value] alignas(MaxAlignOf<Ts...>::value);
 		TagType _tag;
 
-	public:
-		PEFF_FORCEINLINE _VariantStorage(const ThisType &storage) noexcept {
-			_copy_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-		}
-		PEFF_FORCEINLINE _VariantStorage(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
-		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+		PEFF_FORCEINLINE _VariantStorageBase(const T &data) {
+			static_assert(_TAG_OF<T>  < _INVALID_TAG_VALUE, "The type is not in the variant");
 			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
 
 			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
 			_tag = _TAG_OF<T>;
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+		PEFF_FORCEINLINE _VariantStorageBase(T &&data) noexcept {
+			static_assert(_TAG_OF<T>  < _INVALID_TAG_VALUE, "The type is not in the variant");
 			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
 			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
 			_tag = _TAG_OF<T>;
 		}
-		~_VariantStorage() = default;
-
-		template <typename T>
-		PEFF_FORCEINLINE ThisType &operator=(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
-			return *this;
-		}
-		template <typename T>
-		PEFF_FORCEINLINE ThisType &operator=(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
-			return *this;
-		}
-
-		PEFF_FORCEINLINE ThisType &operator=(const ThisType &storage) noexcept {
-			_copy_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			return *this;
-		}
-		PEFF_FORCEINLINE ThisType &operator=(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
-			return *this;
-		}
+		~_VariantStorageBase() = default;
 
 		template <typename T>
 		PEFF_FORCEINLINE T &value() & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(_TAG_OF<T>  < _INVALID_TAG_VALUE, "The type is not in the variant");
 			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
 			return *reinterpret_cast<T *>(_storage);
 		}
 
 		template <typename T>
 		PEFF_FORCEINLINE const T &value() const & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(_TAG_OF<T>  < _INVALID_TAG_VALUE, "The type is not in the variant");
 			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
 			return *reinterpret_cast<const T *>(_storage);
 		}
 
 		template <typename T>
 		PEFF_FORCEINLINE T &&value() && noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(_TAG_OF<T>  < _INVALID_TAG_VALUE, "The type is not in the variant");
 			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
 			_tag = _INVALID_TAG_VALUE;
 			return std::move(reinterpret_cast<T *>(_storage));
@@ -210,94 +153,63 @@ namespace peff {
 	};
 
 	template <typename... Ts>
-	struct _VariantStorage<true, true, Ts...> {
-	public:
-		using TagType = AutoSizeUInteger<sizeof...(Ts) + 1>::type;
-		static_assert(sizeof(TagType) <= sizeof(size_t), "Too many elements to the variant");
-		constexpr static TagType _INVALID_TAG_VALUE = static_cast<TagType>(sizeof...(Ts));
-
-		template <typename T>
-		constexpr static TagType _TAG_OF = _VariantTagOf<0, T, Ts...>::value;
-
+	struct _VariantStorage<true, false, Ts...> : public _VariantStorageBase<Ts...> {
 	private:
+		using BaseType = _VariantStorageBase<Ts...>;
+		using ThisType = _VariantStorage<true, false, Ts...>;
+
+	public:
+		PEFF_FORCEINLINE _VariantStorage(const ThisType &storage) noexcept {
+			_copy_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+		}
+		PEFF_FORCEINLINE _VariantStorage(ThisType &&storage) noexcept {
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
+		}
+		template <typename T>
+		PEFF_FORCEINLINE _VariantStorage(const T &data): BaseType(data) {
+		}
+		template <typename T>
+		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept : BaseType(std::move(data)) {
+		}
+		~_VariantStorage() = default;
+
+		PEFF_FORCEINLINE ThisType &operator=(const ThisType &storage) noexcept {
+			_copy_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			return *this;
+		}
+	};
+
+	template <typename... Ts>
+	struct _VariantStorage<true, true, Ts...> : public _VariantStorageBase<Ts...> {
+	private:
+		using BaseType = _VariantStorageBase<Ts...>;
 		using ThisType = _VariantStorage<true, true, Ts...>;
-		char _storage[MaxSizeOf<Ts...>::value] alignas(MaxAlignOf<Ts...>::value);
-		TagType _tag;
 
 	public:
 		_VariantStorage(const ThisType &storage) noexcept = default;
 		PEFF_FORCEINLINE _VariantStorage(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
+		PEFF_FORCEINLINE _VariantStorage(const T &data) : BaseType(data) {
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
+		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept : BaseType(std::move(data)) {
 		}
 		~_VariantStorage() = default;
 
-		template <typename T>
-		PEFF_FORCEINLINE ThisType &operator=(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
-			return *this;
-		}
-		template <typename T>
-		PEFF_FORCEINLINE ThisType &operator=(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
-			return *this;
-		}
-
-		ThisType &operator=(const ThisType &storage) noexcept = default;
+		ThisType &operator=(const ThisType &) noexcept = default;
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
 			return *this;
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE T &value() & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			return *reinterpret_cast<T *>(_storage);
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE const T &value() const & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			return *reinterpret_cast<const T *>(_storage);
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE T &&value() && noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			_tag = _INVALID_TAG_VALUE;
-			return std::move(reinterpret_cast<T *>(_storage));
-		}
-
-		PEFF_FORCEINLINE TagType get_tag() const noexcept {
-			return _tag;
 		}
 	};
 
@@ -322,51 +234,33 @@ namespace peff {
 	}
 
 	template <typename... Ts>
-	struct _VariantStorage<false, false, Ts...> {
-	public:
-		using TagType = AutoSizeUInteger<sizeof...(Ts) + 1>::type;
-		static_assert(sizeof(TagType) <= sizeof(size_t), "Too many elements to the variant");
-		constexpr static TagType _INVALID_TAG_VALUE = static_cast<TagType>(sizeof...(Ts));
-
-		template <typename T>
-		constexpr static TagType _TAG_OF = static_cast<TagType>(_VariantTagOf<0, T, Ts...>::value);
-
+	struct _VariantStorage<false, false, Ts...> : public _VariantStorageBase<Ts...> {
 	private:
+		using BaseType = _VariantStorageBase<Ts...>;
 		using ThisType = _VariantStorage<false, false, Ts...>;
-		char _storage[MaxSizeOf<Ts...>::value] alignas(MaxAlignOf<Ts...>::value);
-		TagType _tag;
 
 		PEFF_FORCEINLINE void _reset() noexcept {
-			if (_tag < _INVALID_TAG_VALUE) {
-				peff::_destroy_variant<Ts...>(_tag, _storage);
-				_tag = _INVALID_TAG_VALUE;
+			if (this->_tag < BaseType::_INVALID_TAG_VALUE) {
+				peff::_destroy_variant<Ts...>(this->_tag, this->_storage);
+				this->_tag = BaseType::_INVALID_TAG_VALUE;
 			}
 		}
 
 	public:
 		PEFF_FORCEINLINE _VariantStorage(const ThisType &storage) noexcept {
-			_copy_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
+			_copy_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
 		}
 		PEFF_FORCEINLINE _VariantStorage(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
+		PEFF_FORCEINLINE _VariantStorage(const T &data) : BaseType(data) {
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
+		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept : BaseType(std::move(data)) {
 		}
 		PEFF_FORCEINLINE ~_VariantStorage() {
 			_reset();
@@ -374,103 +268,62 @@ namespace peff {
 
 		template <typename T>
 		PEFF_FORCEINLINE ThisType &operator=(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(BaseType::template _TAG_OF<T> < BaseType::_INVALID_TAG_VALUE, "The type is not in the variant");
 			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
+			_reset();
+			peff::construct_at<T>(reinterpret_cast<T *>(this->_storage), data);
+			this->_tag = BaseType::template _TAG_OF<T>;
 			return *this;
 		}
 		template <typename T>
 		PEFF_FORCEINLINE ThisType &operator=(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(BaseType::template _TAG_OF<T> < BaseType::_INVALID_TAG_VALUE, "The type is not in the variant");
 			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
+			_reset();
+			peff::construct_at<T>(reinterpret_cast<T *>(this->_storage), std::move(data));
+			this->_tag = BaseType::template _TAG_OF<T>;
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &storage) noexcept {
-			_copy_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
+			_reset();
+			_copy_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
+			_reset();
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
 			return *this;
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE T &value() & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			return *reinterpret_cast<T *>(_storage);
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE const T &value() const & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			return *reinterpret_cast<const T *>(_storage);
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE T &&value() && noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			_tag = _INVALID_TAG_VALUE;
-			return std::move(reinterpret_cast<T *>(_storage));
-		}
-
-		PEFF_FORCEINLINE TagType get_tag() const noexcept {
-			return _tag;
 		}
 	};
 
 	template <typename... Ts>
-	struct _VariantStorage<false, true, Ts...> {
-	public:
-		using TagType = AutoSizeUInteger<sizeof...(Ts) + 1>::type;
-		static_assert(sizeof(TagType) <= sizeof(size_t), "Too many elements to the variant");
-		constexpr static TagType _INVALID_TAG_VALUE = static_cast<TagType>(sizeof...(Ts));
-
-		template <typename T>
-		constexpr static TagType _TAG_OF = _VariantTagOf<0, T, Ts...>::value;
-
+	struct _VariantStorage<false, true, Ts...> : public _VariantStorageBase<Ts...> {
 	private:
+		using BaseType = _VariantStorageBase<Ts...>;
 		using ThisType = _VariantStorage<false, true, Ts...>;
-		char _storage[MaxSizeOf<Ts...>::value] alignas(MaxAlignOf<Ts...>::value);
-		TagType _tag;
 
 		PEFF_FORCEINLINE void _reset() noexcept {
-			if (_tag < _INVALID_TAG_VALUE) {
-				peff::_destroy_variant<Ts...>(_tag, _storage);
-				_tag = _INVALID_TAG_VALUE;
+			if (this->_tag  < BaseType::_INVALID_TAG_VALUE) {
+				peff::_destroy_variant<Ts...>(this->_tag, this->_storage);
+				this->_tag = BaseType::_INVALID_TAG_VALUE;
 			}
 		}
 
 	public:
-		_VariantStorage(const ThisType &storage) noexcept = default;
+		_VariantStorage(const ThisType &) noexcept = default;
 		PEFF_FORCEINLINE _VariantStorage(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
+		PEFF_FORCEINLINE _VariantStorage(const T &data) : BaseType(data) {
 		}
 		template <typename T>
-		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
+		PEFF_FORCEINLINE _VariantStorage(T &&data) noexcept : BaseType(std::move(data)) {
 		}
 		PEFF_FORCEINLINE ~_VariantStorage() {
 			_reset();
@@ -478,53 +331,29 @@ namespace peff {
 
 		template <typename T>
 		PEFF_FORCEINLINE ThisType &operator=(const T &data) {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(BaseType::template _TAG_OF<T> < BaseType::_INVALID_TAG_VALUE, "The type is not in the variant");
 			static_assert(std::is_copy_constructible_v<T>, "The type must be copy-constructible");
-
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), data);
-			_tag = _TAG_OF<T>;
+			_reset();
+			peff::construct_at<T>(reinterpret_cast<T *>(this->_storage), data);
+			this->_tag = BaseType::template _TAG_OF<T>;
 			return *this;
 		}
 		template <typename T>
 		PEFF_FORCEINLINE ThisType &operator=(T &&data) noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
+			static_assert(BaseType::template _TAG_OF<T> < BaseType::_INVALID_TAG_VALUE, "The type is not in the variant");
 			static_assert(std::is_move_constructible_v<T>, "The type must be move-constructible");
-			peff::construct_at<T>(reinterpret_cast<T *>(_storage), std::move(data));
-			_tag = _TAG_OF<T>;
+			_reset();
+			peff::construct_at<T>(reinterpret_cast<T *>(this->_storage), std::move(data));
+			this->_tag = BaseType::template _TAG_OF<T>;
 			return *this;
 		}
 		ThisType &operator=(const ThisType &storage) noexcept = default;
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&storage) noexcept {
-			_move_variant<Ts...>(_tag, _storage, storage._storage);
-			_tag = storage._tag;
-			storage._tag = _INVALID_TAG_VALUE;
+			_reset();
+			_move_variant<Ts...>(this->_tag, this->_storage, storage._storage);
+			this->_tag = storage._tag;
+			storage._tag = BaseType::_INVALID_TAG_VALUE;
 			return *this;
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE T &value() & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			return *reinterpret_cast<T *>(_storage);
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE const T &value() const & noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			return *reinterpret_cast<const T *>(_storage);
-		}
-
-		template <typename T>
-		PEFF_FORCEINLINE T &&value() && noexcept {
-			static_assert(_TAG_OF<T> < _INVALID_TAG_VALUE, "The type is not in the variant");
-			PEFF_ASSERT((_tag == _TAG_OF<T>), "The value stored in the variant does not match the desired type!");
-			_tag = _INVALID_TAG_VALUE;
-			return std::move(reinterpret_cast<T *>(_storage));
-		}
-
-		PEFF_FORCEINLINE TagType get_tag() const noexcept {
-			return _tag;
 		}
 	};
 
@@ -539,7 +368,7 @@ namespace peff {
 		VariantStorage _storage;
 
 		template <typename T>
-		constexpr static VariantStorage::TagType _CASE_INDEX = _VariantTagOf<0, T, Ts...>::value;
+		constexpr static VariantStorage::TagType _CASE_INDEX = VariantStorage::template _TAG_OF<T>;
 
 	public:
 		template <typename T>

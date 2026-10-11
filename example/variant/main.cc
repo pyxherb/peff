@@ -64,9 +64,13 @@ int main() {
 			break;
 	}
 
-	v2 = (std::string) "hello";
+	peff::String s(peff::default_allocator());
 
-	switch (v.get_index()) {
+	if (!s.build("hello"))
+		throw std::bad_alloc();
+	v2 = std::move(s) ;
+
+	switch (v2.get_index()) {
 		case decltype(v2)::CASE_INDEX<std::string>:
 			printf("%s: string\n", v2.value<std::string>().data());
 			break;

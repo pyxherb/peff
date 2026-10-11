@@ -3,7 +3,9 @@
 
 #include "basedefs.h"
 #include <type_traits>
-#include <compare>
+#if PEFF_CPLUSPLUS >= 202002L
+	#include <compare>
+#endif
 #include <peff/base/assert.h>
 #include <cstdint>
 
@@ -24,6 +26,52 @@ namespace peff {
 							Max <= UINT64_MAX,
 							uint64_t,
 							uintmax_t>>>>;
+	};
+
+	template <std::size_t CurSize, typename... Ts>
+	struct _MaxSizeOfImpl;
+
+	template <std::size_t CurSize, typename T>
+	struct _MaxSizeOfImpl<CurSize, T> {
+		constexpr static std::size_t value =
+			CurSize > sizeof(T) ? CurSize : sizeof(T);
+	};
+
+	template <std::size_t CurSize, typename T, typename... Rest>
+	struct _MaxSizeOfImpl<CurSize, T, Rest...> {
+		constexpr static std::size_t value =
+			_MaxSizeOfImpl<
+				(CurSize > sizeof(T) ? CurSize : sizeof(T)),
+				Rest...>::value;
+	};
+
+	template <typename... Ts>
+	struct MaxSizeOf {
+		constexpr static std::size_t value =
+			_MaxSizeOfImpl<0, Ts...>::value;
+	};
+
+	template <std::size_t CurAlign, typename... Ts>
+	struct _MaxAlignOfImpl;
+
+	template <std::size_t CurAlign, typename T>
+	struct _MaxAlignOfImpl<CurAlign, T> {
+		constexpr static std::size_t value =
+			CurAlign > alignof(T) ? CurAlign : alignof(T);
+	};
+
+	template <std::size_t CurAlign, typename T, typename... Rest>
+	struct _MaxAlignOfImpl<CurAlign, T, Rest...> {
+		constexpr static std::size_t value =
+			_MaxAlignOfImpl<
+				(CurAlign > alignof(T) ? CurAlign : alignof(T)),
+				Rest...>::value;
+	};
+
+	template <typename... Ts>
+	struct MaxAlignOf {
+		constexpr static std::size_t value =
+			_MaxAlignOfImpl<0, Ts...>::value;
 	};
 
 	template <typename... Ts>

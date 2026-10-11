@@ -2,8 +2,6 @@
 #define _PEFF_CONTAINERS_RBTREE_H_
 
 #include <cassert>
-#include <stdexcept>
-#include <memory>
 #include <type_traits>
 
 #if PEFF_CPLUSPLUS >= 202002L

@@ -6,7 +6,7 @@
 namespace peff {
 	typedef void (*PanicHandler)(const char *msg);
 
-	PEFF_BASE_API void panic(const char *msg);
+	[[nodiscard]] PEFF_BASE_API void panic(const char *msg);
 }
 
 #endif

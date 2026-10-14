@@ -87,6 +87,11 @@ namespace peff {
 				: IsOneOf<T, Ts...>::value;
 	};
 
+	template <typename T, typename... Ts>
+	struct FirstOf {
+		using type = T;
+	};
+
 	struct PartialOrd {
 	public:
 		enum class _PartialOrdKind : int8_t {

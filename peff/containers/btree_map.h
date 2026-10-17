@@ -361,7 +361,7 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE Iterator prev() {
+			PEFF_FORCEINLINE Iterator prev() const {
 				Iterator iterator = *this;
 
 				return --iterator;
@@ -378,10 +378,14 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE Iterator next() {
+			PEFF_FORCEINLINE Iterator next() const {
 				Iterator iterator = *this;
 
 				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE IteratorDirection direction() const noexcept {
+				return _iterator.direction();
 			}
 
 			PEFF_FORCEINLINE K &key() const {
@@ -440,10 +444,37 @@ namespace peff {
 				return *this;
 			}
 
-			PEFF_FORCEINLINE ConstIterator next() {
+			PEFF_FORCEINLINE ConstIterator operator++(int) {
+				ConstIterator iterator = *this;
+				++(*this);
+				return iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator next() const {
 				ConstIterator iterator = *this;
 
 				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator--() {
+				--_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator operator--(int) {
+				ConstIterator iterator = *this;
+				--(*this);
+				return iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator prev() const {
+				ConstIterator iterator = *this;
+
+				return --iterator;
+			}
+
+			PEFF_FORCEINLINE IteratorDirection direction() const noexcept {
+				return _iterator.direction();
 			}
 
 			PEFF_FORCEINLINE const K &key() const {

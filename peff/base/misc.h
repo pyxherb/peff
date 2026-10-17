@@ -27,10 +27,10 @@ namespace peff {
 			return *(T *)_buf;
 		}
 		PEFF_FORCEINLINE T &operator*() {
-			return *(T *)get();
+			return get();
 		}
 		PEFF_FORCEINLINE const T &operator*() const {
-			return *(T *)get();
+			return get();
 		}
 		PEFF_FORCEINLINE T *operator->() {
 			return (T *)_buf;

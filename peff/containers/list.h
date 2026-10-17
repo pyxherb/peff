@@ -297,7 +297,6 @@ namespace peff {
 
 				it.node = nullptr;
 				it.list = nullptr;
-				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
 				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
@@ -335,12 +334,22 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE Iterator next() const {
+				Iterator iterator = *this;
+
+				return ++iterator;
+			}
+
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
-					if (!(node = node->prev))
+					if (!node)
+						node = list->_last;
+					else if (!(node = node->prev))
 						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				} else {
-					if (!(node = node->next))
+					if (!node)
+						node = list->_first;
+					else if (!(node = node->next))
 						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				}
 
@@ -351,6 +360,12 @@ namespace peff {
 				Iterator it = *this;
 				--(*this);
 				return it;
+			}
+
+			PEFF_FORCEINLINE Iterator prev() const {
+				Iterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Node *node) const noexcept {
@@ -436,7 +451,6 @@ namespace peff {
 
 				it.node = nullptr;
 				it.list = nullptr;
-				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator=(const ConstIterator &rhs) noexcept {
 				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
@@ -491,12 +505,22 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE ConstIterator next() const {
+				ConstIterator iterator = *this;
+
+				return ++iterator;
+			}
+
 			PEFF_FORCEINLINE ConstIterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
-					if (!(node = node->prev))
+					if (!node)
+						node = list->_last;
+					else if (!(node = node->prev))
 						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				} else {
-					if (!(node = node->next))
+					if (!node)
+						node = list->_first;
+					else if (!(node = node->next))
 						PEFF_ASSERT(false, "Dereasing the begin iterator");
 				}
 
@@ -507,6 +531,12 @@ namespace peff {
 				ConstIterator it = *this;
 				--(*this);
 				return it;
+			}
+
+			PEFF_FORCEINLINE ConstIterator prev() const {
+				ConstIterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Node *node) const noexcept {

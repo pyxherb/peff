@@ -175,29 +175,35 @@ namespace peff {
 			Bucket &bucket = _buckets.at(index);
 
 			T *result = nullptr;
+			bool is_new_element = true;
+
 			for (auto &i : bucket) {
 				if (_eq_cmp(i.data, tmp_data)) {
+					// The element is already present: update it in place and keep the size
+					// unchanged.
 					move_assign_or_move_construct<T>(i.data, std::move(tmp_data));
 					result = &i.data;
-					goto inserted;
+					is_new_element = false;
+					break;
 				}
 			}
-			{
+
+			if (is_new_element) {
 				auto h = bucket.push_front(Element(std::move(tmp_data), hash_code));
 				if (!h)
 					return nullptr;
 				result = &h->data.data;
-			}
 
-		inserted:
-			if (!_check_and_resize_buckets()) {
-				if (force_resize_buckets) {
-					bucket.pop_front();
-					return nullptr;
+				if (!_check_and_resize_buckets()) {
+					if (force_resize_buckets) {
+						bucket.pop_front();
+						return nullptr;
+					}
 				}
+
+				++_size;
 			}
 
-			++_size;
 			return result;
 		}
 
@@ -311,10 +317,12 @@ namespace peff {
 
 		PEFF_FORCEINLINE void clear() {
 			_buckets.clear();
+			_size = 0;
 		}
 
 		PEFF_FORCEINLINE void clear_and_shrink() {
 			_buckets.clear_and_shrink();
+			_size = 0;
 		}
 
 		PEFF_FORCEINLINE PEFF_NONNULL_RET Alloc *allocator() const {
@@ -354,7 +362,6 @@ namespace peff {
 				it.idx_cur_bucket = SIZE_MAX;
 				it.bucket_node_handle = Bucket::null_node_handle();
 				it.hash_set = nullptr;
-				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
 				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
@@ -410,11 +417,26 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE Iterator next() const {
+				Iterator iterator = *this;
+
+				return ++iterator;
+			}
+
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (direction == IteratorDirection::Forward) {
 					if (idx_cur_bucket == SIZE_MAX) {
-						idx_cur_bucket = hash_set->_buckets.size();
-						bucket_node_handle = hash_set->_buckets.at(idx_cur_bucket).last_node();
+						size_t i = hash_set->_buckets.size();
+						typename Bucket::NodeHandle node = nullptr;
+						while (i) {
+							--i;
+							node = hash_set->_buckets.at(i).last_node();
+							if (node)
+								break;
+						}
+						PEFF_ASSERT(node, "Decreasing the beginning iterator");
+						idx_cur_bucket = i;
+						bucket_node_handle = node;
 					} else {
 						typename Bucket::NodeHandle next_node = Bucket::prev(bucket_node_handle, 1);
 						if (!next_node) {
@@ -431,8 +453,16 @@ namespace peff {
 					}
 				} else {
 					if (idx_cur_bucket == SIZE_MAX) {
-						idx_cur_bucket = 0;
-						bucket_node_handle = hash_set->_buckets.at(0).first_node();
+						size_t i = 0;
+						typename Bucket::NodeHandle node = nullptr;
+						for (; i < hash_set->_buckets.size(); ++i) {
+							node = hash_set->_buckets.at(i).first_node();
+							if (node)
+								break;
+						}
+						PEFF_ASSERT(node, "Decreasing the beginning iterator");
+						idx_cur_bucket = i;
+						bucket_node_handle = node;
 					} else {
 						typename Bucket::NodeHandle next_node = Bucket::next(bucket_node_handle, 1);
 						if (!next_node) {
@@ -455,6 +485,12 @@ namespace peff {
 				Iterator it = *this;
 				--(*this);
 				return it;
+			}
+
+			PEFF_FORCEINLINE Iterator prev() const {
+				Iterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &it) const {
@@ -512,18 +548,12 @@ namespace peff {
 			return Iterator(this, SIZE_MAX, nullptr, IteratorDirection::Forward);
 		}
 		PEFF_FORCEINLINE Iterator rbegin() {
-			for (size_t i = _buckets.size(); i; --i) {
+			for (size_t i = _buckets.size(); i-- > 0;) {
 				auto &cur_bucket = _buckets.at(i);
 				typename Bucket::NodeHandle node = cur_bucket.last_node();
 				if (node) {
 					return Iterator(this, i, node, IteratorDirection::Reversed);
 				}
-			}
-
-			auto &cur_bucket = _buckets.at(0);
-			typename Bucket::NodeHandle node = cur_bucket.last_node();
-			if (node) {
-				return Iterator(this, 0, node, IteratorDirection::Reversed);
 			}
 			return rend();
 		}
@@ -576,6 +606,39 @@ namespace peff {
 			PEFF_FORCEINLINE ConstIterator &operator++() {
 				++_iterator;
 				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator operator++(int) {
+				ConstIterator iterator = *this;
+				++(*this);
+				return iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator next() const {
+				ConstIterator iterator = *this;
+
+				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator &operator--() {
+				--_iterator;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE ConstIterator operator--(int) {
+				ConstIterator iterator = *this;
+				--(*this);
+				return iterator;
+			}
+
+			PEFF_FORCEINLINE ConstIterator prev() const {
+				ConstIterator iterator = *this;
+
+				return --iterator;
+			}
+
+			PEFF_FORCEINLINE IteratorDirection direction() const noexcept {
+				return _iterator.direction;
 			}
 		};
 

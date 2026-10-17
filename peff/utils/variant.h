@@ -144,14 +144,14 @@ namespace peff {
 	template <typename... Ts>
 	struct _VariantStorageBase {
 	public:
-		using TagType = AutoSizeUInteger<sizeof...(Ts) + 1>::type;
+		using TagType = typename AutoSizeUInteger<sizeof...(Ts) + 1>::type;
 		static_assert(sizeof(TagType) <= sizeof(size_t), "Too many elements to the variant");
 		constexpr static TagType _INVALID_TAG_VALUE = static_cast<TagType>(sizeof...(Ts));
 
 		template <typename T>
 		constexpr static TagType _TAG_OF = _VariantTagOf<0, T, Ts...>::value;
 
-		char alignas(MaxAlignOf<Ts...>::value) _storage[MaxSizeOf<Ts...>::value];
+		alignas(MaxAlignOf<Ts...>::value) char _storage[MaxSizeOf<Ts...>::value];
 		TagType _tag;
 
 		PEFF_FORCEINLINE _VariantStorageBase() : _tag(_INVALID_TAG_VALUE) {
@@ -251,7 +251,7 @@ namespace peff {
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&storage) noexcept(_IsAllNoexceptMoveable<Ts...>::value) {
-			PEFF_ASSERT(storage != this, "Self-assignment is not allowed!");
+			PEFF_ASSERT(&storage != this, "Self-assignment is not allowed!");
 			this->_tag = BaseType::_INVALID_TAG_VALUE;
 			_move_variant<Ts...>(storage._tag, this->_storage, storage._storage);
 			this->_tag = storage._tag;
@@ -259,7 +259,7 @@ namespace peff {
 			return *this;
 		}
 		PEFF_FORCEINLINE ThisType &operator=(const ThisType &storage) {
-			PEFF_ASSERT(storage != this, "Self-assignment is not allowed!");
+			PEFF_ASSERT(&storage != this, "Self-assignment is not allowed!");
 			this->_tag = BaseType::_INVALID_TAG_VALUE;
 			_copy_variant<Ts...>(storage._tag, this->_storage, storage._storage);
 			this->_tag = storage._tag;
@@ -274,15 +274,10 @@ namespace peff {
 		using ThisType = _VariantStorage<true, true, Ts...>;
 
 	public:
-#if PEFF_CPLUSPLUS >= 202002L
+		/// @note Every case is trivially copyable, so the byte-wise copy of the whole storage performed by
+		/// the defaulted operations is exactly the required behavior, and the storage itself stays trivially
+		/// copyable (which the @c true @c true specialization exists for).
 		_VariantStorage(const ThisType &storage) = default;
-#else
-		PEFF_FORCEINLINE _VariantStorage(const ThisType &storage) {
-			PEFF_ASSERT(&storage != this, "Self-assignment is not allowed!");
-			_copy_variant<Ts...>(storage._tag, this->_storage, storage._storage);
-			this->_tag = storage._tag;
-		}
-#endif
 		PEFF_FORCEINLINE _VariantStorage(ThisType &&storage) noexcept(_IsAllNoexceptMoveable<Ts...>::value) {
 			PEFF_ASSERT(&storage != this, "Self-assignment is not allowed!");
 			_move_variant<Ts...>(storage._tag, this->_storage, storage._storage);
@@ -317,19 +312,9 @@ namespace peff {
 			this->_tag = BaseType::template _TAG_OF<std::decay_t<T>>;
 			return *this;
 		}
-#if PEFF_CPLUSPLUS >= 202002L
 		ThisType &operator=(const ThisType &) = default;
-#else
-		PEFF_FORCEINLINE ThisType &operator=(const ThisType &storage) {
-			PEFF_ASSERT(storage != this, "Self-assignment is not allowed!");
-			this->_tag = BaseType::_INVALID_TAG_VALUE;
-			_copy_variant<Ts...>(storage._tag, this->_storage, storage._storage);
-			this->_tag = storage._tag;
-			return *this;
-		}
-#endif
 		PEFF_FORCEINLINE ThisType &operator=(ThisType &&storage) noexcept(_IsAllNoexceptMoveable<Ts...>::value) {
-			PEFF_ASSERT(storage != this, "Self-assignment is not allowed!");
+			PEFF_ASSERT(&storage != this, "Self-assignment is not allowed!");
 			this->_tag = BaseType::_INVALID_TAG_VALUE;
 			_move_variant<Ts...>(storage._tag, this->_storage, storage._storage);
 			this->_tag = storage._tag;
@@ -421,6 +406,7 @@ namespace peff {
 	private:
 		static_assert(!(std::disjunction_v<std::is_reference<Ts>...>), "Type of any case must not be reference");
 		static_assert(sizeof...(Ts) != 0, "A variant with no possible case is not constructible");
+		using FirstCaseType = typename FirstOf<Ts...>::type;
 		using VariantStorage = _VariantStorage<
 			_IsAllTriviallyDestructible<Ts...>::value,
 			_IsAllTriviallyCopyable<Ts...>::value,
@@ -435,11 +421,16 @@ namespace peff {
 		constexpr static VariantIndex CASE_INDEX = (_CASE_INDEX<T> >= VariantStorage::_INVALID_TAG_VALUE ? SIZE_MAX : static_cast<VariantIndex>(_CASE_INDEX<T>));
 
 		Variant(const Variant<Ts...> &) = default;
-		PEFF_FORCEINLINE Variant(Variant &&rhs) noexcept(_IsAllNoexceptMoveable<Ts...>::value) : _storage(std::move(rhs._storage)) {
-			PEFF_ASSERT(&rhs != this, "Self-assignment is not allowed!");
+		PEFF_FORCEINLINE Variant(Variant<Ts...> &&rhs) noexcept(_IsAllNoexceptMoveable<Ts...>::value) : _storage(std::move(rhs._storage)) {
 		}
-		template <typename T = FirstOf<Ts...>, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, Variant<Ts...>>>>
-		PEFF_FORCEINLINE Variant(const T &data = {}) : _storage(data) {
+		/// @brief Construct an instance holding a value-initialized instance of the first case.
+		PEFF_FORCEINLINE Variant() noexcept(std::is_nothrow_move_constructible_v<FirstCaseType>) : _storage(FirstCaseType()) {
+			static_assert(_OccurrenceTimes<0, FirstCaseType, Ts...>::value < 2, "Specified type occurred more than once");
+		}
+		/// @brief Construct an instance holding a copy of @p data.
+		/// @param data The value to be copied into the instance.
+		template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, Variant<Ts...>>>>
+		PEFF_FORCEINLINE Variant(const T &data) : _storage(data) {
 			static_assert(_OccurrenceTimes<0, T, Ts...>::value < 2, "Specified type occurred more than once");
 		}
 		template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, Variant<Ts...>>>>
@@ -455,13 +446,13 @@ namespace peff {
 			_storage = std::move(rhs._storage);
 			return *this;
 		}
-		template <typename T>
+		template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, Variant<Ts...>>>>
 		PEFF_FORCEINLINE Variant &operator=(const T &data) {
 			static_assert(_OccurrenceTimes<0, T, Ts...>::value < 2, "Specified type occurred more than once");
 			_storage = data;
 			return *this;
 		}
-		template <typename T>
+		template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, Variant<Ts...>>>>
 		PEFF_FORCEINLINE Variant &operator=(T &&data) noexcept(std::is_nothrow_constructible_v<std::decay_t<T>, T>) {
 			static_assert(_OccurrenceTimes<0, T, Ts...>::value < 2, "Specified type occurred more than once");
 			_storage = std::forward<T>(data);

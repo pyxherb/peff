@@ -370,39 +370,32 @@ namespace peff {
 		inline void clear() noexcept {
 			if (!_root)
 				return;
-			Node *cur_node = _get_min_node(_root);
-			Node *parent = _root->p;
-			bool walked_root_node = false;
 
-			while (cur_node != parent) {
-				bool has_unvisited = false;
+			Node *cur_node = _get_min_node(_root);
+
+			while (cur_node) {
+				Node *child = nullptr;
+
 				for (size_t i = 0; i < N; ++i) {
 					if (cur_node->children[i]) {
-						cur_node = _get_min_node(cur_node->children[i]);
-						has_unvisited = true;
+						child = _get_min_node(cur_node->children[i]);
 						break;
 					}
 				}
-				if (!has_unvisited) {
-					Node *node_to_delete = cur_node;
-					while (cur_node->p &&
-						   (cur_node == cur_node->p->children[N - 1] ||
-							   [&]() {
-								   Node *p = cur_node->p;
-								   for (size_t i = cur_node->offset + 1; i < N; ++i) {
-									   if (p->children[i])
-										   return false;
-								   }
-								   return true;
-							   }())) {
-						node_to_delete = cur_node;
-						cur_node = cur_node->p;
-						_delete_single_node(node_to_delete);
-					}
-					node_to_delete = cur_node;
-					cur_node = cur_node->p;
-					_delete_single_node(node_to_delete);
+
+				if (child) {
+					cur_node = child;
+					continue;
 				}
+
+				// The node has no child: detach it from its parent, so that the parent's
+				// children scan never reaches the freed node, then delete it.
+				Node *parent = cur_node->p;
+				if (parent)
+					parent->children[cur_node->offset] = nullptr;
+
+				_delete_single_node(cur_node);
+				cur_node = parent;
 			}
 
 			_root = nullptr;
@@ -537,7 +530,6 @@ namespace peff {
 				tree = it.tree;
 				direction = it.direction;
 				slot_index = it.slot_index;
-				it.direction = IteratorDirection::Invalid;
 			}
 			PEFF_FORCEINLINE Iterator &operator=(const Iterator &rhs) noexcept {
 				PEFF_ASSERT(direction == rhs.direction, "Incompatible iterator direction");
@@ -612,7 +604,7 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE Iterator next() {
+			PEFF_FORCEINLINE Iterator next() const {
 				Iterator iterator = *this;
 				return ++iterator;
 			}
@@ -683,7 +675,7 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE Iterator prev() {
+			PEFF_FORCEINLINE Iterator prev() const {
 				Iterator iterator = *this;
 				return --iterator;
 			}
@@ -780,9 +772,13 @@ namespace peff {
 				++(*this);
 				return it;
 			}
-			PEFF_FORCEINLINE ConstIterator next() {
+			PEFF_FORCEINLINE ConstIterator next() const {
 				ConstIterator it = *this;
 				return ++it;
+			}
+
+			PEFF_FORCEINLINE IteratorDirection direction() const noexcept {
+				return _iterator.direction;
 			}
 			PEFF_FORCEINLINE ConstIterator &operator--() {
 				--_iterator;
@@ -793,7 +789,7 @@ namespace peff {
 				--(*this);
 				return it;
 			}
-			PEFF_FORCEINLINE ConstIterator prev() {
+			PEFF_FORCEINLINE ConstIterator prev() const {
 				ConstIterator it = *this;
 				return --it;
 			}

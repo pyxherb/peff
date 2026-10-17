@@ -125,11 +125,11 @@ namespace peff {
 	#ifdef _MSC_VER
 		if (!value)
 			return 64;
-		return (uint8_t)_lzcnt_u64((uint32_t)value);
+		return (uint8_t)_lzcnt_u64(value);
 	#elif defined(__GNUC__) || defined(__clang__)
 		if (!value)
 			return 64;
-		return __builtin_clz((uint32_t)value);
+		return __builtin_clzll(value);
 	#else
 		#define _PEFF_USE_DEFAULT_COUNT_LEADING_ZERO_U64 1
 	#endif
@@ -297,7 +297,7 @@ namespace peff {
 	#define _PEFF_USE_DEFAULT_RROT_U64 1
 #endif
 #if _PEFF_USE_DEFAULT_RROT_U64
-		return shift ? ((value << shift) | (value >> (32 - shift))) : value;
+		return shift ? ((value << shift) | (value >> (64 - shift))) : value;
 #endif
 	}
 

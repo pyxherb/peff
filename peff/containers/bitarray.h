@@ -78,6 +78,7 @@ namespace peff {
 		PEFF_FORCEINLINE BitArray& operator=(BitArray &&rhs) noexcept {
 			_buffer = std::move(rhs._buffer);
 			_num_bits = rhs._num_bits;
+			rhs._num_bits = 0;
 			return *this;
 		}
 
@@ -138,7 +139,7 @@ namespace peff {
 				return false;
 			}
 			for (size_t i = 0; i < len; ++i) {
-				_set_byte(old_num_bits + i, data[i], 8);
+				_set_byte(old_num_bits + i * 8, data[i], 8);
 			}
 			return true;
 		}
@@ -160,12 +161,8 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE bool pop_back_byte_and_resize_capacity() {
-			if (!resize_uninit(_num_bits - 8)) {
-				return false;
-			}
-			_num_bits -= 8;
-
-			return true;
+			// resize_uninit() already updates the number of bits.
+			return resize_uninit(_num_bits - 8);
 		}
 
 		PEFF_FORCEINLINE PEFF_NULLABLE const uint8_t *data() const {
@@ -195,48 +192,52 @@ namespace peff {
 			assert(bit_index < _num_bits);
 			assert(bit_index + num_bits <= _num_bits);
 
-			size_t idx_end = bit_index + num_bits;
+			if (!num_bits)
+				return;
 
-			size_t idx_start_fill_byte = (bit_index + 7) >> 3;
-			size_t idx_end_fill_byte = idx_end >> 3;
-			size_t sz_fill_byte = idx_end_fill_byte - idx_start_fill_byte;
+			const size_t idx_end = bit_index + num_bits;
+			const size_t first_byte = bit_index >> 3;
+			const size_t last_byte = (idx_end - 1) >> 3;
 
-			if (bit_index & 7) {
-				uint8_t start_bits = 0xff << (bit_index & 7);
-				_buffer[bit_index >> 3] |= start_bits;
+			if (first_byte == last_byte) {
+				// The whole range lives inside a single byte.
+				_buffer[first_byte] |= (uint8_t)((0xffu << (bit_index & 7)) & (0xffu >> (7 - ((idx_end - 1) & 7))));
+				return;
 			}
 
-			if (sz_fill_byte)
-				memset(_buffer.data() + idx_start_fill_byte, 0xff, sz_fill_byte);
+			if (bit_index & 7)
+				_buffer[first_byte] |= (uint8_t)(0xffu << (bit_index & 7));
 
-			if (idx_end & 7) {
-				uint8_t end_bits = 0xff >> (7 - (bit_index & 7));
-				_buffer[idx_end >> 3] |= end_bits;
-			}
+			if (last_byte > first_byte + 1)
+				memset(_buffer.data() + first_byte + 1, 0xff, last_byte - first_byte - 1);
+
+			_buffer[last_byte] |= (uint8_t)(0xffu >> (7 - ((idx_end - 1) & 7)));
 		}
 
 		PEFF_FORCEINLINE void fill_clear(size_t bit_index, size_t num_bits) {
 			assert(bit_index < _num_bits);
-			assert(bit_index + num_bits < _num_bits);
+			assert(bit_index + num_bits <= _num_bits);
 
-			size_t idx_end = bit_index + num_bits;
+			if (!num_bits)
+				return;
 
-			size_t idx_start_fill_byte = (bit_index + 7) >> 3;
-			size_t idx_end_fill_byte = idx_end >> 3;
-			size_t sz_fill_byte = idx_end_fill_byte - idx_start_fill_byte;
+			const size_t idx_end = bit_index + num_bits;
+			const size_t first_byte = bit_index >> 3;
+			const size_t last_byte = (idx_end - 1) >> 3;
 
-			if (bit_index & 7) {
-				uint8_t start_bits = 0xff >> (7 - (bit_index & 7));
-				_buffer[bit_index >> 3] &= start_bits;
+			if (first_byte == last_byte) {
+				// The whole range lives inside a single byte.
+				_buffer[first_byte] &= (uint8_t) ~((0xffu << (bit_index & 7)) & (0xffu >> (7 - ((idx_end - 1) & 7))));
+				return;
 			}
 
-			if (sz_fill_byte)
-				memset(_buffer.data() + idx_start_fill_byte, 0x00, sz_fill_byte);
+			if (bit_index & 7)
+				_buffer[first_byte] &= (uint8_t) ~(0xffu << (bit_index & 7));
 
-			if (idx_end & 7) {
-				uint8_t end_bits = 0xff << (bit_index & 7);
-				_buffer[idx_end >> 3] &= end_bits;
-			}
+			if (last_byte > first_byte + 1)
+				memset(_buffer.data() + first_byte + 1, 0x00, last_byte - first_byte - 1);
+
+			_buffer[last_byte] &= (uint8_t) ~(0xffu >> (7 - ((idx_end - 1) & 7)));
 		}
 
 		PEFF_FORCEINLINE void set_byte(size_t bit_index, uint8_t b) {

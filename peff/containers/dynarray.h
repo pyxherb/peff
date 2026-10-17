@@ -3,6 +3,10 @@
 
 #include <cassert>
 #include <cstring>
+#include <cstddef>
+#include <iterator>
+#include <type_traits>
+#include "misc.h"
 #include <peff/base/alloc.h>
 #include <peff/base/misc.h>
 
@@ -15,9 +19,176 @@ namespace peff {
 	/// @tparam T Type of the elements.
 	template <typename T>
 	class DynArray {
+	private:
+		template <bool IsConst, IteratorDirection Direction>
+		struct IteratorImpl {
+			using Pointer = std::conditional_t<IsConst, const T *, T *>;
+			using Reference = std::conditional_t<IsConst, const T &, T &>;
+			using DifferenceType = std::ptrdiff_t;
+			using value_type = T;
+			using difference_type = DifferenceType;
+			using pointer = Pointer;
+			using reference = Reference;
+			using iterator_category = std::random_access_iterator_tag;
+
+			static constexpr IteratorDirection ITERATOR_DIRECTION = Direction;
+
+			Pointer ptr;
+
+			PEFF_FORCEINLINE IteratorImpl() noexcept : ptr(nullptr) {
+			}
+			PEFF_FORCEINLINE IteratorImpl(Pointer ptr) noexcept : ptr(ptr) {
+			}
+
+			template <bool OtherIsConst, std::enable_if_t<IsConst && !OtherIsConst, int> = 0>
+			PEFF_FORCEINLINE IteratorImpl(const IteratorImpl<OtherIsConst, Direction> &rhs) noexcept : ptr(rhs.ptr) {
+			}
+
+			PEFF_FORCEINLINE Reference operator*() const noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					return *ptr;
+				else
+					return *(ptr - 1);
+			}
+
+			PEFF_FORCEINLINE Pointer operator->() const noexcept {
+				return &(**this);
+			}
+
+			PEFF_FORCEINLINE Reference operator[](DifferenceType offset) const noexcept {
+				return *(*this + offset);
+			}
+
+			PEFF_FORCEINLINE IteratorImpl &operator++() noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					++ptr;
+				else
+					--ptr;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl operator++(int) noexcept {
+				IteratorImpl it = *this;
+				++(*this);
+				return it;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl &operator--() noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					--ptr;
+				else
+					++ptr;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl operator--(int) noexcept {
+				IteratorImpl it = *this;
+				--(*this);
+				return it;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl &operator+=(DifferenceType offset) noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					ptr += offset;
+				else
+					ptr -= offset;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl &operator-=(DifferenceType offset) noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					ptr -= offset;
+				else
+					ptr += offset;
+				return *this;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl operator+(DifferenceType offset) const noexcept {
+				IteratorImpl it = *this;
+				it += offset;
+				return it;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl operator-(DifferenceType offset) const noexcept {
+				IteratorImpl it = *this;
+				it -= offset;
+				return it;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl next() const noexcept {
+				IteratorImpl it = *this;
+				return ++it;
+			}
+
+			PEFF_FORCEINLINE IteratorImpl prev() const noexcept {
+				IteratorImpl it = *this;
+				return --it;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE DifferenceType operator-(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					return ptr - rhs.ptr;
+				else
+					return rhs.ptr - ptr;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE bool operator==(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				return ptr == rhs.ptr;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE bool operator!=(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				return ptr != rhs.ptr;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE bool operator<(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					return ptr < rhs.ptr;
+				else
+					return ptr > rhs.ptr;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE bool operator<=(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					return ptr <= rhs.ptr;
+				else
+					return ptr >= rhs.ptr;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE bool operator>(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					return ptr > rhs.ptr;
+				else
+					return ptr < rhs.ptr;
+			}
+
+			template <bool OtherIsConst>
+			PEFF_FORCEINLINE bool operator>=(const IteratorImpl<OtherIsConst, Direction> &rhs) const noexcept {
+				if constexpr (Direction == IteratorDirection::Forward)
+					return ptr >= rhs.ptr;
+				else
+					return ptr <= rhs.ptr;
+			}
+
+			PEFF_FORCEINLINE Pointer base() const noexcept {
+				return ptr;
+			}
+
+			friend PEFF_FORCEINLINE IteratorImpl operator+(DifferenceType offset, const IteratorImpl &it) noexcept {
+				return it + offset;
+			}
+		};
+
 	public:
-		using Iterator = T *;
-		using ConstIterator = const T *;
+		using Iterator = IteratorImpl<false, IteratorDirection::Forward>;
+		using ConstIterator = IteratorImpl<true, IteratorDirection::Forward>;
+		using ReverseIterator = IteratorImpl<false, IteratorDirection::Reversed>;
+		using ConstReverseIterator = IteratorImpl<true, IteratorDirection::Reversed>;
 
 		size_t _length = 0;
 		size_t _capacity = 0;
@@ -73,7 +244,7 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE void move_data_uninit(PEFF_OUT T *new_data, PEFF_NONNULL T *old_data, size_t length) noexcept {
-			if constexpr (std::is_trivially_move_constructible_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				memmove(new_data, old_data, sizeof(T) * length);
 			} else {
 				if (new_data + length < old_data) {
@@ -168,7 +339,7 @@ namespace peff {
 			T *new_data;
 			bool clear_old_data = true;
 
-			if constexpr (std::is_trivially_move_assignable_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				if (_data) {
 					if (!(new_data = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), new_capacity_total_size, alignof(T))))
 						return false;
@@ -197,6 +368,8 @@ namespace peff {
 								 _data,
 								 sizeof(T) * _capacity, alignof(T),
 								 new_capacity_total_size))) {
+							// The buffer stays where it is: _clear() must not release it.
+							clear_old_data = false;
 							_expand_to<construct>(new_data, length, std::forward<Args>(args)...);
 						} else {
 							if (!(new_data = (T *)_allocator->alloc(new_capacity_total_size, alignof(T))))
@@ -237,7 +410,7 @@ namespace peff {
 			T *new_data;
 			bool clear_old_data = true;
 
-			if constexpr (std::is_trivially_move_assignable_v<T>) {
+			if constexpr (std::is_trivially_copyable_v<T>) {
 				if (_data) {
 					if (!(new_data = (T *)_allocator->realloc(_data, sizeof(T) * _capacity, alignof(T), new_capacity_total_size, alignof(T))))
 						return false;
@@ -255,9 +428,10 @@ namespace peff {
 				return false;
 			}
 
-			if constexpr (std::is_trivially_move_assignable_v<T>) {
-			} else {
-				_shrink(new_data, length);
+			if constexpr (!std::is_trivially_copyable_v<T>) {
+				// Move the surviving elements into the newly allocated buffer; _clear() below
+				// destroys the old elements and releases the old buffer.
+				move_data_uninit(new_data, _data, length);
 			}
 
 			if (clear_old_data)
@@ -312,14 +486,12 @@ namespace peff {
 			assert(idx_end <= _length);
 
 			const size_t gap_length = idx_end - idx_start;
-			const size_t post_gap_length = _length - idx_end;
 			const size_t new_length = _length - gap_length;
 
-			if (post_gap_length < gap_length) {
-				_destruct_data(_data + idx_start + post_gap_length, (gap_length - post_gap_length));
-			}
 			_move_data(_data + idx_start, _data + idx_end, _length - idx_end);
 
+			// _shrink_capacity destroys the trailing gap_length elements: the erased elements
+			// the move did not overwrite and the moved-from tail elements.
 			return _shrink_capacity(new_length, new_length);
 		}
 
@@ -328,13 +500,13 @@ namespace peff {
 			assert(idx_end <= _length);
 
 			const size_t gap_length = idx_end - idx_start;
-			const size_t post_gap_length = _length - idx_end;
 			const size_t new_length = _length - gap_length;
 
-			if (post_gap_length < gap_length) {
-				_destruct_data(_data + idx_start + post_gap_length, (gap_length - post_gap_length));
-			}
 			_move_data(_data + idx_start, _data + idx_end, _length - idx_end);
+
+			// The trailing gap_length slots now hold either the erased elements the move did
+			// not overwrite or the moved-from tail elements: destroy them all.
+			_destruct_data(_data + new_length, gap_length);
 
 			_length = new_length;
 		}
@@ -381,7 +553,9 @@ namespace peff {
 				old_length = _length,
 				new_length = _length + length;
 
-			if (!_auto_grow_capacity<construct>(new_length))
+			// Grow the capacity without initializing the reserved tail: the shifted tail is
+			// constructed into it below, exactly once.
+			if (!_auto_grow_capacity<false>(new_length))
 				return nullptr;
 
 			T *gap_start = &_data[index];
@@ -390,13 +564,29 @@ namespace peff {
 				if (index < old_length) {
 					memmove(&_data[index + length], gap_start, sizeof(T) * (old_length - index));
 				}
-			} else {
-				if (index < old_length) {
-					move_data_uninit(
-						&_data[index + length],
-						gap_start,
-						old_length - index);
+
+				if constexpr (construct) {
+					_construct_data(gap_start, length);
 				}
+			} else {
+				// Shift the tail rightwards, from the end: the slots at or beyond old_length
+				// still hold raw storage and must be constructed, the ones below are live
+				// objects and must be moved into.
+				for (size_t i = old_length; i > index; --i) {
+					T &src = _data[i - 1];
+					const size_t dest_index = i - 1 + length;
+
+					if (dest_index >= old_length) {
+						peff::construct_at<T>(&_data[dest_index], std::move(src));
+					} else {
+						move_assign_or_move_construct<T>(_data[dest_index], std::move(src));
+					}
+				}
+
+				// The gap slots that used to hold live objects are moved-from; the ones at or
+				// beyond old_length still hold raw storage and must not be destroyed.
+				const size_t live_gap_length = (index + length <= old_length) ? length : (old_length - index);
+				_destruct_data(gap_start, live_gap_length);
 
 				if constexpr (construct) {
 					_construct_data(gap_start, length);
@@ -564,7 +754,7 @@ namespace peff {
 		/// @return PEFF_FORCEINLINE
 		///
 		[[nodiscard]] PEFF_FORCEINLINE bool shrink_to_fit() {
-			if (_length > _capacity)
+			if (_length < _capacity)
 				return _shrink_capacity(_length, _length);
 			return true;
 		}
@@ -786,27 +976,51 @@ namespace peff {
 		}
 
 		PEFF_FORCEINLINE Iterator begin() {
-			return _data;
+			return Iterator(_data);
 		}
 
 		PEFF_FORCEINLINE Iterator end() {
-			return _data + _length;
+			return Iterator(_data + _length);
 		}
 
 		PEFF_FORCEINLINE ConstIterator begin() const {
-			return _data;
+			return ConstIterator(_data);
 		}
 
 		PEFF_FORCEINLINE ConstIterator end() const {
-			return _data + _length;
+			return ConstIterator(_data + _length);
 		}
 
 		PEFF_FORCEINLINE ConstIterator cbegin() const {
-			return _data;
+			return ConstIterator(_data);
 		}
 
 		PEFF_FORCEINLINE ConstIterator cend() const {
-			return _data + _length;
+			return ConstIterator(_data + _length);
+		}
+
+		PEFF_FORCEINLINE ReverseIterator rbegin() {
+			return ReverseIterator(_data + _length);
+		}
+
+		PEFF_FORCEINLINE ReverseIterator rend() {
+			return ReverseIterator(_data);
+		}
+
+		PEFF_FORCEINLINE ConstReverseIterator rbegin() const {
+			return ConstReverseIterator(_data + _length);
+		}
+
+		PEFF_FORCEINLINE ConstReverseIterator rend() const {
+			return ConstReverseIterator(_data);
+		}
+
+		PEFF_FORCEINLINE ConstReverseIterator crbegin() const {
+			return ConstReverseIterator(_data + _length);
+		}
+
+		PEFF_FORCEINLINE ConstReverseIterator cend_reversed() const {
+			return ConstReverseIterator(_data);
 		}
 
 #if PEFF_CPLUSPLUS >= 202002L

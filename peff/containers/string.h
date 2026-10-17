@@ -15,8 +15,10 @@ namespace peff {
 		ArrayType _array;
 
 	public:
-		using Iterator = char *;
-		using ConstIterator = const char *;
+		using Iterator = ArrayType::Iterator;
+		using ConstIterator = ArrayType::ConstIterator;
+		using ReverseIterator = ArrayType::ReverseIterator;
+		using ConstReverseIterator = ArrayType::ConstReverseIterator;
 
 		PEFF_FORCEINLINE String(Alloc *allocator) : _array(allocator) {
 		}

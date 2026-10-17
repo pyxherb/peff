@@ -1223,6 +1223,7 @@ namespace peff {
 			Node *_node;
 			size_t _idx;
 			bool _reversed;
+			Node *_root;
 
 			friend ThisType;
 
@@ -1295,7 +1296,7 @@ namespace peff {
 			}
 
 		public:
-			PEFF_FORCEINLINE Iterator(Node *node, size_t idx, bool reversed = false) : _node(node), _idx(idx), _reversed(reversed) {}
+			PEFF_FORCEINLINE Iterator(Node *node, size_t idx, bool reversed = false, Node *root = nullptr) : _node(node), _idx(idx), _reversed(reversed), _root(root) {}
 
 			PEFF_FORCEINLINE const T &operator*() const {
 				return _node->key(_idx);
@@ -1321,12 +1322,30 @@ namespace peff {
 				return it;
 			}
 
+			PEFF_FORCEINLINE Iterator next() const {
+				Iterator iterator = *this;
+
+				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE IteratorDirection direction() const noexcept {
+				return _reversed ? IteratorDirection::Reversed : IteratorDirection::Forward;
+			}
+
 			PEFF_FORCEINLINE Iterator &operator--() {
 				if (_node) {
 					if (_reversed)
 						_step_forward();
 					else
 						_step_backward();
+				} else if (_root) {
+					if (_reversed) {
+						_node = _min_node(_root);
+						_idx = 0;
+					} else {
+						_node = _max_node(_root);
+						_idx = _node->num_keys - 1;
+					}
 				}
 				return *this;
 			}
@@ -1335,6 +1354,12 @@ namespace peff {
 				Iterator it = *this;
 				--(*this);
 				return it;
+			}
+
+			PEFF_FORCEINLINE Iterator prev() const {
+				Iterator iterator = *this;
+
+				return --iterator;
 			}
 
 			PEFF_FORCEINLINE bool operator==(const Iterator &other) const {
@@ -1380,10 +1405,14 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE ConstIterator next() {
+			PEFF_FORCEINLINE ConstIterator next() const {
 				ConstIterator iterator = *this;
 
 				return ++iterator;
+			}
+
+			PEFF_FORCEINLINE IteratorDirection direction() const noexcept {
+				return _iterator.direction();
 			}
 
 			PEFF_FORCEINLINE ConstIterator &operator--() {
@@ -1397,7 +1426,7 @@ namespace peff {
 				return it;
 			}
 
-			PEFF_FORCEINLINE ConstIterator prev() {
+			PEFF_FORCEINLINE ConstIterator prev() const {
 				ConstIterator iterator = *this;
 
 				return --iterator;
@@ -1436,21 +1465,21 @@ namespace peff {
 		PEFF_FORCEINLINE Iterator begin() noexcept {
 			if (!_root)
 				return end();
-			return Iterator(_min_node(_root), 0);
+			return Iterator(_min_node(_root), 0, false, _root);
 		}
 
 		PEFF_FORCEINLINE Iterator end() noexcept {
-			return Iterator(nullptr, 0);
+			return Iterator(nullptr, 0, false, _root);
 		}
 
 		PEFF_FORCEINLINE ConstIterator begin() const noexcept {
 			if (!_root)
 				return end();
-			return ConstIterator(begin());
+			return ConstIterator(const_cast<ThisType *>(this)->begin());
 		}
 
 		PEFF_FORCEINLINE ConstIterator end() const noexcept {
-			return ConstIterator(Iterator(nullptr, 0));
+			return ConstIterator(Iterator(nullptr, 0, false, const_cast<ThisType *>(this)->_root));
 		}
 
 		PEFF_FORCEINLINE Iterator rbegin() noexcept {
@@ -1458,11 +1487,11 @@ namespace peff {
 				return rend();
 
 			Node *node = _max_node(_root);
-			return Iterator(node, node->num_keys - 1, true);
+			return Iterator(node, node->num_keys - 1, true, _root);
 		}
 
 		PEFF_FORCEINLINE Iterator rend() noexcept {
-			return Iterator(nullptr, 0, true);
+			return Iterator(nullptr, 0, true, _root);
 		}
 
 		PEFF_FORCEINLINE ConstIterator crbegin() const noexcept {
@@ -1495,7 +1524,7 @@ namespace peff {
 
 				if (!node)
 					return end();
-				return Iterator(node, idx);
+				return Iterator(node, idx, false, _root);
 			} else {
 				if (!_root)
 					return end();
@@ -1506,7 +1535,7 @@ namespace peff {
 
 				if (!node)
 					return end();
-				return Iterator(node, idx);
+				return Iterator(node, idx, false, _root);
 			}
 		}
 
@@ -1532,7 +1561,7 @@ namespace peff {
 
 				if (!node)
 					return end();
-				return ConstIterator(Iterator(node, idx));
+				return ConstIterator(Iterator(node, idx, false, _root));
 			} else {
 				if (!_root)
 					return end();
@@ -1543,7 +1572,7 @@ namespace peff {
 
 				if (!node)
 					return end();
-				return ConstIterator(Iterator(node, idx));
+				return ConstIterator(Iterator(node, idx, false, _root));
 			}
 		}
 
@@ -1581,7 +1610,7 @@ namespace peff {
 			if (!node)
 				return end();
 
-			return Iterator(node, idx);
+			return Iterator(node, idx, false, _root);
 		}
 
 		/// @brief Find the element with the greatest key that is not greater than the given key.
@@ -1618,7 +1647,7 @@ namespace peff {
 			if (!node)
 				return end();
 
-			return ConstIterator(Iterator(node, idx));
+			return ConstIterator(Iterator(node, idx, false, _root));
 		}
 
 		/// @brief Remove the element pointed to by an iterator from the set.
